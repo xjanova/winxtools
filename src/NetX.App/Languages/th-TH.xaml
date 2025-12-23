@@ -1,0 +1,149 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ============================================== -->
+    <!-- NetX - Thai Language Pack                     -->
+    <!-- ============================================== -->
+
+    <!-- App Info -->
+    <system:String x:Key="AppName">WinXTools</system:String>
+    <system:String x:Key="AppTagline">จัดการเครือข่ายและระบบขั้นสูง</system:String>
+    <system:String x:Key="AppVersion">เวอร์ชัน 0.1.0-beta</system:String>
+    <system:String x:Key="AppCredit">โดย xman studio</system:String>
+
+    <!-- Navigation -->
+    <system:String x:Key="Nav_Dashboard">แดชบอร์ด</system:String>
+    <system:String x:Key="Nav_NetworkMonitor">ตรวจสอบเครือข่าย</system:String>
+    <system:String x:Key="Nav_BandwidthControl">ควบคุมแบนด์วิดท์</system:String>
+    <system:String x:Key="Nav_Uninstaller">ถอนการติดตั้ง</system:String>
+    <system:String x:Key="Nav_Cleaner">ทำความสะอาดระบบ</system:String>
+    <system:String x:Key="Nav_Settings">ตั้งค่า</system:String>
+
+    <!-- Dashboard -->
+    <system:String x:Key="Dashboard_Title">แดชบอร์ด</system:String>
+    <system:String x:Key="Dashboard_TotalDownload">ดาวน์โหลดทั้งหมด</system:String>
+    <system:String x:Key="Dashboard_TotalUpload">อัพโหลดทั้งหมด</system:String>
+    <system:String x:Key="Dashboard_ActiveApps">แอปที่ใช้งาน</system:String>
+    <system:String x:Key="Dashboard_Connections">การเชื่อมต่อ</system:String>
+    <system:String x:Key="Dashboard_TopConsumers">แอปที่ใช้แบนด์วิดท์สูงสุด</system:String>
+    <system:String x:Key="Dashboard_RealtimeTraffic">ทราฟฟิกแบบเรียลไทม์</system:String>
+    <system:String x:Key="Dashboard_QuickActions">การดำเนินการด่วน</system:String>
+    <system:String x:Key="Dashboard_BlockAll">บล็อกทั้งหมด</system:String>
+    <system:String x:Key="Dashboard_ResumeAll">เปิดใช้งานทั้งหมด</system:String>
+    <system:String x:Key="Dashboard_QuickClean">ทำความสะอาดด่วน</system:String>
+
+    <!-- Network Monitor -->
+    <system:String x:Key="Network_Title">ตรวจสอบเครือข่าย</system:String>
+    <system:String x:Key="Network_ProcessName">ชื่อโปรเซส</system:String>
+    <system:String x:Key="Network_Download">ดาวน์โหลด</system:String>
+    <system:String x:Key="Network_Upload">อัพโหลด</system:String>
+    <system:String x:Key="Network_TotalData">ข้อมูลทั้งหมด</system:String>
+    <system:String x:Key="Network_Connections">การเชื่อมต่อ</system:String>
+    <system:String x:Key="Network_Status">สถานะ</system:String>
+    <system:String x:Key="Network_Search">ค้นหาโปรเซส...</system:String>
+    <system:String x:Key="Network_ShowAll">แสดงทั้งหมด</system:String>
+    <system:String x:Key="Network_ActiveOnly">เฉพาะที่ใช้งาน</system:String>
+    <system:String x:Key="Network_ChartLine">กราฟเส้น</system:String>
+    <system:String x:Key="Network_ChartBar">กราฟแท่ง</system:String>
+
+    <!-- Bandwidth Control -->
+    <system:String x:Key="Bandwidth_Title">ควบคุมแบนด์วิดท์</system:String>
+    <system:String x:Key="Bandwidth_BasicMode">โหมดพื้นฐาน</system:String>
+    <system:String x:Key="Bandwidth_AdvancedMode">โหมดขั้นสูง</system:String>
+    <system:String x:Key="Bandwidth_BasicDesc">จำกัดแบนด์วิดท์ด้วย Windows QoS ใช้งานง่าย ทำงานทันที</system:String>
+    <system:String x:Key="Bandwidth_AdvancedDesc">ควบคุมระดับ Kernel ด้วย Windows Filtering Platform ทรงพลังที่สุด ไม่สามารถ bypass ได้</system:String>
+    <system:String x:Key="Bandwidth_Rules">กฎที่ใช้งาน</system:String>
+    <system:String x:Key="Bandwidth_AddRule">เพิ่มกฎ</system:String>
+    <system:String x:Key="Bandwidth_EditRule">แก้ไข</system:String>
+    <system:String x:Key="Bandwidth_DeleteRule">ลบ</system:String>
+    <system:String x:Key="Bandwidth_Block">บล็อก</system:String>
+    <system:String x:Key="Bandwidth_Limit">จำกัดความเร็ว</system:String>
+    <system:String x:Key="Bandwidth_Unlimited">ไม่จำกัด</system:String>
+
+    <!-- Uninstaller -->
+    <system:String x:Key="Uninstall_Title">ถอนการติดตั้งขั้นลึก</system:String>
+    <system:String x:Key="Uninstall_Scan">สแกนโปรแกรม</system:String>
+    <system:String x:Key="Uninstall_Refresh">รีเฟรช</system:String>
+    <system:String x:Key="Uninstall_Uninstall">ถอนการติดตั้ง</system:String>
+    <system:String x:Key="Uninstall_DeepClean">ทำความสะอาดลึก</system:String>
+    <system:String x:Key="Uninstall_ForceRemove">บังคับลบ</system:String>
+    <system:String x:Key="Uninstall_Search">ค้นหาโปรแกรม...</system:String>
+    <system:String x:Key="Uninstall_ShowSystem">แสดงแอประบบ</system:String>
+    <system:String x:Key="Uninstall_Size">ขนาด</system:String>
+    <system:String x:Key="Uninstall_InstallDate">ติดตั้งเมื่อ</system:String>
+    <system:String x:Key="Uninstall_Leftovers">พบไฟล์ตกค้าง</system:String>
+    <system:String x:Key="Uninstall_Files">ไฟล์</system:String>
+    <system:String x:Key="Uninstall_Registry">คีย์ Registry</system:String>
+
+    <!-- Cleaner -->
+    <system:String x:Key="Cleaner_Title">ทำความสะอาดระบบ</system:String>
+    <system:String x:Key="Cleaner_Scan">สแกน</system:String>
+    <system:String x:Key="Cleaner_Clean">ทำความสะอาด</system:String>
+    <system:String x:Key="Cleaner_SelectAll">เลือกทั้งหมด</system:String>
+    <system:String x:Key="Cleaner_TempFiles">ไฟล์ชั่วคราว</system:String>
+    <system:String x:Key="Cleaner_BrowserCache">แคชเบราว์เซอร์</system:String>
+    <system:String x:Key="Cleaner_WindowsUpdate">แคช Windows Update</system:String>
+    <system:String x:Key="Cleaner_RecycleBin">ถังขยะ</system:String>
+    <system:String x:Key="Cleaner_Thumbnails">แคชรูปขนาดย่อ</system:String>
+    <system:String x:Key="Cleaner_Logs">ไฟล์ Log</system:String>
+    <system:String x:Key="Cleaner_Prefetch">ข้อมูล Prefetch</system:String>
+    <system:String x:Key="Cleaner_OldWindows">Windows เก่า</system:String>
+    <system:String x:Key="Cleaner_MemoryDumps">Memory Dumps</system:String>
+    <system:String x:Key="Cleaner_TotalSize">ขนาดรวม</system:String>
+    <system:String x:Key="Cleaner_Cleaning">กำลังทำความสะอาด...</system:String>
+    <system:String x:Key="Cleaner_Complete">ทำความสะอาดเสร็จสิ้น!</system:String>
+
+    <!-- Settings -->
+    <system:String x:Key="Settings_Title">ตั้งค่า</system:String>
+    <system:String x:Key="Settings_General">ทั่วไป</system:String>
+    <system:String x:Key="Settings_Language">ภาษา</system:String>
+    <system:String x:Key="Settings_Theme">ธีม</system:String>
+    <system:String x:Key="Settings_StartWithWindows">เริ่มพร้อม Windows</system:String>
+    <system:String x:Key="Settings_MinimizeToTray">ย่อไปที่ System Tray</system:String>
+    <system:String x:Key="Settings_Notifications">แสดงการแจ้งเตือน</system:String>
+    <system:String x:Key="Settings_Network">เครือข่าย</system:String>
+    <system:String x:Key="Settings_RefreshRate">อัตราการรีเฟรช</system:String>
+    <system:String x:Key="Settings_DataRetention">เก็บข้อมูล</system:String>
+    <system:String x:Key="Settings_About">เกี่ยวกับ</system:String>
+    <system:String x:Key="Settings_CheckUpdates">ตรวจสอบอัพเดท</system:String>
+    <system:String x:Key="Settings_ResetSettings">รีเซ็ตการตั้งค่า</system:String>
+
+    <!-- Common -->
+    <system:String x:Key="Common_OK">ตกลง</system:String>
+    <system:String x:Key="Common_Cancel">ยกเลิก</system:String>
+    <system:String x:Key="Common_Apply">นำไปใช้</system:String>
+    <system:String x:Key="Common_Save">บันทึก</system:String>
+    <system:String x:Key="Common_Close">ปิด</system:String>
+    <system:String x:Key="Common_Yes">ใช่</system:String>
+    <system:String x:Key="Common_No">ไม่</system:String>
+    <system:String x:Key="Common_Error">ข้อผิดพลาด</system:String>
+    <system:String x:Key="Common_Warning">คำเตือน</system:String>
+    <system:String x:Key="Common_Info">ข้อมูล</system:String>
+    <system:String x:Key="Common_Success">สำเร็จ</system:String>
+    <system:String x:Key="Common_Loading">กำลังโหลด...</system:String>
+    <system:String x:Key="Common_Processing">กำลังประมวลผล...</system:String>
+
+    <!-- Units -->
+    <system:String x:Key="Unit_BytesPerSec">B/s</system:String>
+    <system:String x:Key="Unit_KBPerSec">KB/s</system:String>
+    <system:String x:Key="Unit_MBPerSec">MB/s</system:String>
+    <system:String x:Key="Unit_GBPerSec">GB/s</system:String>
+    <system:String x:Key="Unit_Bytes">B</system:String>
+    <system:String x:Key="Unit_KB">KB</system:String>
+    <system:String x:Key="Unit_MB">MB</system:String>
+    <system:String x:Key="Unit_GB">GB</system:String>
+    <system:String x:Key="Unit_TB">TB</system:String>
+
+    <!-- Admin Dialog -->
+    <system:String x:Key="Admin_Title">ต้องการสิทธิ์ผู้ดูแลระบบ</system:String>
+    <system:String x:Key="Admin_Message">WinXTools ต้องการสิทธิ์ผู้ดูแลระบบเพื่อเข้าถึง:</system:String>
+    <system:String x:Key="Admin_Feature1">การตรวจสอบทราฟฟิกเครือข่าย</system:String>
+    <system:String x:Key="Admin_Feature2">การควบคุมแบนด์วิดท์ (WFP)</system:String>
+    <system:String x:Key="Admin_Feature3">การสแกน Registry ขั้นลึก</system:String>
+    <system:String x:Key="Admin_Feature4">การทำความสะอาดไฟล์ระบบ</system:String>
+    <system:String x:Key="Admin_RunAsAdmin">เรียกใช้ในฐานะผู้ดูแลระบบ</system:String>
+    <system:String x:Key="Admin_LimitedMode">เรียกใช้โหมดจำกัด</system:String>
+    <system:String x:Key="Admin_Exit">ออก</system:String>
+
+</ResourceDictionary>

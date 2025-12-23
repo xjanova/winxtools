@@ -1,0 +1,338 @@
+<Page x:Class="NetX.App.Views.ConnectionMonitorView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+      Title="Connection Monitor">
+
+    <Page.Resources>
+        <Geometry x:Key="IncomingIcon">M12,4L12,20M12,20L6,14M12,20L18,14</Geometry>
+        <Geometry x:Key="OutgoingIcon">M12,20L12,4M12,4L6,10M12,4L18,10</Geometry>
+        <Geometry x:Key="BlockIcon">M12,2C17.5,2 22,6.5 22,12C22,17.5 17.5,22 12,22C6.5,22 2,17.5 2,12C2,6.5 6.5,2 12,2M12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C16.42,20 20,16.42 20,12C20,7.58 16.42,4 12,4M16.24,7.76L7.76,16.24L16.24,7.76Z</Geometry>
+        <Geometry x:Key="AllowIcon">M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z</Geometry>
+        <Geometry x:Key="RefreshIcon">M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z</Geometry>
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Connection Monitor"
+                           Style="{StaticResource HeaderTextStyle}"
+                           FontSize="28"/>
+                <TextBlock x:Name="StatusText"
+                           Text="Monitoring active connections..."
+                           Style="{StaticResource BodyTextStyle}"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="RefreshBtn"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="RefreshBtn_Click"
+                        Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource RefreshIcon}"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                        <TextBlock Text="Refresh"/>
+                    </StackPanel>
+                </Button>
+
+                <CheckBox x:Name="AutoRefreshBtn"
+                          IsChecked="True"
+                          Click="AutoRefresh_Changed"
+                          VerticalAlignment="Center"
+                          Content="Auto Refresh"
+                          Foreground="{StaticResource TextSecondaryBrush}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Stats Cards -->
+        <Grid Grid.Row="1" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Total Connections -->
+            <Border Grid.Column="0" Style="{StaticResource StatCardStyle}" Margin="0,0,10,0">
+                <StackPanel>
+                    <TextBlock x:Name="TotalConnectionsText"
+                               Text="0"
+                               Style="{StaticResource StatValueStyle}"/>
+                    <TextBlock Text="Total Connections"
+                               Style="{StaticResource StatLabelStyle}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Incoming -->
+            <Border Grid.Column="1" Style="{StaticResource StatCardStyle}" Margin="5,0">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock x:Name="IncomingText"
+                                   Text="0"
+                                   Style="{StaticResource StatValueStyle}"
+                                   Foreground="{StaticResource AuroraCyanBrush}"/>
+                        <TextBlock Text="Incoming"
+                                   Style="{StaticResource StatLabelStyle}"/>
+                    </StackPanel>
+                    <Path Data="{StaticResource IncomingIcon}"
+                          Fill="{StaticResource AuroraCyanBrush}"
+                          Width="24" Height="24" Stretch="Uniform"
+                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Opacity="0.3"/>
+                </Grid>
+            </Border>
+
+            <!-- Outgoing -->
+            <Border Grid.Column="2" Style="{StaticResource StatCardStyle}" Margin="5,0">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock x:Name="OutgoingText"
+                                   Text="0"
+                                   Style="{StaticResource StatValueStyle}"
+                                   Foreground="{StaticResource AuroraGreenBrush}"/>
+                        <TextBlock Text="Outgoing"
+                                   Style="{StaticResource StatLabelStyle}"/>
+                    </StackPanel>
+                    <Path Data="{StaticResource OutgoingIcon}"
+                          Fill="{StaticResource AuroraGreenBrush}"
+                          Width="24" Height="24" Stretch="Uniform"
+                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Opacity="0.3"/>
+                </Grid>
+            </Border>
+
+            <!-- Blocked -->
+            <Border Grid.Column="3" Style="{StaticResource StatCardStyle}" Margin="10,0,0,0">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock x:Name="BlockedText"
+                                   Text="0"
+                                   Style="{StaticResource StatValueStyle}"
+                                   Foreground="{StaticResource DangerBrush}"/>
+                        <TextBlock Text="Blocked IPs"
+                                   Style="{StaticResource StatLabelStyle}"/>
+                    </StackPanel>
+                    <Path Data="{StaticResource BlockIcon}"
+                          Fill="{StaticResource DangerBrush}"
+                          Width="24" Height="24" Stretch="Uniform"
+                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Opacity="0.3"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Connections List -->
+        <Border Grid.Row="2" Style="{StaticResource GlassCardStyle}" Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Filter Bar -->
+                <Border Grid.Row="0" Background="{StaticResource HeaderGradientBrush}" Padding="16,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="SearchBox"
+                                 Grid.Column="0"
+                                 TextChanged="SearchBox_TextChanged"
+                                 Width="300"
+                                 HorizontalAlignment="Left">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource ModernTextBoxStyle}">
+                                    <Setter Property="Tag" Value="Search IP, hostname, or port..."/>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+
+                        <ComboBox x:Name="DirectionFilter"
+                                  Grid.Column="1"
+                                  SelectedIndex="0"
+                                  SelectionChanged="Filter_Changed"
+                                  Margin="10,0"
+                                  Width="140">
+                            <ComboBoxItem Content="All Directions"/>
+                            <ComboBoxItem Content="Incoming Only"/>
+                            <ComboBoxItem Content="Outgoing Only"/>
+                        </ComboBox>
+
+                        <ComboBox x:Name="ProtocolFilter"
+                                  Grid.Column="2"
+                                  SelectedIndex="0"
+                                  SelectionChanged="Filter_Changed"
+                                  Width="100">
+                            <ComboBoxItem Content="All"/>
+                            <ComboBoxItem Content="TCP"/>
+                            <ComboBoxItem Content="UDP"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+                <!-- Connections ListView -->
+                <ListView x:Name="ConnectionsList"
+                          Grid.Row="1"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="16,12"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border x:Name="Border"
+                                                Background="Transparent"
+                                                BorderBrush="{StaticResource BorderBrush}"
+                                                BorderThickness="0,0,0,1"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Border" Property="Background" Value="#10ffffff"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Border" Property="Background" Value="#1500c8ff"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Direction Icon -->
+                                <Border Grid.Column="0"
+                                        Width="32" Height="32"
+                                        CornerRadius="6"
+                                        Background="{Binding DirectionColor}"
+                                        Opacity="0.2"
+                                        HorizontalAlignment="Left">
+                                </Border>
+                                <Path Grid.Column="0"
+                                      Data="{Binding DirectionIcon}"
+                                      Fill="{Binding DirectionColor}"
+                                      Width="16" Height="16"
+                                      Stretch="Uniform"
+                                      HorizontalAlignment="Left"
+                                      Margin="8,0,0,0"/>
+
+                                <!-- Protocol -->
+                                <Border Grid.Column="1"
+                                        Background="{StaticResource AccentTertiaryBrush}"
+                                        CornerRadius="4"
+                                        Padding="8,4"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock Text="{Binding Protocol}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="White"/>
+                                </Border>
+
+                                <!-- Remote Endpoint -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DisplayEndpoint}"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               FontSize="13"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding RemoteHostname}"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               FontSize="11"
+                                               Visibility="{Binding HasHostname, Converter={StaticResource BoolToVisibilityConverter}}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+
+                                <!-- State -->
+                                <TextBlock Grid.Column="3"
+                                           Text="{Binding State}"
+                                           Foreground="{Binding StateColor}"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"/>
+
+                                <!-- Local Port -->
+                                <TextBlock Grid.Column="4"
+                                           Text="{Binding LocalPortDisplay}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"/>
+
+                                <!-- Actions -->
+                                <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource SecondaryButtonStyle}"
+                                            Padding="8,6"
+                                            Margin="0,0,5,0"
+                                            Click="BlockConnection_Click"
+                                            Tag="{Binding RemoteAddress}"
+                                            ToolTip="Block this IP"
+                                            Visibility="{Binding CanBlock, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Path Data="{StaticResource BlockIcon}"
+                                              Fill="{StaticResource DangerBrush}"
+                                              Width="14" Height="14" Stretch="Uniform"/>
+                                    </Button>
+                                    <Button Style="{StaticResource SecondaryButtonStyle}"
+                                            Padding="8,6"
+                                            Click="UnblockConnection_Click"
+                                            Tag="{Binding RemoteAddress}"
+                                            ToolTip="Unblock this IP"
+                                            Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Path Data="{StaticResource AllowIcon}"
+                                              Fill="{StaticResource SuccessBrush}"
+                                              Width="14" Height="14" Stretch="Uniform"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <!-- Empty State -->
+                <StackPanel x:Name="EmptyState"
+                            Grid.Row="1"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Visibility="Collapsed">
+                    <TextBlock Text="No connections found"
+                               Style="{StaticResource SubHeaderTextStyle}"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Active network connections will appear here"
+                               Style="{StaticResource BodyTextStyle}"
+                               HorizontalAlignment="Center"
+                               Margin="0,8,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

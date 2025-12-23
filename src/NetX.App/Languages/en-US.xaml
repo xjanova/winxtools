@@ -1,0 +1,153 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ============================================== -->
+    <!-- NetX - English (US) Language Pack             -->
+    <!-- ============================================== -->
+
+    <!-- App Info -->
+    <system:String x:Key="AppName">WinXTools</system:String>
+    <system:String x:Key="AppTagline">Advanced Network &amp; System Manager</system:String>
+    <system:String x:Key="AppVersion">Version 0.1.0-beta</system:String>
+    <system:String x:Key="AppCredit">by xman studio</system:String>
+
+    <!-- Navigation -->
+    <system:String x:Key="Nav_Dashboard">Dashboard</system:String>
+    <system:String x:Key="Nav_NetworkMonitor">Network Monitor</system:String>
+    <system:String x:Key="Nav_ConnectionMonitor">Connections</system:String>
+    <system:String x:Key="Nav_PacketMonitor">Packet Monitor</system:String>
+    <system:String x:Key="Nav_BandwidthControl">Bandwidth Control</system:String>
+    <system:String x:Key="Nav_Uninstaller">Uninstaller</system:String>
+    <system:String x:Key="Nav_Cleaner">System Cleaner</system:String>
+    <system:String x:Key="Nav_Rules">Automation</system:String>
+    <system:String x:Key="Nav_Tricks">Windows Tricks</system:String>
+    <system:String x:Key="Nav_Settings">Settings</system:String>
+
+    <!-- Dashboard -->
+    <system:String x:Key="Dashboard_Title">Dashboard</system:String>
+    <system:String x:Key="Dashboard_TotalDownload">Total Download</system:String>
+    <system:String x:Key="Dashboard_TotalUpload">Total Upload</system:String>
+    <system:String x:Key="Dashboard_ActiveApps">Active Apps</system:String>
+    <system:String x:Key="Dashboard_Connections">Connections</system:String>
+    <system:String x:Key="Dashboard_TopConsumers">Top Bandwidth Consumers</system:String>
+    <system:String x:Key="Dashboard_RealtimeTraffic">Real-time Traffic</system:String>
+    <system:String x:Key="Dashboard_QuickActions">Quick Actions</system:String>
+    <system:String x:Key="Dashboard_BlockAll">Block All</system:String>
+    <system:String x:Key="Dashboard_ResumeAll">Resume All</system:String>
+    <system:String x:Key="Dashboard_QuickClean">Quick Clean</system:String>
+
+    <!-- Network Monitor -->
+    <system:String x:Key="Network_Title">Network Monitor</system:String>
+    <system:String x:Key="Network_ProcessName">Process Name</system:String>
+    <system:String x:Key="Network_Download">Download</system:String>
+    <system:String x:Key="Network_Upload">Upload</system:String>
+    <system:String x:Key="Network_TotalData">Total Data</system:String>
+    <system:String x:Key="Network_Connections">Connections</system:String>
+    <system:String x:Key="Network_Status">Status</system:String>
+    <system:String x:Key="Network_Search">Search process...</system:String>
+    <system:String x:Key="Network_ShowAll">Show All</system:String>
+    <system:String x:Key="Network_ActiveOnly">Active Only</system:String>
+    <system:String x:Key="Network_ChartLine">Line Chart</system:String>
+    <system:String x:Key="Network_ChartBar">Bar Chart</system:String>
+
+    <!-- Bandwidth Control -->
+    <system:String x:Key="Bandwidth_Title">Bandwidth Control</system:String>
+    <system:String x:Key="Bandwidth_BasicMode">Basic Mode</system:String>
+    <system:String x:Key="Bandwidth_AdvancedMode">Advanced Mode</system:String>
+    <system:String x:Key="Bandwidth_BasicDesc">Simple bandwidth limiting using Windows QoS. Easy to use, works instantly.</system:String>
+    <system:String x:Key="Bandwidth_AdvancedDesc">Kernel-level control using Windows Filtering Platform. Most powerful, cannot be bypassed.</system:String>
+    <system:String x:Key="Bandwidth_Rules">Active Rules</system:String>
+    <system:String x:Key="Bandwidth_AddRule">Add Rule</system:String>
+    <system:String x:Key="Bandwidth_EditRule">Edit</system:String>
+    <system:String x:Key="Bandwidth_DeleteRule">Delete</system:String>
+    <system:String x:Key="Bandwidth_Block">Block</system:String>
+    <system:String x:Key="Bandwidth_Limit">Limit Speed</system:String>
+    <system:String x:Key="Bandwidth_Unlimited">Unlimited</system:String>
+
+    <!-- Uninstaller -->
+    <system:String x:Key="Uninstall_Title">Deep Uninstaller</system:String>
+    <system:String x:Key="Uninstall_Scan">Scan Programs</system:String>
+    <system:String x:Key="Uninstall_Refresh">Refresh</system:String>
+    <system:String x:Key="Uninstall_Uninstall">Uninstall</system:String>
+    <system:String x:Key="Uninstall_DeepClean">Deep Clean</system:String>
+    <system:String x:Key="Uninstall_ForceRemove">Force Remove</system:String>
+    <system:String x:Key="Uninstall_Search">Search program...</system:String>
+    <system:String x:Key="Uninstall_ShowSystem">Show System Apps</system:String>
+    <system:String x:Key="Uninstall_Size">Size</system:String>
+    <system:String x:Key="Uninstall_InstallDate">Installed</system:String>
+    <system:String x:Key="Uninstall_Leftovers">Leftovers Found</system:String>
+    <system:String x:Key="Uninstall_Files">Files</system:String>
+    <system:String x:Key="Uninstall_Registry">Registry Keys</system:String>
+
+    <!-- Cleaner -->
+    <system:String x:Key="Cleaner_Title">System Cleaner</system:String>
+    <system:String x:Key="Cleaner_Scan">Scan</system:String>
+    <system:String x:Key="Cleaner_Clean">Clean Selected</system:String>
+    <system:String x:Key="Cleaner_SelectAll">Select All</system:String>
+    <system:String x:Key="Cleaner_TempFiles">Temporary Files</system:String>
+    <system:String x:Key="Cleaner_BrowserCache">Browser Cache</system:String>
+    <system:String x:Key="Cleaner_WindowsUpdate">Windows Update Cache</system:String>
+    <system:String x:Key="Cleaner_RecycleBin">Recycle Bin</system:String>
+    <system:String x:Key="Cleaner_Thumbnails">Thumbnail Cache</system:String>
+    <system:String x:Key="Cleaner_Logs">Log Files</system:String>
+    <system:String x:Key="Cleaner_Prefetch">Prefetch Data</system:String>
+    <system:String x:Key="Cleaner_OldWindows">Old Windows Installation</system:String>
+    <system:String x:Key="Cleaner_MemoryDumps">Memory Dumps</system:String>
+    <system:String x:Key="Cleaner_TotalSize">Total Size</system:String>
+    <system:String x:Key="Cleaner_Cleaning">Cleaning...</system:String>
+    <system:String x:Key="Cleaner_Complete">Cleanup Complete!</system:String>
+
+    <!-- Settings -->
+    <system:String x:Key="Settings_Title">Settings</system:String>
+    <system:String x:Key="Settings_General">General</system:String>
+    <system:String x:Key="Settings_Language">Language</system:String>
+    <system:String x:Key="Settings_Theme">Theme</system:String>
+    <system:String x:Key="Settings_StartWithWindows">Start with Windows</system:String>
+    <system:String x:Key="Settings_MinimizeToTray">Minimize to System Tray</system:String>
+    <system:String x:Key="Settings_Notifications">Show Notifications</system:String>
+    <system:String x:Key="Settings_Network">Network</system:String>
+    <system:String x:Key="Settings_RefreshRate">Refresh Rate</system:String>
+    <system:String x:Key="Settings_DataRetention">Data Retention</system:String>
+    <system:String x:Key="Settings_About">About</system:String>
+    <system:String x:Key="Settings_CheckUpdates">Check for Updates</system:String>
+    <system:String x:Key="Settings_ResetSettings">Reset Settings</system:String>
+
+    <!-- Common -->
+    <system:String x:Key="Common_OK">OK</system:String>
+    <system:String x:Key="Common_Cancel">Cancel</system:String>
+    <system:String x:Key="Common_Apply">Apply</system:String>
+    <system:String x:Key="Common_Save">Save</system:String>
+    <system:String x:Key="Common_Close">Close</system:String>
+    <system:String x:Key="Common_Yes">Yes</system:String>
+    <system:String x:Key="Common_No">No</system:String>
+    <system:String x:Key="Common_Error">Error</system:String>
+    <system:String x:Key="Common_Warning">Warning</system:String>
+    <system:String x:Key="Common_Info">Information</system:String>
+    <system:String x:Key="Common_Success">Success</system:String>
+    <system:String x:Key="Common_Loading">Loading...</system:String>
+    <system:String x:Key="Common_Processing">Processing...</system:String>
+
+    <!-- Units -->
+    <system:String x:Key="Unit_BytesPerSec">B/s</system:String>
+    <system:String x:Key="Unit_KBPerSec">KB/s</system:String>
+    <system:String x:Key="Unit_MBPerSec">MB/s</system:String>
+    <system:String x:Key="Unit_GBPerSec">GB/s</system:String>
+    <system:String x:Key="Unit_Bytes">B</system:String>
+    <system:String x:Key="Unit_KB">KB</system:String>
+    <system:String x:Key="Unit_MB">MB</system:String>
+    <system:String x:Key="Unit_GB">GB</system:String>
+    <system:String x:Key="Unit_TB">TB</system:String>
+
+    <!-- Admin Dialog -->
+    <system:String x:Key="Admin_Title">Administrator Required</system:String>
+    <system:String x:Key="Admin_Message">WinXTools needs administrator privileges to access:</system:String>
+    <system:String x:Key="Admin_Feature1">Network traffic monitoring</system:String>
+    <system:String x:Key="Admin_Feature2">Bandwidth control (WFP)</system:String>
+    <system:String x:Key="Admin_Feature3">Deep registry scanning</system:String>
+    <system:String x:Key="Admin_Feature4">System file cleanup</system:String>
+    <system:String x:Key="Admin_RunAsAdmin">Run as Administrator</system:String>
+    <system:String x:Key="Admin_LimitedMode">Run Limited Mode</system:String>
+    <system:String x:Key="Admin_Exit">Exit</system:String>
+
+</ResourceDictionary>

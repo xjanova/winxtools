@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- <ApplicationIcon>Assets\icon.ico</ApplicationIcon> -->
+    <Company>xman studio</Company>
+    <Product>WinXTools</Product>
+    <Description>WinXTools - Advanced Windows Network &amp; System Management Tool</Description>
+    <Copyright>Copyright © xman studio 2024-2025</Copyright>
+    <Version>0.1.0-beta</Version>
+    <AssemblyName>WinXTools</AssemblyName>
+
+    <!-- Request admin privileges -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- Fix for CommunityToolkit.Mvvm + WPF source generator issue -->
+    <IncludePackageReferencesDuringMarkupCompilation>false</IncludePackageReferencesDuringMarkupCompilation>
+  </PropertyGroup>
+
+  <!-- Publish settings - use when publishing only -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NetX.Core\NetX.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\**\*" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,203 @@
+<Page x:Class="NetX.App.Views.UninstallerView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Uninstaller"
+      Background="{StaticResource BgPrimaryBrush}">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="{DynamicResource Uninstall_Title}"
+                       Style="{StaticResource HeaderTextStyle}"
+                       FontSize="28"/>
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1" Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Search Box -->
+                <Border Grid.Column="0"
+                        Background="{StaticResource BgTertiaryBrush}"
+                        CornerRadius="8"
+                        Padding="12,8"
+                        MaxWidth="400"
+                        HorizontalAlignment="Left">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Path Grid.Column="0"
+                              Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3Z"
+                              Fill="{StaticResource TextTertiaryBrush}"
+                              Width="16" Height="16"
+                              Stretch="Uniform"
+                              Margin="0,0,8,0"/>
+                        <TextBox Grid.Column="1"
+                                 x:Name="SearchBox"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{StaticResource TextPrimaryBrush}"
+                                 FontSize="13"
+                                 TextChanged="SearchBox_TextChanged"/>
+                    </Grid>
+                </Border>
+
+                <!-- Show System Apps Toggle -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0">
+                    <TextBlock Text="{DynamicResource Uninstall_ShowSystem}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <CheckBox x:Name="ShowSystemApps"
+                              Style="{StaticResource ToggleSwitchStyle}"
+                              Checked="ShowSystemApps_Changed"
+                              Unchecked="ShowSystemApps_Changed"/>
+                </StackPanel>
+
+                <!-- Actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="{DynamicResource Uninstall_Refresh}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="Refresh_Click"
+                            Margin="0,0,8,0"/>
+                    <Button Content="{DynamicResource Uninstall_Scan}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Click="Scan_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Programs List -->
+        <Border Grid.Row="2" Style="{StaticResource GlassCardStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Column Headers -->
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="200"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Text="{DynamicResource Network_ProcessName}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="2" Text="{DynamicResource Uninstall_Size}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="3" Text="{DynamicResource Uninstall_InstallDate}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Grid.Column="4" Text="Actions" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                </Grid>
+
+                <!-- Programs ListView -->
+                <ListView Grid.Row="1"
+                          x:Name="ProgramsList"
+                          Background="Transparent"
+                          BorderThickness="0">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0,12"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border x:Name="border"
+                                                Background="{TemplateBinding Background}"
+                                                Padding="{TemplateBinding Padding}"
+                                                CornerRadius="8"
+                                                Margin="0,2">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="#1affffff"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="#2600d4ff"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="200"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Icon -->
+                                <Border Grid.Column="0"
+                                        Width="32" Height="32"
+                                        CornerRadius="6"
+                                        Background="{StaticResource BgTertiaryBrush}">
+                                    <Path Data="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
+                                          Fill="{StaticResource AccentPrimaryBrush}"
+                                          Width="16" Height="16"
+                                          Stretch="Uniform"/>
+                                </Border>
+
+                                <!-- Name & Publisher -->
+                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding Name}"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Publisher}"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               FontSize="11"/>
+                                </StackPanel>
+
+                                <!-- Size -->
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Size}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontFamily="{StaticResource MonoFont}"
+                                           HorizontalAlignment="Right"/>
+
+                                <!-- Install Date -->
+                                <TextBlock Grid.Column="3"
+                                           Text="{Binding InstallDate}"
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           HorizontalAlignment="Center"/>
+
+                                <!-- Actions -->
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Content="{DynamicResource Uninstall_Uninstall}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Padding="10,6"
+                                            Click="Uninstall_Click"
+                                            Margin="0,0,4,0"/>
+                                    <Button Content="{DynamicResource Uninstall_DeepClean}"
+                                            Style="{StaticResource DangerButtonStyle}"
+                                            Padding="10,6"
+                                            Click="DeepClean_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
