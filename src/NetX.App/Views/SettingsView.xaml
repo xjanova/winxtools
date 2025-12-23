@@ -57,7 +57,7 @@
                             <TextBlock Text="{DynamicResource Settings_StartWithWindows}"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        FontWeight="SemiBold"/>
-                            <TextBlock Text="Launch NetX when Windows starts"
+                            <TextBlock Text="Launch WinXTools when Windows starts"
                                        Foreground="{StaticResource TextTertiaryBrush}"
                                        FontSize="11"/>
                         </StackPanel>
@@ -350,7 +350,7 @@
                                 CornerRadius="12"
                                 Background="{StaticResource AccentGradientBrush}"
                                 Margin="0,0,16,0">
-                            <TextBlock Text="NX"
+                            <TextBlock Text="WX"
                                        FontSize="24"
                                        FontWeight="Bold"
                                        Foreground="White"
@@ -359,7 +359,7 @@
                         </Border>
 
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="NetX"
+                            <TextBlock Text="WinXTools"
                                        Style="{StaticResource SubHeaderTextStyle}"
                                        FontSize="20"/>
                             <TextBlock Text="{DynamicResource AppTagline}"

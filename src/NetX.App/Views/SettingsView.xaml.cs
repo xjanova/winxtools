@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -103,13 +104,78 @@ public partial class SettingsView : Page
         }
     }
 
-    private void CheckUpdates_Click(object sender, RoutedEventArgs e)
+    private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "NetX is up to date!\n\nVersion: 1.0.0\n\nNo updates available.",
-            "Check for Updates",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        var button = sender as Button;
+        if (button != null)
+        {
+            button.IsEnabled = false;
+            button.Content = "Checking...";
+        }
+
+        try
+        {
+            var updateInfo = await UpdateChecker.Instance.CheckForUpdatesAsync();
+
+            if (button != null)
+            {
+                button.IsEnabled = true;
+                button.Content = FindResource("Settings_CheckUpdates") as string ?? "Check for Updates";
+            }
+
+            if (updateInfo == null)
+            {
+                MessageBox.Show(
+                    "Unable to check for updates.\n\nPlease check your internet connection.",
+                    "Update Check Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            if (updateInfo.IsUpdateAvailable)
+            {
+                var result = MessageBox.Show(
+                    $"A new version is available!\n\n" +
+                    $"Current version: {updateInfo.CurrentVersion}\n" +
+                    $"Latest version: {updateInfo.LatestVersion}\n\n" +
+                    $"Would you like to download the update?",
+                    "Update Available",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (result == MessageBoxResult.Yes && !string.IsNullOrEmpty(updateInfo.ReleaseUrl))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = updateInfo.ReleaseUrl,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"WinXTools is up to date!\n\nVersion: {updateInfo.CurrentVersion}",
+                    "No Updates Available",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (button != null)
+            {
+                button.IsEnabled = true;
+                button.Content = FindResource("Settings_CheckUpdates") as string ?? "Check for Updates";
+            }
+
+            MessageBox.Show(
+                $"Failed to check for updates: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void ResetSettings_Click(object sender, RoutedEventArgs e)

@@ -122,7 +122,7 @@ public class RuleEngine
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error evaluating rule {rule.Name}: {ex.Message}");
+                global::System.Diagnostics.Debug.WriteLine($"Error evaluating rule {rule.Name}: {ex.Message}");
             }
         }
 
@@ -193,7 +193,7 @@ public class RuleEngine
 
     private bool EvaluateProcessCondition(RuleCondition condition)
     {
-        var processes = System.Diagnostics.Process.GetProcessesByName(condition.Value ?? "");
+        var processes = global::System.Diagnostics.Process.GetProcessesByName(condition.Value ?? "");
         return condition.Operator switch
         {
             ConditionOperator.Equals => processes.Length > 0,
@@ -342,7 +342,7 @@ public class RuleEngine
 
         var content = new StringContent(
             JsonSerializer.Serialize(new { text = message, rule = rule.Name, timestamp = DateTime.Now }),
-            System.Text.Encoding.UTF8,
+            global::System.Text.Encoding.UTF8,
             "application/json");
 
         await client.PostAsync(action.Target, content);
@@ -371,7 +371,7 @@ public class RuleEngine
     {
         if (string.IsNullOrEmpty(action.Target)) return;
 
-        var psi = new System.Diagnostics.ProcessStartInfo
+        var psi = new global::System.Diagnostics.ProcessStartInfo
         {
             FileName = "cmd.exe",
             Arguments = $"/c {action.Target}",
@@ -379,7 +379,7 @@ public class RuleEngine
             CreateNoWindow = true
         };
 
-        System.Diagnostics.Process.Start(psi);
+        global::System.Diagnostics.Process.Start(psi);
     }
 
     private string ReplaceVariables(string template, NetworkRule rule)
@@ -424,7 +424,7 @@ public class RuleEngine
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error loading rules: {ex.Message}");
+            global::System.Diagnostics.Debug.WriteLine($"Error loading rules: {ex.Message}");
         }
     }
 
@@ -438,7 +438,7 @@ public class RuleEngine
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error saving rules: {ex.Message}");
+            global::System.Diagnostics.Debug.WriteLine($"Error saving rules: {ex.Message}");
         }
     }
 

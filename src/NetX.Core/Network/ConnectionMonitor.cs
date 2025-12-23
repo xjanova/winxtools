@@ -76,7 +76,7 @@ public class ConnectionMonitor
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error getting connections: {ex.Message}");
+            global::System.Diagnostics.Debug.WriteLine($"Error getting connections: {ex.Message}");
         }
 
         return connections;

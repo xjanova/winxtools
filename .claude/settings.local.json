@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(test:*)",
+      "Bash(dotnet build:*)",
+      "Bash(cmd /c \"dotnet build\")",
+      "Bash(powershell -Command \"cd D:\\Code\\NetX; dotnet build 2>&1\")",
+      "Bash(where dotnet:*)",
+      "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" build D:CodeNetXNetX.sln)",
+      "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" build \"D:\\Code\\NetX\\NetX.sln\")",
+      "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" clean \"D:\\Code\\NetX\\NetX.sln\")",
+      "Bash(cmd /c \"rd /s /q D:\\Code\\NetX\\src\\NetX.App\\obj\")",
+      "Bash(powershell.exe -Command \"Remove-Item -Path ''D:\\Code\\NetX\\src\\NetX.App\\obj'' -Recurse -Force\")",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(start \"\" \"D:\\Code\\NetX\\NetX.sln\")",
+      "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" restore \"D:\\Code\\NetX\\NetX.sln\")",
+      "Bash(dotnet --list-sdks:*)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"D:\\Code\\NetX\\fix-path.ps1\")",
+      "Bash(if not exist \"D:\\Code\\NetX\\src\\NetX.App\\Assets\" mkdir \"D:\\Code\\NetX\\src\\NetX.App\\Assets\")",
+      "Bash(copy \"D:\\Code\\NetX\\logo.png\" \"D:\\Code\\NetX\\src\\NetX.App\\Assets\\logo.png\")",
+      "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" build \"D:\\Code\\NetX\\NetX.sln\" --verbosity minimal)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(del /f \"D:\\Code\\NetX\\nul\")",
+      "Bash(git reset:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial release: WinXTools v0.1.0-beta\n\nFeatures:\n- Real-time network monitoring per process\n- Connection monitor with TCP/UDP tracking  \n- Bandwidth control with kill auto mode\n- System cleaner with multiple categories\n- Deep uninstaller with leftover detection\n- RAM optimizer with auto-optimization\n- Process killer with smart kill mode\n- Status bar with live bandwidth stats\n- Sleek scrollbars and smooth UI updates\n- Thai and English language support\n- Premium dark theme with lava lamp background\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(move \"D:\\Code\\NetX\\src\\NetX.Core\\System\\UpdateChecker.cs\" \"D:\\Code\\NetX\\src\\NetX.Core\\Optimization\\UpdateChecker.cs\")",
+      "Bash(cmd /c move:*)"
+    ]
+  }
+}
