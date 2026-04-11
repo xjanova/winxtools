@@ -5,7 +5,9 @@ using System.Runtime.InteropServices;
 namespace NetX.Core.Network;
 
 /// <summary>
-/// Network monitoring service that tracks real bandwidth usage per process and per interface
+/// Network monitoring service that tracks real bandwidth usage per process and per interface.
+/// Uses WinDivert PacketEngine for accurate real-time packet-level measurement when available,
+/// falls back to interface statistics when PacketEngine is not running.
 /// </summary>
 public class NetworkMonitor
 {
@@ -24,9 +26,88 @@ public class NetworkMonitor
     private long _currentUploadSpeed = 0;
     private string? _selectedInterfaceId = null; // null = all interfaces
 
+    // Caching for performance optimization
+    private NetworkStats? _cachedStats = null;
+    private DateTime _lastCacheTime = DateTime.MinValue;
+    private const double CACHE_DURATION_SECONDS = 0.8; // Cache results for 0.8 seconds (faster updates with PacketEngine)
+
+    // Process stats cache (separate from full stats)
+    private List<ProcessNetworkStats>? _cachedProcessStats = null;
+    private DateTime _lastProcessCacheTime = DateTime.MinValue;
+    private const double PROCESS_CACHE_DURATION = 1.0; // Cache process stats for 1 second
+
+    // Interface bandwidth cache
+    private Dictionary<string, (long download, long upload, string name)>? _cachedInterfaceBandwidth = null;
+    private DateTime _lastInterfaceCacheTime = DateTime.MinValue;
+    private const double INTERFACE_CACHE_DURATION = 1.0; // Cache interface stats for 1 second
+
+    // PacketEngine integration
+    private bool _packetEngineStarted = false;
+    private bool _packetEngineAvailable = false;
+
+    public bool IsPacketEngineActive => _packetEngineStarted && PacketEngine.Instance.IsRunning;
+
     private NetworkMonitor()
     {
         InitializeInterfaces();
+        TryStartPacketEngine();
+    }
+
+    /// <summary>
+    /// Try to start the PacketEngine for accurate packet-level monitoring
+    /// </summary>
+    private void TryStartPacketEngine()
+    {
+        try
+        {
+            var engine = PacketEngine.Instance;
+            _packetEngineAvailable = engine.IsDriverLoaded;
+
+            if (_packetEngineAvailable)
+            {
+                _packetEngineStarted = engine.Start();
+                if (_packetEngineStarted)
+                {
+                    Debug.WriteLine("PacketEngine started successfully - using real-time packet capture");
+                }
+                else
+                {
+                    Debug.WriteLine("PacketEngine failed to start - falling back to interface stats");
+                }
+            }
+            else
+            {
+                Debug.WriteLine("WinDivert driver not available - using interface stats mode");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"PacketEngine initialization error: {ex.Message}");
+            _packetEngineAvailable = false;
+            _packetEngineStarted = false;
+        }
+    }
+
+    /// <summary>
+    /// Manually start PacketEngine (requires admin)
+    /// </summary>
+    public bool StartPacketEngine()
+    {
+        if (_packetEngineStarted) return true;
+        TryStartPacketEngine();
+        return _packetEngineStarted;
+    }
+
+    /// <summary>
+    /// Stop PacketEngine
+    /// </summary>
+    public void StopPacketEngine()
+    {
+        if (_packetEngineStarted)
+        {
+            PacketEngine.Instance.Stop();
+            _packetEngineStarted = false;
+        }
     }
 
     #region Interface Management
@@ -133,124 +214,81 @@ public class NetworkMonitor
     #region Real Bandwidth Measurement
 
     /// <summary>
-    /// Get current network statistics with real bandwidth measurement
+    /// Get current network statistics with real bandwidth measurement.
+    /// Uses PacketEngine for accurate per-process measurement when available,
+    /// falls back to interface statistics otherwise.
     /// </summary>
     public NetworkStats GetCurrentStats()
     {
-        var stats = new NetworkStats();
         var now = DateTime.Now;
+
+        // Return cached stats if available and not expired
+        lock (_lock)
+        {
+            if (_cachedStats != null && (now - _lastCacheTime).TotalSeconds < CACHE_DURATION_SECONDS)
+            {
+                return _cachedStats;
+            }
+        }
+
+        var stats = new NetworkStats();
         var elapsed = (now - _lastUpdate).TotalSeconds;
 
-        if (elapsed < 0.1) elapsed = 1; // Minimum 100ms
+        if (elapsed < 0.3) elapsed = 1; // Minimum for measurement
 
         try
         {
-            // Update interface statistics and calculate real speeds
-            UpdateInterfaceStats(elapsed);
-
-            // Get TCP connections with process info
-            var tcpConnections = GetExtendedTcpTable();
-            var udpEndpoints = GetExtendedUdpTable();
-
-            // Group connections by process with state info
-            var processConnections = new Dictionary<int, List<TcpConnectionInfo>>();
-
-            foreach (var conn in tcpConnections)
+            // If PacketEngine is running, use its accurate data
+            if (IsPacketEngineActive)
             {
-                if (!processConnections.ContainsKey(conn.ProcessId))
-                    processConnections[conn.ProcessId] = new List<TcpConnectionInfo>();
-                processConnections[conn.ProcessId].Add(conn);
-            }
+                var engineStats = PacketEngine.Instance.GetStats();
 
-            // Add UDP endpoints count
-            var processUdpCount = new Dictionary<int, int>();
-            foreach (var endpoint in udpEndpoints)
-            {
-                if (!processUdpCount.ContainsKey(endpoint.ProcessId))
-                    processUdpCount[endpoint.ProcessId] = 0;
-                processUdpCount[endpoint.ProcessId]++;
+                stats.TotalDownloadSpeed = engineStats.TotalDownloadSpeed;
+                stats.TotalUploadSpeed = engineStats.TotalUploadSpeed;
+                stats.TotalBytesReceived = engineStats.TotalBytesReceived;
+                stats.TotalBytesSent = engineStats.TotalBytesSent;
+                stats.ActiveProcessCount = engineStats.ActiveProcessCount;
 
-                if (!processConnections.ContainsKey(endpoint.ProcessId))
-                    processConnections[endpoint.ProcessId] = new List<TcpConnectionInfo>();
-            }
-
-            // Get process info
-            var processes = Process.GetProcesses();
-            var processLookup = processes.ToDictionary(p => p.Id, p => p);
-
-            // Calculate total active connections for bandwidth distribution
-            var establishedConnections = tcpConnections.Count(c => c.State == TcpState.Established);
-            if (establishedConnections < 1) establishedConnections = 1;
-
-            lock (_lock)
-            {
-                foreach (var kvp in processConnections)
+                // Convert PacketEngine stats to our format
+                stats.ProcessStats = engineStats.ProcessStats.Select(ps => new ProcessNetworkStats
                 {
-                    var pid = kvp.Key;
-                    var connections = kvp.Value;
-                    var connectionCount = connections.Count + processUdpCount.GetValueOrDefault(pid, 0);
+                    ProcessId = ps.ProcessId,
+                    ProcessName = ps.ProcessName,
+                    DownloadSpeed = ps.DownloadSpeed,
+                    UploadSpeed = ps.UploadSpeed,
+                    TotalDownloaded = ps.TotalBytesReceived,
+                    TotalUploaded = ps.TotalBytesSent,
+                    ConnectionCount = 1 // PacketEngine doesn't track connections
+                }).ToList();
 
-                    if (!processLookup.TryGetValue(pid, out var process))
-                        continue;
+                stats.TotalConnections = stats.ProcessStats.Count;
 
-                    try
-                    {
-                        var processName = process.ProcessName;
+                // Also update interface stats for interface view
+                UpdateInterfaceStats(elapsed);
+            }
+            else
+            {
+                // Fallback: Update interface statistics and calculate speeds
+                UpdateInterfaceStats(elapsed);
 
-                        // Calculate bandwidth share based on active connections
-                        var activeConns = connections.Count(c => c.State == TcpState.Established);
-                        var share = establishedConnections > 0 ? (double)Math.Max(1, activeConns) / establishedConnections : 0;
+                stats.TotalDownloadSpeed = _currentDownloadSpeed;
+                stats.TotalUploadSpeed = _currentUploadSpeed;
+                stats.TotalBytesReceived = _totalBytesReceived;
+                stats.TotalBytesSent = _totalBytesSent;
 
-                        // Distribute real bandwidth based on connection share
-                        var downloadSpeed = _currentDownloadSpeed * share;
-                        var uploadSpeed = _currentUploadSpeed * share;
-
-                        // Track totals per process
-                        if (!_processTrackers.ContainsKey(pid))
-                        {
-                            _processTrackers[pid] = new ProcessBandwidthTracker(pid, processName);
-                        }
-
-                        var tracker = _processTrackers[pid];
-                        tracker.Update(downloadSpeed, uploadSpeed, elapsed);
-
-                        var processStats = new ProcessNetworkStats
-                        {
-                            ProcessId = pid,
-                            ProcessName = processName,
-                            DownloadSpeed = downloadSpeed,
-                            UploadSpeed = uploadSpeed,
-                            ConnectionCount = connectionCount,
-                            TotalDownloaded = tracker.TotalDownloaded,
-                            TotalUploaded = tracker.TotalUploaded
-                        };
-
-                        stats.ProcessStats.Add(processStats);
-                        stats.TotalDownloadSpeed += downloadSpeed;
-                        stats.TotalUploadSpeed += uploadSpeed;
-                        stats.TotalConnections += connectionCount;
-                    }
-                    catch { }
-                }
-
-                // Clean up old trackers
-                var activeProcessIds = processConnections.Keys.ToHashSet();
-                var toRemove = _processTrackers.Keys.Where(k => !activeProcessIds.Contains(k)).ToList();
-                foreach (var pid in toRemove)
-                {
-                    _processTrackers.Remove(pid);
-                }
+                // Get process stats using connection-based estimation
+                stats.ProcessStats = GetProcessStatsInternal(elapsed);
+                stats.TotalConnections = stats.ProcessStats.Sum(p => p.ConnectionCount);
+                stats.ActiveProcessCount = stats.ProcessStats.Count;
             }
 
-            stats.ActiveProcessCount = stats.ProcessStats.Count;
-            stats.TotalBytesReceived = _totalBytesReceived;
-            stats.TotalBytesSent = _totalBytesSent;
             _lastUpdate = now;
 
-            // Cleanup
-            foreach (var p in processes)
+            // Cache the results
+            lock (_lock)
             {
-                try { p.Dispose(); } catch { }
+                _cachedStats = stats;
+                _lastCacheTime = now;
             }
         }
         catch (Exception ex)
@@ -259,6 +297,166 @@ public class NetworkMonitor
         }
 
         return stats;
+    }
+
+    /// <summary>
+    /// Get process stats with caching to reduce CPU usage
+    /// </summary>
+    private List<ProcessNetworkStats> GetProcessStatsInternal(double elapsed)
+    {
+        var now = DateTime.Now;
+
+        // Return cached process stats if available
+        lock (_lock)
+        {
+            if (_cachedProcessStats != null && (now - _lastProcessCacheTime).TotalSeconds < PROCESS_CACHE_DURATION)
+            {
+                return _cachedProcessStats;
+            }
+        }
+
+        var result = new List<ProcessNetworkStats>();
+
+        try
+        {
+            // Get TCP connections with process info
+            var tcpConnections = GetExtendedTcpTable();
+            var udpEndpoints = GetExtendedUdpTable();
+
+            // Group connections by process
+            var processConnections = new Dictionary<int, int>(); // pid -> connection count
+            var processEstablished = new Dictionary<int, int>(); // pid -> established count
+
+            foreach (var conn in tcpConnections)
+            {
+                if (!processConnections.ContainsKey(conn.ProcessId))
+                {
+                    processConnections[conn.ProcessId] = 0;
+                    processEstablished[conn.ProcessId] = 0;
+                }
+                processConnections[conn.ProcessId]++;
+                if (conn.State == TcpState.Established)
+                    processEstablished[conn.ProcessId]++;
+            }
+
+            foreach (var endpoint in udpEndpoints)
+            {
+                if (!processConnections.ContainsKey(endpoint.ProcessId))
+                {
+                    processConnections[endpoint.ProcessId] = 0;
+                    processEstablished[endpoint.ProcessId] = 0;
+                }
+                processConnections[endpoint.ProcessId]++;
+            }
+
+            // Calculate total established connections for bandwidth distribution
+            var totalEstablished = processEstablished.Values.Sum();
+            if (totalEstablished < 1) totalEstablished = 1;
+
+            // Get process names (only once, cached)
+            foreach (var kvp in processConnections)
+            {
+                var pid = kvp.Key;
+                var connectionCount = kvp.Value;
+                var established = processEstablished.GetValueOrDefault(pid, 0);
+
+                try
+                {
+                    string processName;
+                    lock (_lock)
+                    {
+                        if (_processTrackers.TryGetValue(pid, out var existingTracker))
+                        {
+                            processName = existingTracker.ProcessName;
+                        }
+                        else
+                        {
+                            using var process = Process.GetProcessById(pid);
+                            processName = process.ProcessName;
+                        }
+                    }
+
+                    // Distribute bandwidth based on established connections
+                    var share = (double)Math.Max(1, established) / totalEstablished;
+                    var downloadSpeed = _currentDownloadSpeed * share;
+                    var uploadSpeed = _currentUploadSpeed * share;
+
+                    // Track totals per process
+                    lock (_lock)
+                    {
+                        if (!_processTrackers.ContainsKey(pid))
+                        {
+                            _processTrackers[pid] = new ProcessBandwidthTracker(pid, processName);
+                        }
+                        var tracker = _processTrackers[pid];
+                        tracker.Update(downloadSpeed, uploadSpeed, elapsed);
+
+                        result.Add(new ProcessNetworkStats
+                        {
+                            ProcessId = pid,
+                            ProcessName = processName,
+                            DownloadSpeed = downloadSpeed,
+                            UploadSpeed = uploadSpeed,
+                            ConnectionCount = connectionCount,
+                            TotalDownloaded = tracker.TotalDownloaded,
+                            TotalUploaded = tracker.TotalUploaded
+                        });
+                    }
+                }
+                catch
+                {
+                    // Process may have exited
+                }
+            }
+
+            // Clean up old trackers
+            lock (_lock)
+            {
+                var activeProcessIds = processConnections.Keys.ToHashSet();
+                var toRemove = _processTrackers.Keys.Where(k => !activeProcessIds.Contains(k)).ToList();
+                foreach (var pid in toRemove)
+                {
+                    _processTrackers.Remove(pid);
+                }
+
+                _cachedProcessStats = result;
+                _lastProcessCacheTime = now;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error getting process stats: {ex.Message}");
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get stats for a specific process by ID
+    /// </summary>
+    public ProcessNetworkStats? GetProcessStats(int processId)
+    {
+        // If PacketEngine is active, get directly from it for most accurate data
+        if (IsPacketEngineActive)
+        {
+            var engineStats = PacketEngine.Instance.GetProcessStats(processId);
+            if (engineStats != null)
+            {
+                return new ProcessNetworkStats
+                {
+                    ProcessId = engineStats.ProcessId,
+                    ProcessName = engineStats.ProcessName,
+                    DownloadSpeed = engineStats.DownloadSpeed,
+                    UploadSpeed = engineStats.UploadSpeed,
+                    TotalDownloaded = engineStats.TotalBytesReceived,
+                    TotalUploaded = engineStats.TotalBytesSent,
+                    ConnectionCount = 1
+                };
+            }
+        }
+
+        var stats = GetCurrentStats();
+        return stats.ProcessStats.FirstOrDefault(p => p.ProcessId == processId);
     }
 
     private void UpdateInterfaceStats(double elapsed)
@@ -371,15 +569,33 @@ public class NetworkMonitor
     }
 
     /// <summary>
-    /// Get per-interface bandwidth statistics
+    /// Get per-interface bandwidth statistics (with caching for performance)
     /// </summary>
     public Dictionary<string, (long download, long upload, string name)> GetInterfaceBandwidth()
     {
+        var now = DateTime.Now;
+
+        // Return cached result if available
+        lock (_lock)
+        {
+            if (_cachedInterfaceBandwidth != null && (now - _lastInterfaceCacheTime).TotalSeconds < INTERFACE_CACHE_DURATION)
+            {
+                return _cachedInterfaceBandwidth;
+            }
+        }
+
         var result = new Dictionary<string, (long, long, string)>();
 
         foreach (var kvp in _interfaceStats)
         {
             result[kvp.Key] = (kvp.Value.DownloadSpeed, kvp.Value.UploadSpeed, kvp.Value.Name);
+        }
+
+        // Cache the result
+        lock (_lock)
+        {
+            _cachedInterfaceBandwidth = result;
+            _lastInterfaceCacheTime = now;
         }
 
         return result;

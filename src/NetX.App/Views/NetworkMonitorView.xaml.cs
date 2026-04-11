@@ -11,6 +11,8 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 using NetX.Core.Network;
 using NetX.Core.Optimization;
+using NetX.Core.Helpers;
+using NetX.App.Helpers;
 
 namespace NetX.App.Views;
 
@@ -18,9 +20,11 @@ public partial class NetworkMonitorView : Page
 {
     private readonly DispatcherTimer _updateTimer;
     private readonly NetworkMonitor _networkMonitor;
-    private readonly ObservableCollection<double> _selectedDownloadHistory = new();
-    private readonly ObservableCollection<double> _selectedUploadHistory = new();
-    private List<ProcessDisplayItem> _allProcesses = new();
+    private readonly ChartDataCache _chartCache = ChartDataCache.Instance;
+    private readonly ObservableCollection<double> _selectedDownloadHistory;
+    private readonly ObservableCollection<double> _selectedUploadHistory;
+    private readonly ObservableCollection<ProcessDisplayItem> _displayedProcesses = new();
+    private readonly Dictionary<int, ProcessDisplayItem> _processMap = new();
     private const int MaxDataPoints = 30;
     private bool _isLineChart = true;
     private ISeries[]? _lineSeries;
@@ -31,25 +35,36 @@ public partial class NetworkMonitorView : Page
     private bool _sortAscending = false;
     private int? _selectedProcessId;
 
+    // Pagination
+    private int _currentPage = 1;
+    private int _itemsPerPage = 10;
+    private int _totalPages = 1;
+    private List<ProcessDisplayItem> _allFilteredItems = new();
+
+    // Debounce timer for applying bandwidth limits (1 second delay after slider stops)
+    private DispatcherTimer? _bandwidthDebounceTimer;
+
     public NetworkMonitorView()
     {
         InitializeComponent();
 
         _networkMonitor = NetworkMonitor.Instance;
 
-        // Initialize chart data
-        for (int i = 0; i < MaxDataPoints; i++)
-        {
-            _selectedDownloadHistory.Add(0);
-            _selectedUploadHistory.Add(0);
-        }
+        // Use cached chart data for continuity across page navigation
+        _selectedDownloadHistory = _chartCache.NetworkMonitorDownloadHistory;
+        _selectedUploadHistory = _chartCache.NetworkMonitorUploadHistory;
+        _selectedProcessId = _chartCache.NetworkMonitorSelectedProcessId;
+
+        // Initialize chart data only if not already initialized
+        _chartCache.InitializeCollection(_selectedDownloadHistory, MaxDataPoints);
+        _chartCache.InitializeCollection(_selectedUploadHistory, MaxDataPoints);
 
         InitializeDetailChart();
 
-        // Setup timer
-        _updateTimer = new DispatcherTimer
+        // Setup timer - use 2 seconds for smoother performance
+        _updateTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
-            Interval = TimeSpan.FromSeconds(1)
+            Interval = TimeSpan.FromSeconds(2)
         };
         _updateTimer.Tick += UpdateTimer_Tick;
         _updateTimer.Start();
@@ -60,7 +75,11 @@ public partial class NetworkMonitorView : Page
         AutoKillToggle.IsChecked = ProcessKiller.Instance.IsAutoKillEnabled;
         SmartKillToggle.IsChecked = ProcessKiller.Instance.IsSmartKillEnabled;
 
-        Unloaded += (s, e) => _updateTimer.Stop();
+        Unloaded += (s, e) =>
+        {
+            _updateTimer.Stop();
+            _bandwidthDebounceTimer?.Stop();
+        };
     }
 
     private void InitializeDetailChart()
@@ -156,49 +175,72 @@ public partial class NetworkMonitorView : Page
         {
             var stats = _networkMonitor.GetCurrentStats();
 
-            // Calculate max speeds for bar chart scaling
-            var maxDownload = stats.ProcessStats.Any() ? stats.ProcessStats.Max(p => p.DownloadSpeed) : 1;
-            var maxUpload = stats.ProcessStats.Any() ? stats.ProcessStats.Max(p => p.UploadSpeed) : 1;
-            if (maxDownload < 1) maxDownload = 1;
-            if (maxUpload < 1) maxUpload = 1;
+            // Update existing items or add new ones (avoids recreating the entire list)
+            var currentProcessIds = new HashSet<int>();
 
-            _allProcesses = stats.ProcessStats
-                .Select(p => new ProcessDisplayItem
-                {
-                    ProcessId = p.ProcessId,
-                    ProcessName = p.ProcessName,
-                    DownloadSpeed = p.DownloadSpeed,
-                    UploadSpeed = p.UploadSpeed,
-                    DownloadSpeedText = FormatSpeed(p.DownloadSpeed),
-                    UploadSpeedText = FormatSpeed(p.UploadSpeed),
-                    ConnectionCount = p.ConnectionCount,
-                    // Calculate bar heights (0-20 pixels)
-                    DownloadBarHeight = (int)Math.Min(20, (p.DownloadSpeed / maxDownload) * 20),
-                    UploadBarHeight = (int)Math.Min(20, (p.UploadSpeed / maxUpload) * 20),
-                    IsAutoKillEnabled = ProcessKiller.Instance.IsProcessBlocked(p.ProcessName)
-                })
+            // Only show top processes by activity (limit to 50 for performance)
+            var topProcesses = stats.ProcessStats
+                .OrderByDescending(p => p.DownloadSpeed + p.UploadSpeed)
+                .Take(50)
                 .ToList();
+
+            foreach (var p in topProcesses)
+            {
+                currentProcessIds.Add(p.ProcessId);
+
+                if (_processMap.TryGetValue(p.ProcessId, out var existing))
+                {
+                    // Update existing item
+                    existing.DownloadSpeed = p.DownloadSpeed;
+                    existing.UploadSpeed = p.UploadSpeed;
+                    existing.DownloadSpeedText = FormatSpeed(p.DownloadSpeed);
+                    existing.UploadSpeedText = FormatSpeed(p.UploadSpeed);
+                    existing.ConnectionCount = p.ConnectionCount;
+                    existing.IsAutoKillEnabled = ProcessKiller.Instance.IsProcessBlocked(p.ProcessName);
+                }
+                else
+                {
+                    // Add new item (defer icon loading)
+                    var newItem = new ProcessDisplayItem
+                    {
+                        ProcessId = p.ProcessId,
+                        ProcessName = p.ProcessName,
+                        DownloadSpeed = p.DownloadSpeed,
+                        UploadSpeed = p.UploadSpeed,
+                        DownloadSpeedText = FormatSpeed(p.DownloadSpeed),
+                        UploadSpeedText = FormatSpeed(p.UploadSpeed),
+                        ConnectionCount = p.ConnectionCount,
+                        IsAutoKillEnabled = ProcessKiller.Instance.IsProcessBlocked(p.ProcessName),
+                        Icon = ProcessIconHelper.GetProcessIcon(p.ProcessName)
+                    };
+                    _processMap[p.ProcessId] = newItem;
+                }
+            }
+
+            // Remove processes that are no longer active
+            var toRemove = _processMap.Keys.Where(id => !currentProcessIds.Contains(id)).ToList();
+            foreach (var id in toRemove)
+            {
+                _processMap.Remove(id);
+            }
 
             ApplyFilters();
 
-            StatusText.Text = $"Monitoring {stats.ActiveProcessCount} processes, {stats.TotalConnections} connections";
+            // Show total speed from interface (accurate measurement)
+            StatusText.Text = $"↓ {FormatSpeed(stats.TotalDownloadSpeed)} | ↑ {FormatSpeed(stats.TotalUploadSpeed)} | {stats.ActiveProcessCount} apps, {stats.TotalConnections} connections";
 
             // Update selected process chart and bandwidth display
-            if (_selectedProcessId.HasValue)
+            if (_selectedProcessId.HasValue && _processMap.TryGetValue(_selectedProcessId.Value, out var currentStats))
             {
-                var currentStats = _allProcesses.FirstOrDefault(p => p.ProcessId == _selectedProcessId.Value);
-                if (currentStats != null)
-                {
-                    _selectedDownloadHistory.RemoveAt(0);
-                    _selectedDownloadHistory.Add(currentStats.DownloadSpeed);
+                _selectedDownloadHistory.RemoveAt(0);
+                _selectedDownloadHistory.Add(currentStats.DownloadSpeed);
 
-                    _selectedUploadHistory.RemoveAt(0);
-                    _selectedUploadHistory.Add(currentStats.UploadSpeed);
+                _selectedUploadHistory.RemoveAt(0);
+                _selectedUploadHistory.Add(currentStats.UploadSpeed);
 
-                    // Update real-time speed display
-                    CurrentDownloadSpeed.Text = currentStats.DownloadSpeedText;
-                    CurrentUploadSpeed.Text = currentStats.UploadSpeedText;
-                }
+                // Update real-time speed display
+                CurrentDownloadSpeed.Text = currentStats.DownloadSpeedText;
+                CurrentUploadSpeed.Text = currentStats.UploadSpeedText;
             }
         }
         catch (Exception ex)
@@ -206,6 +248,10 @@ public partial class NetworkMonitorView : Page
             StatusText.Text = $"Error: {ex.Message}";
         }
     }
+
+    private List<ProcessDisplayItem>? _lastDisplayedList;
+    private string _lastSearchText = "";
+    private bool _lastShowActiveOnly;
 
     private void ApplyFilters()
     {
@@ -215,7 +261,7 @@ public partial class NetworkMonitorView : Page
         var searchText = SearchBox.Text?.ToLower() ?? "";
         var showActiveOnly = ActiveOnlyBtn.IsChecked == true;
 
-        var filtered = _allProcesses.Where(p =>
+        var filtered = _processMap.Values.Where(p =>
         {
             // Search filter
             if (!string.IsNullOrEmpty(searchText))
@@ -234,8 +280,105 @@ public partial class NetworkMonitorView : Page
 
         // Apply sorting
         filtered = ApplySorting(filtered);
+        _allFilteredItems = filtered.ToList();
 
-        ProcessList.ItemsSource = filtered.ToList();
+        // Calculate pagination
+        _totalPages = Math.Max(1, (int)Math.Ceiling((double)_allFilteredItems.Count / _itemsPerPage));
+        if (_currentPage > _totalPages) _currentPage = _totalPages;
+
+        // Get current page items
+        var pageItems = _allFilteredItems
+            .Skip((_currentPage - 1) * _itemsPerPage)
+            .Take(_itemsPerPage)
+            .ToList();
+
+        // Only rebind ItemsSource if the list composition changed
+        bool needsRebind = _lastDisplayedList == null ||
+                          _lastSearchText != searchText ||
+                          _lastShowActiveOnly != showActiveOnly ||
+                          !AreListsEqual(_lastDisplayedList, pageItems);
+
+        if (needsRebind)
+        {
+            ProcessList.ItemsSource = pageItems;
+            _lastDisplayedList = pageItems;
+            _lastSearchText = searchText;
+            _lastShowActiveOnly = showActiveOnly;
+        }
+
+        // Update pagination UI
+        UpdatePaginationUI();
+    }
+
+    private void UpdatePaginationUI()
+    {
+        if (PageInfoText == null) return;
+
+        CurrentPageText.Text = _currentPage.ToString();
+        PageInfoText.Text = $"Page {_currentPage} of {_totalPages} ({_allFilteredItems.Count} apps)";
+
+        // Enable/disable pagination buttons
+        FirstPageBtn.IsEnabled = _currentPage > 1;
+        PrevPageBtn.IsEnabled = _currentPage > 1;
+        NextPageBtn.IsEnabled = _currentPage < _totalPages;
+        LastPageBtn.IsEnabled = _currentPage < _totalPages;
+    }
+
+    #region Pagination Events
+
+    private void FirstPage_Click(object sender, RoutedEventArgs e)
+    {
+        _currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void PrevPage_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            ApplyFilters();
+        }
+    }
+
+    private void NextPage_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            ApplyFilters();
+        }
+    }
+
+    private void LastPage_Click(object sender, RoutedEventArgs e)
+    {
+        _currentPage = _totalPages;
+        ApplyFilters();
+    }
+
+    private void ItemsPerPage_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ItemsPerPageCombo?.SelectedItem is ComboBoxItem item)
+        {
+            if (int.TryParse(item.Content?.ToString(), out var count))
+            {
+                _itemsPerPage = count;
+                _currentPage = 1; // Reset to first page
+                ApplyFilters();
+            }
+        }
+    }
+
+    #endregion
+
+    private static bool AreListsEqual(List<ProcessDisplayItem> a, List<ProcessDisplayItem> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+        {
+            if (a[i].ProcessId != b[i].ProcessId) return false;
+        }
+        return true;
     }
 
     private IEnumerable<ProcessDisplayItem> ApplySorting(IEnumerable<ProcessDisplayItem> items)
@@ -335,14 +478,21 @@ public partial class NetworkMonitorView : Page
         if (ProcessList.SelectedItem is ProcessDisplayItem item)
         {
             _selectedProcessId = item.ProcessId;
+            _chartCache.NetworkMonitorSelectedProcessId = item.ProcessId; // Cache for navigation persistence
             SelectedProcessName.Text = item.ProcessName;
             SelectedProcessDetails.Text = $"PID: {item.ProcessId} | Connections: {item.ConnectionCount}";
+
+            // Show process icon in detail panel
+            if (item.Icon != null)
+            {
+                SelectedProcessName.Text = item.ProcessName;
+            }
 
             // Update speed displays
             CurrentDownloadSpeed.Text = item.DownloadSpeedText;
             CurrentUploadSpeed.Text = item.UploadSpeedText;
 
-            // Reset chart history for new selection
+            // Reset chart history for new selection (new process = new chart data)
             for (int i = 0; i < MaxDataPoints; i++)
             {
                 _selectedDownloadHistory[i] = 0;
@@ -352,8 +502,25 @@ public partial class NetworkMonitorView : Page
             // Load connections for this process
             LoadProcessConnections(item.ProcessId);
 
-            // Reset bandwidth slider
-            BandwidthLimitSlider.Value = 0;
+            // Load existing bandwidth limits for this process
+            LoadProcessBandwidthLimits(item.ProcessName);
+        }
+    }
+
+    private void LoadProcessBandwidthLimits(string processName)
+    {
+        var existingRule = BandwidthLimiter.Instance.GetLimit(processName);
+        if (existingRule != null)
+        {
+            // Set sliders to existing limits
+            DownloadLimitSlider.Value = KBpsToSlider(existingRule.DownloadLimitKBps);
+            UploadLimitSlider.Value = KBpsToSlider(existingRule.UploadLimitKBps);
+        }
+        else
+        {
+            // Reset to unlimited
+            DownloadLimitSlider.Value = 0;
+            UploadLimitSlider.Value = 0;
         }
     }
 
@@ -367,39 +534,134 @@ public partial class NetworkMonitorView : Page
         }).ToList();
     }
 
-    private void BandwidthLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    private long _currentDownloadLimitKBps = 0;
+    private long _currentUploadLimitKBps = 0;
+
+    private void DownloadLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (!_selectedProcessId.HasValue) return;
+        if (DownloadLimitText == null) return;
 
         var value = e.NewValue;
-        if (value <= 0)
+        _currentDownloadLimitKBps = SliderToKBps(value);
+        DownloadLimitText.Text = FormatLimitText(_currentDownloadLimitKBps);
+
+        // Debounce - apply after 1 second of no changes
+        ScheduleBandwidthApply();
+    }
+
+    private void UploadLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (UploadLimitText == null) return;
+
+        var value = e.NewValue;
+        _currentUploadLimitKBps = SliderToKBps(value);
+        UploadLimitText.Text = FormatLimitText(_currentUploadLimitKBps);
+
+        // Debounce - apply after 1 second of no changes
+        ScheduleBandwidthApply();
+    }
+
+    /// <summary>
+    /// Schedule applying bandwidth limits with 1 second debounce
+    /// </summary>
+    private void ScheduleBandwidthApply()
+    {
+        // Create timer if needed
+        if (_bandwidthDebounceTimer == null)
         {
-            BandwidthLimitText.Text = "Unlimited";
-        }
-        else if (value >= 100)
-        {
-            BandwidthLimitText.Text = "Blocked";
-        }
-        else
-        {
-            // Calculate actual limit based on slider
-            var limitKBps = (100 - value) * 10; // 0-100 -> 1000-0 KB/s
-            if (limitKBps >= 1000)
-                BandwidthLimitText.Text = $"{limitKBps / 1000:F1} MB/s";
-            else
-                BandwidthLimitText.Text = $"{limitKBps:F0} KB/s";
+            _bandwidthDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _bandwidthDebounceTimer.Tick += (s, e) =>
+            {
+                _bandwidthDebounceTimer.Stop();
+                ApplyBandwidthLimits();
+            };
         }
 
-        // TODO: Apply actual bandwidth limit using WFP or QoS
-        StatusText.Text = $"Bandwidth limit set to {BandwidthLimitText.Text} for PID {_selectedProcessId}";
+        // Reset the timer (restart the 1 second countdown)
+        _bandwidthDebounceTimer.Stop();
+        _bandwidthDebounceTimer.Start();
+    }
+
+    private long SliderToKBps(double sliderValue)
+    {
+        // 0 = unlimited, 100 = blocked
+        // Exponential scale for better control
+        if (sliderValue <= 0) return -1; // Unlimited
+        if (sliderValue >= 100) return 0; // Blocked
+
+        // Map 1-99 to reasonable speed range (100MB/s down to 1KB/s)
+        double ratio = (100 - sliderValue) / 100.0;
+        double maxKBps = 102400; // 100 MB/s
+        double minKBps = 1;
+
+        return (long)(minKBps + (maxKBps - minKBps) * Math.Pow(ratio, 2));
+    }
+
+    private string FormatLimitText(long kbps)
+    {
+        if (kbps < 0) return "Unlimited";
+        if (kbps == 0) return "Blocked";
+        if (kbps >= 1024) return $"{kbps / 1024.0:F1} MB/s";
+        return $"{kbps} KB/s";
+    }
+
+    private void ApplyBandwidthLimits()
+    {
+        if (!_selectedProcessId.HasValue) return;
+        if (_processMap.TryGetValue(_selectedProcessId.Value, out var process))
+        {
+            var downloadLimit = _currentDownloadLimitKBps < 0 ? 0 : _currentDownloadLimitKBps;
+            var uploadLimit = _currentUploadLimitKBps < 0 ? 0 : _currentUploadLimitKBps;
+
+            if (downloadLimit == 0 && uploadLimit == 0)
+            {
+                BandwidthLimiter.Instance.RemoveLimit(process.ProcessName);
+                StatusText.Text = $"Removed limits for {process.ProcessName}";
+            }
+            else
+            {
+                BandwidthLimiter.Instance.SetProcessLimit(process.ProcessName, downloadLimit, uploadLimit);
+                BandwidthLimiter.Instance.IsEnabled = true;
+                StatusText.Text = $"Set limits for {process.ProcessName}: ↓{FormatLimitText(_currentDownloadLimitKBps)} ↑{FormatLimitText(_currentUploadLimitKBps)}";
+            }
+
+            // Update process display
+            process.DownloadLimitText = FormatLimitText(_currentDownloadLimitKBps);
+            process.UploadLimitText_Limit = FormatLimitText(_currentUploadLimitKBps);
+        }
     }
 
     private void SpeedPreset_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string tagStr && double.TryParse(tagStr, out var value))
+        if (sender is Button btn && btn.Tag is string tagStr)
         {
-            BandwidthLimitSlider.Value = value;
+            if (tagStr == "unlimited")
+            {
+                DownloadLimitSlider.Value = 0;
+                UploadLimitSlider.Value = 0;
+            }
+            else if (long.TryParse(tagStr, out var kbps))
+            {
+                // Convert KBps to slider value
+                var sliderValue = KBpsToSlider(kbps);
+                DownloadLimitSlider.Value = sliderValue;
+                UploadLimitSlider.Value = sliderValue;
+            }
         }
+    }
+
+    private double KBpsToSlider(long kbps)
+    {
+        if (kbps <= 0) return 100; // Blocked
+        if (kbps >= 102400) return 0; // Unlimited
+
+        double maxKBps = 102400;
+        double minKBps = 1;
+        double ratio = Math.Sqrt((kbps - minKBps) / (maxKBps - minKBps));
+        return 100 - (ratio * 100);
     }
 
     private void BlockProcess_Click(object sender, RoutedEventArgs e)
@@ -434,8 +696,7 @@ public partial class NetworkMonitorView : Page
         if (sender is Button btn && btn.Tag is int processId)
         {
             // Select the process to show details
-            var item = _allProcesses.FirstOrDefault(p => p.ProcessId == processId);
-            if (item != null)
+            if (_processMap.TryGetValue(processId, out var item))
             {
                 ProcessList.SelectedItem = item;
             }
@@ -470,7 +731,7 @@ public partial class NetworkMonitorView : Page
     {
         if (sender is Button btn && btn.Tag is int processId)
         {
-            var process = _allProcesses.FirstOrDefault(p => p.ProcessId == processId);
+            _processMap.TryGetValue(processId, out var process);
             var processName = process?.ProcessName ?? $"PID {processId}";
 
             if (ProcessKiller.IsProtectedProcess(processName))
@@ -577,16 +838,98 @@ public partial class NetworkMonitorView : Page
     }
 }
 
-public class ProcessDisplayItem
+public class ProcessDisplayItem : INotifyPropertyChanged
 {
+    private double _downloadSpeed;
+    private double _uploadSpeed;
+    private string _downloadSpeedText = "0 B/s";
+    private string _uploadSpeedText = "0 B/s";
+    private int _connectionCount;
+    private bool _isAutoKillEnabled;
+    private string _downloadLimitText = "";
+    private string _uploadLimitText = "";
+    private bool _hasLimit;
+
     public int ProcessId { get; set; }
     public string ProcessName { get; set; } = string.Empty;
-    public double DownloadSpeed { get; set; }
-    public double UploadSpeed { get; set; }
-    public string DownloadSpeedText { get; set; } = "0 B/s";
-    public string UploadSpeedText { get; set; } = "0 B/s";
-    public int ConnectionCount { get; set; }
-    public int DownloadBarHeight { get; set; }
-    public int UploadBarHeight { get; set; }
-    public bool IsAutoKillEnabled { get; set; }
+    public ImageSource? Icon { get; set; }
+
+    public double DownloadSpeed
+    {
+        get => _downloadSpeed;
+        set { _downloadSpeed = value; OnPropertyChanged(nameof(DownloadSpeed)); }
+    }
+
+    public double UploadSpeed
+    {
+        get => _uploadSpeed;
+        set { _uploadSpeed = value; OnPropertyChanged(nameof(UploadSpeed)); }
+    }
+
+    public string DownloadSpeedText
+    {
+        get => _downloadSpeedText;
+        set { _downloadSpeedText = value; OnPropertyChanged(nameof(DownloadSpeedText)); }
+    }
+
+    public string UploadSpeedText
+    {
+        get => _uploadSpeedText;
+        set { _uploadSpeedText = value; OnPropertyChanged(nameof(UploadSpeedText)); }
+    }
+
+    public int ConnectionCount
+    {
+        get => _connectionCount;
+        set { _connectionCount = value; OnPropertyChanged(nameof(ConnectionCount)); }
+    }
+
+    public bool IsAutoKillEnabled
+    {
+        get => _isAutoKillEnabled;
+        set { _isAutoKillEnabled = value; OnPropertyChanged(nameof(IsAutoKillEnabled)); }
+    }
+
+    public string DownloadLimitText
+    {
+        get => _downloadLimitText;
+        set
+        {
+            _downloadLimitText = value;
+            OnPropertyChanged(nameof(DownloadLimitText));
+            UpdateHasLimit();
+        }
+    }
+
+    public string UploadLimitText_Limit
+    {
+        get => _uploadLimitText;
+        set
+        {
+            _uploadLimitText = value;
+            OnPropertyChanged(nameof(UploadLimitText_Limit));
+            UpdateHasLimit();
+        }
+    }
+
+    public bool HasLimit
+    {
+        get => _hasLimit;
+        private set { _hasLimit = value; OnPropertyChanged(nameof(HasLimit)); }
+    }
+
+    public string LimitDisplayText => HasLimit ? $"↓{DownloadLimitText} ↑{UploadLimitText_Limit}" : "";
+
+    private void UpdateHasLimit()
+    {
+        HasLimit = !string.IsNullOrEmpty(_downloadLimitText) || !string.IsNullOrEmpty(_uploadLimitText);
+        OnPropertyChanged(nameof(LimitDisplayText));
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }

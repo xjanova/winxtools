@@ -27,16 +27,28 @@ public partial class MainWindow : Window
         // Handle window state changes for maximize icon
         StateChanged += MainWindow_StateChanged;
 
-        // Setup status bar updates
+        // Setup status bar updates - use longer interval to reduce CPU usage
         _networkMonitor = NetworkMonitor.Instance;
-        _statusTimer = new DispatcherTimer
+        _statusTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
-            Interval = TimeSpan.FromSeconds(1)
+            Interval = TimeSpan.FromSeconds(2)
         };
         _statusTimer.Tick += StatusTimer_Tick;
         _statusTimer.Start();
 
-        Closed += (s, e) => _statusTimer.Stop();
+        Closed += MainWindow_Closed;
+    }
+
+    private void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        _statusTimer.Stop();
+
+        // Clean up bandwidth limiter (removes all QoS policies and firewall rules)
+        try
+        {
+            BandwidthLimiter.Instance.Dispose();
+        }
+        catch { }
     }
 
     private void StatusTimer_Tick(object? sender, EventArgs e)
@@ -73,8 +85,63 @@ public partial class MainWindow : Window
 
             StatusDownloadBar.Width = downloadRatio * 29; // Half of 60 width minus spacing
             StatusUploadBar.Width = uploadRatio * 29;
+
+            // Update bandwidth limit status
+            UpdateBandwidthLimitStatus();
         }
         catch { }
+    }
+
+    private void UpdateBandwidthLimitStatus()
+    {
+        try
+        {
+            var limiter = BandwidthLimiter.Instance;
+            if (!limiter.IsEnabled)
+            {
+                BandwidthLimitBadge.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // Find active interface and get its limit
+            var activeInterface = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up
+                          && ni.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+                .FirstOrDefault();
+
+            if (activeInterface == null)
+            {
+                BandwidthLimitBadge.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var savedRule = limiter.GetLimit($"interface:{activeInterface.Id}");
+            if (savedRule == null || (savedRule.DownloadLimitKBps < 0 && savedRule.UploadLimitKBps < 0))
+            {
+                BandwidthLimitBadge.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // Format limit text (values are stored as Kbps)
+            string dlText = savedRule.DownloadLimitKBps <= 0 ? "-" : FormatKbps((int)savedRule.DownloadLimitKBps);
+            string ulText = savedRule.UploadLimitKBps <= 0 ? "-" : FormatKbps((int)savedRule.UploadLimitKBps);
+
+            StatusBandwidthLimit.Text = $"{dlText}/{ulText}";
+            BandwidthLimitBadge.Visibility = Visibility.Visible;
+        }
+        catch
+        {
+            BandwidthLimitBadge.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static string FormatKbps(int kbps)
+    {
+        if (kbps >= 1024000) // 1 Gbps
+            return $"{kbps / 1024000.0:F1}G";
+        if (kbps >= 1024) // 1 Mbps
+            return $"{kbps / 1024.0:F0}M";
+        return $"{kbps}K";
     }
 
     private static string FormatSpeed(double bytesPerSecond)
@@ -129,7 +196,23 @@ public partial class MainWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
-        Close();
+        // Hide window immediately for instant feedback
+        Hide();
+
+        // Stop timer immediately
+        _statusTimer.Stop();
+
+        // Quick cleanup - don't wait for external processes
+        try
+        {
+            // Just stop enforcement timer, don't run slow PowerShell cleanup
+            // Cleanup will happen on next app startup anyway
+            BandwidthLimiter.Instance.QuickDispose();
+        }
+        catch { }
+
+        // Exit immediately
+        Environment.Exit(0);
     }
 
     private void MainWindow_StateChanged(object? sender, EventArgs e)
@@ -170,11 +253,15 @@ public partial class MainWindow : Window
         {
             "Dashboard" => new DashboardView(),
             "Network" => new NetworkMonitorView(),
+            "Bandwidth" => new BandwidthControlView(),
             "Connections" => new ConnectionMonitorView(),
             "Packets" => new PacketMonitorView(),
-            "Bandwidth" => new BandwidthControlView(),
+            "NetworkTools" => new NetworkToolsView(),
+            "ProxyVpn" => new ProxyVpnView(),
+            "RamOptimizer" => new RamOptimizerView(),
             "Uninstaller" => new UninstallerView(),
             "Cleaner" => new CleanerView(),
+            "WinOptimizer" => new WindowsOptimizerView(),
             "Rules" => new RulesView(),
             "Tricks" => new WindowsTricksView(),
             "Settings" => new SettingsView(),
@@ -194,11 +281,15 @@ public partial class MainWindow : Window
         {
             "Dashboard" => "Nav_Dashboard",
             "Network" => "Nav_NetworkMonitor",
+            "Bandwidth" => "Nav_BandwidthControl",
             "Connections" => "Nav_ConnectionMonitor",
             "Packets" => "Nav_PacketMonitor",
-            "Bandwidth" => "Nav_BandwidthControl",
+            "NetworkTools" => "Nav_NetworkTools",
+            "ProxyVpn" => "Nav_ProxyVpn",
+            "RamOptimizer" => "Nav_RamOptimizer",
             "Uninstaller" => "Nav_Uninstaller",
             "Cleaner" => "Nav_Cleaner",
+            "WinOptimizer" => "Nav_WinOptimizer",
             "Rules" => "Nav_Rules",
             "Tricks" => "Nav_Tricks",
             "Settings" => "Nav_Settings",
@@ -206,6 +297,21 @@ public partial class MainWindow : Window
         };
 
         CurrentPageTitle.Text = (string)FindResource(resourceKey);
+    }
+
+    public void NavigateToRamOptimizer()
+    {
+        // Find and click the RAM Optimizer nav button
+        if (NavRamOptimizer != null)
+        {
+            NavButton_Click(NavRamOptimizer, new RoutedEventArgs());
+        }
+        else
+        {
+            // Direct navigation if button not found
+            MainFrame.Navigate(new RamOptimizerView());
+            UpdatePageTitle("RamOptimizer");
+        }
     }
 
     #endregion

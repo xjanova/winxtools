@@ -15,9 +15,16 @@
     <!-- Navigation -->
     <system:String x:Key="Nav_Dashboard">แดชบอร์ด</system:String>
     <system:String x:Key="Nav_NetworkMonitor">ตรวจสอบเครือข่าย</system:String>
+    <system:String x:Key="Nav_ConnectionMonitor">การเชื่อมต่อ</system:String>
+    <system:String x:Key="Nav_PacketMonitor">ตรวจสอบแพ็กเก็ต</system:String>
     <system:String x:Key="Nav_BandwidthControl">ควบคุมแบนด์วิดท์</system:String>
+    <system:String x:Key="Nav_NetworkTools">เครื่องมือเครือข่าย</system:String>
+    <system:String x:Key="Nav_RamOptimizer">เพิ่มประสิทธิภาพ RAM</system:String>
     <system:String x:Key="Nav_Uninstaller">ถอนการติดตั้ง</system:String>
     <system:String x:Key="Nav_Cleaner">ทำความสะอาดระบบ</system:String>
+    <system:String x:Key="Nav_WinOptimizer">ปรับแต่ง Windows</system:String>
+    <system:String x:Key="Nav_Rules">ระบบอัตโนมัติ</system:String>
+    <system:String x:Key="Nav_Tricks">เทคนิค Windows</system:String>
     <system:String x:Key="Nav_Settings">ตั้งค่า</system:String>
 
     <!-- Dashboard -->
@@ -32,6 +39,7 @@
     <system:String x:Key="Dashboard_BlockAll">บล็อกทั้งหมด</system:String>
     <system:String x:Key="Dashboard_ResumeAll">เปิดใช้งานทั้งหมด</system:String>
     <system:String x:Key="Dashboard_QuickClean">ทำความสะอาดด่วน</system:String>
+    <system:String x:Key="Dashboard_GlobalBandwidth">ควบคุมความเร็วเครือข่ายทั้งหมด</system:String>
 
     <!-- Network Monitor -->
     <system:String x:Key="Network_Title">ตรวจสอบเครือข่าย</system:String>
@@ -109,6 +117,63 @@
     <system:String x:Key="Settings_CheckUpdates">ตรวจสอบอัพเดท</system:String>
     <system:String x:Key="Settings_ResetSettings">รีเซ็ตการตั้งค่า</system:String>
 
+    <!-- RAM Optimizer -->
+    <system:String x:Key="RamOptimizer_Title">เพิ่มประสิทธิภาพ RAM</system:String>
+    <system:String x:Key="RamOptimizer_Subtitle">ตรวจสอบและเพิ่มประสิทธิภาพการใช้หน่วยความจำ</system:String>
+    <system:String x:Key="RamOptimizer_TotalMemory">หน่วยความจำทั้งหมด</system:String>
+    <system:String x:Key="RamOptimizer_UsedMemory">ใช้งานอยู่</system:String>
+    <system:String x:Key="RamOptimizer_AvailableMemory">ว่าง</system:String>
+    <system:String x:Key="RamOptimizer_Usage">การใช้งาน</system:String>
+    <system:String x:Key="RamOptimizer_MemoryHistory">ประวัติการใช้หน่วยความจำ</system:String>
+    <system:String x:Key="RamOptimizer_TopConsumers">โปรแกรมที่ใช้หน่วยความจำสูงสุด</system:String>
+    <system:String x:Key="RamOptimizer_OptimizeNow">เพิ่มประสิทธิภาพเดี๋ยวนี้</system:String>
+    <system:String x:Key="RamOptimizer_NeverOptimized">ยังไม่ได้เพิ่มประสิทธิภาพ</system:String>
+    <system:String x:Key="RamOptimizer_Settings">ตั้งค่าการเพิ่มประสิทธิภาพอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_AutoOptimize">เพิ่มประสิทธิภาพอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_Threshold">เกณฑ์หน่วยความจำ</system:String>
+    <system:String x:Key="RamOptimizer_Interval">ช่วงเวลาตรวจสอบ</system:String>
+    <system:String x:Key="RamOptimizer_History">ประวัติการเพิ่มประสิทธิภาพ</system:String>
+    <system:String x:Key="RamOptimizer_ProcessProtection">การป้องกันโปรเซส</system:String>
+    <system:String x:Key="RamOptimizer_SmartKill">Smart Kill</system:String>
+    <system:String x:Key="RamOptimizer_SmartKillDesc">ตรวจจับและปิดโปรเซสที่ค้างอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_AutoKill">กฎ Auto Kill</system:String>
+    <system:String x:Key="RamOptimizer_AutoKillDesc">ปิดโปรเซสที่ตรงกับกฎอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_KillRules">กฎการปิดโปรเซส</system:String>
+    <system:String x:Key="RamOptimizer_AddKillRuleTitle">เพิ่มกฎ Kill</system:String>
+    <system:String x:Key="RamOptimizer_AddKillRuleMessage">ใส่ชื่อโปรเซสที่จะปิดอัตโนมัติ (ไม่ต้องใส่ .exe):</system:String>
+
+    <!-- Windows Optimizer -->
+    <system:String x:Key="WinOptimizer_Title">ปรับแต่ง Windows</system:String>
+    <system:String x:Key="WinOptimizer_Subtitle">ปิด Services และ AI Features ที่ไม่จำเป็นเพื่อเพิ่มประสิทธิภาพ</system:String>
+    <system:String x:Key="WinOptimizer_CreateRestore">สร้าง Restore Point</system:String>
+    <system:String x:Key="WinOptimizer_Services">Services</system:String>
+    <system:String x:Key="WinOptimizer_AIFeatures">AI Features</system:String>
+    <system:String x:Key="WinOptimizer_Telemetry">Telemetry</system:String>
+    <system:String x:Key="WinOptimizer_Startup">Startup</system:String>
+    <system:String x:Key="WinOptimizer_SelectAll">เลือกทั้งหมด</system:String>
+    <system:String x:Key="WinOptimizer_Summary">สรุป</system:String>
+    <system:String x:Key="WinOptimizer_Selected">เลือกแล้ว</system:String>
+    <system:String x:Key="WinOptimizer_Disabled">ปิดแล้ว</system:String>
+    <system:String x:Key="WinOptimizer_EstimatedRAM">ประมาณ RAM ที่ประหยัด</system:String>
+    <system:String x:Key="WinOptimizer_TotalItems">รายการทั้งหมด</system:String>
+    <system:String x:Key="WinOptimizer_QuickActions">ดำเนินการด่วน</system:String>
+    <system:String x:Key="WinOptimizer_ApplySelected">นำไปใช้</system:String>
+    <system:String x:Key="WinOptimizer_SafeOptimize">ปรับแต่งแบบปลอดภัย</system:String>
+    <system:String x:Key="WinOptimizer_RestoreAll">คืนค่าทั้งหมด</system:String>
+    <system:String x:Key="WinOptimizer_WarningTitle">สำคัญ</system:String>
+    <system:String x:Key="WinOptimizer_WarningText">สร้าง Restore Point ก่อนทำการเปลี่ยนแปลง การเปลี่ยนแปลงบางอย่างต้องรีสตาร์ทเครื่อง</system:String>
+    <system:String x:Key="WinOptimizer_RestorePoints">Restore Points ล่าสุด</system:String>
+    <system:String x:Key="WinOptimizer_NoRestorePoints">ไม่พบ Restore Point</system:String>
+
+    <!-- Network Tools -->
+    <system:String x:Key="NetworkTools_Title">เครื่องมือเครือข่าย</system:String>
+    <system:String x:Key="NetworkTools_Subtitle">เครื่องมือวินิจฉัยและวิเคราะห์สำหรับแก้ไขปัญหาเครือข่าย</system:String>
+
+    <!-- Proxy VPN -->
+    <system:String x:Key="Nav_ProxyVpn">มุดประเทศ</system:String>
+    <system:String x:Key="ProxyVpn_Title">มุดประเทศ (Proxy VPN)</system:String>
+    <system:String x:Key="ProxyVpn_Subtitle">เชื่อมต่อผ่าน Proxy ฟรีทั่วโลก</system:String>
+
     <!-- Common -->
     <system:String x:Key="Common_OK">ตกลง</system:String>
     <system:String x:Key="Common_Cancel">ยกเลิก</system:String>
@@ -123,6 +188,54 @@
     <system:String x:Key="Common_Success">สำเร็จ</system:String>
     <system:String x:Key="Common_Loading">กำลังโหลด...</system:String>
     <system:String x:Key="Common_Processing">กำลังประมวลผล...</system:String>
+    <system:String x:Key="Common_Execute">ดำเนินการ</system:String>
+    <system:String x:Key="Common_Refresh">รีเฟรช</system:String>
+    <system:String x:Key="Common_Add">เพิ่ม</system:String>
+
+    <!-- Settings Page -->
+    <system:String x:Key="Settings_RamOptimizerDesc">จัดการการเพิ่มประสิทธิภาพ RAM, กฎ auto-kill และการป้องกันโปรเซส</system:String>
+    <system:String x:Key="Settings_OpenRamOptimizer">เปิด RAM Optimizer</system:String>
+
+    <!-- Blockly Visual Rule Builder -->
+    <system:String x:Key="Blockly_DragBlocksHere">ลากบล็อกมาที่นี่เพื่อสร้างกฎ</system:String>
+    <system:String x:Key="Blockly_DragBlocksHint">เงื่อนไขจะทริกเกอร์การกระทำเมื่อตรงกัน</system:String>
+    <system:String x:Key="Blockly_DropToDelete">วางที่นี่เพื่อลบ</system:String>
+    <system:String x:Key="Blockly_Conditions">เงื่อนไข</system:String>
+    <system:String x:Key="Blockly_Actions">การกระทำ</system:String>
+    <system:String x:Key="Blockly_Logic">ลอจิก</system:String>
+    <system:String x:Key="Blockly_TimeRange">ช่วงเวลา</system:String>
+    <system:String x:Key="Blockly_DayOfWeek">วันในสัปดาห์</system:String>
+    <system:String x:Key="Blockly_ProcessRunning">โปรเซสทำงานอยู่</system:String>
+    <system:String x:Key="Blockly_BandwidthExceeds">แบนด์วิดท์เกิน</system:String>
+    <system:String x:Key="Blockly_ConnectionCount">จำนวนการเชื่อมต่อ</system:String>
+    <system:String x:Key="Blockly_IPConnected">IP เชื่อมต่อ</system:String>
+    <system:String x:Key="Blockly_PortInUse">พอร์ตถูกใช้งาน</system:String>
+    <system:String x:Key="Blockly_LimitBandwidth">จำกัดแบนด์วิดท์</system:String>
+    <system:String x:Key="Blockly_BlockIP">บล็อก IP</system:String>
+    <system:String x:Key="Blockly_BlockPort">บล็อกพอร์ต</system:String>
+    <system:String x:Key="Blockly_Notify">แจ้งเตือน</system:String>
+    <system:String x:Key="Blockly_Email">ส่งอีเมล</system:String>
+    <system:String x:Key="Blockly_Command">รันคำสั่ง</system:String>
+    <system:String x:Key="Blockly_KillProcess">ปิดโปรเซส</system:String>
+    <system:String x:Key="Blockly_Clear">ล้าง</system:String>
+    <system:String x:Key="Blockly_SaveRule">บันทึกกฎ</system:String>
+    <system:String x:Key="Blockly_RuleCanvas">แคนวาสสร้างกฎ</system:String>
+    <system:String x:Key="Blockly_NoRules">ยังไม่มีกฎที่กำหนด</system:String>
+    <system:String x:Key="Blockly_Ready">พร้อมใช้งาน</system:String>
+    <system:String x:Key="Blockly_Blocks">บล็อก</system:String>
+    <system:String x:Key="Blockly_ActiveRules">กฎที่ใช้งาน</system:String>
+    <system:String x:Key="Blockly_ClearConfirm">ล้างบล็อกทั้งหมดจากแคนวาส?</system:String>
+    <system:String x:Key="Blockly_NoBlocksError">กรุณาเพิ่มอย่างน้อยหนึ่งบล็อกเพื่อสร้างกฎ</system:String>
+    <system:String x:Key="Blockly_NeedConditionAndAction">กฎต้องมีอย่างน้อยหนึ่งเงื่อนไขและหนึ่งการกระทำ</system:String>
+    <system:String x:Key="Blockly_RuleNameTitle">บันทึกกฎ</system:String>
+    <system:String x:Key="Blockly_RuleNameMessage">ใส่ชื่อสำหรับกฎนี้:</system:String>
+    <system:String x:Key="Blockly_RuleSaved">บันทึกกฎสำเร็จ!</system:String>
+    <system:String x:Key="Blockly_NewRule">กฎใหม่</system:String>
+    <system:String x:Key="Blockly_CreateNew">ลากบล็อกเพื่อสร้างกฎใหม่</system:String>
+    <system:String x:Key="Blockly_DeleteConfirm">ลบกฎ</system:String>
+
+    <!-- Bandwidth Control -->
+    <system:String x:Key="Bandwidth_VisualBuilderDesc">สร้างกฎอัตโนมัติด้วยบล็อกภาพ - ลาก เชื่อมต่อ และควบคุม</system:String>
 
     <!-- Units -->
     <system:String x:Key="Unit_BytesPerSec">B/s</system:String>

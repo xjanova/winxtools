@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
       Title="Dashboard"
-      Background="{StaticResource BgPrimaryBrush}">
+      Background="Transparent">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
         <Grid>
@@ -24,20 +24,16 @@
                            Margin="0,4,0,0"/>
             </StackPanel>
 
-            <!-- Stats Cards Row -->
-            <Grid Grid.Row="1" Margin="0,0,0,24">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
+            <!-- Stats Cards Row - Auto-reflow WrapPanel -->
+            <ItemsControl x:Name="StatsCardsPanel" Grid.Row="1" Margin="0,0,0,24">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel x:Name="StatsGrid" Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.Items>
                 <!-- Download Card -->
-                <Border Grid.Column="0" Style="{StaticResource StatCardStyle}">
+                <Border x:Name="Card1" Style="{StaticResource StatCardStyle}" Margin="0,0,12,12" MinWidth="140">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -74,7 +70,7 @@
                 </Border>
 
                 <!-- Upload Card -->
-                <Border Grid.Column="2" Style="{StaticResource StatCardStyle}">
+                <Border x:Name="Card2" Style="{StaticResource StatCardStyle}" Margin="0,0,12,12" MinWidth="140">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -111,7 +107,7 @@
                 </Border>
 
                 <!-- Active Apps Card -->
-                <Border Grid.Column="4" Style="{StaticResource StatCardStyle}">
+                <Border x:Name="Card3" Style="{StaticResource StatCardStyle}" Margin="0,0,12,12" MinWidth="140">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -148,7 +144,7 @@
                 </Border>
 
                 <!-- Connections Card -->
-                <Border Grid.Column="6" Style="{StaticResource StatCardStyle}">
+                <Border x:Name="Card4" Style="{StaticResource StatCardStyle}" Margin="0,0,12,12" MinWidth="140">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -183,14 +179,101 @@
                                    Style="{StaticResource StatLabelStyle}"/>
                     </Grid>
                 </Border>
-            </Grid>
+
+                <!-- Total Downloaded Card -->
+                <Border x:Name="Card5" Style="{StaticResource StatCardStyle}" Margin="0,0,12,12" MinWidth="140">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Icon -->
+                        <Border Grid.Row="0"
+                                Width="48" Height="48"
+                                CornerRadius="12"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,16">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#7c3aed" Offset="0"/>
+                                    <GradientStop Color="#a855f7" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Path Data="M13,5V11H14.17L12,13.17L9.83,11H11V5H13M15,3H9V9H5L12,16L19,9H15V3M19,18H5V20H19V18Z"
+                                  Fill="White"
+                                  Width="24" Height="24"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Value -->
+                        <TextBlock Grid.Row="1"
+                                   x:Name="TotalDownloaded"
+                                   Text="0 MB"
+                                   Style="{StaticResource StatValueStyle}"
+                                   FontSize="20"/>
+
+                        <!-- Label -->
+                        <TextBlock Grid.Row="2"
+                                   Text="Total Received"
+                                   Style="{StaticResource StatLabelStyle}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Total Uploaded Card -->
+                <Border x:Name="Card6" Style="{StaticResource StatCardStyle}" Margin="0,0,12,12" MinWidth="140">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Icon -->
+                        <Border Grid.Row="0"
+                                Width="48" Height="48"
+                                CornerRadius="12"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,16">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#ec4899" Offset="0"/>
+                                    <GradientStop Color="#f472b6" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Path Data="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"
+                                  Fill="White"
+                                  Width="24" Height="24"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Value -->
+                        <TextBlock Grid.Row="1"
+                                   x:Name="TotalUploaded"
+                                   Text="0 MB"
+                                   Style="{StaticResource StatValueStyle}"
+                                   FontSize="20"/>
+
+                        <!-- Label -->
+                        <TextBlock Grid.Row="2"
+                                   Text="Total Sent"
+                                   Style="{StaticResource StatLabelStyle}"/>
+                    </Grid>
+                </Border>
+                </ItemsControl.Items>
+            </ItemsControl>
 
             <!-- Charts and Top Consumers Row -->
             <Grid Grid.Row="2" Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="2*" MinWidth="350"/>
                     <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*" MinWidth="280"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Real-time Traffic Chart -->
@@ -318,21 +401,79 @@
                                Style="{StaticResource SubHeaderTextStyle}"
                                Margin="0,0,0,16"/>
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
-                        <Button Content="{DynamicResource Dashboard_BlockAll}"
-                                Style="{StaticResource DangerButtonStyle}"
+                    <WrapPanel Grid.Row="1" Orientation="Horizontal">
+                        <!-- Block All -->
+                        <Button Style="{StaticResource DangerButtonStyle}"
                                 Click="BlockAll_Click"
-                                Margin="0,0,12,0"/>
+                                Margin="0,0,12,8"
+                                ToolTip="Block all network traffic immediately">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"
+                                      Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                <TextBlock Text="{DynamicResource Dashboard_BlockAll}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
-                        <Button Content="{DynamicResource Dashboard_ResumeAll}"
-                                Style="{StaticResource SuccessButtonStyle}"
+                        <!-- Resume All -->
+                        <Button Style="{StaticResource SuccessButtonStyle}"
                                 Click="ResumeAll_Click"
-                                Margin="0,0,12,0"/>
+                                Margin="0,0,12,8"
+                                ToolTip="Resume all network traffic">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z"
+                                      Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                <TextBlock Text="{DynamicResource Dashboard_ResumeAll}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
-                        <Button Content="{DynamicResource Dashboard_QuickClean}"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Click="QuickClean_Click"/>
-                    </StackPanel>
+                        <!-- Quick Clean -->
+                        <Button Style="{StaticResource PrimaryButtonStyle}"
+                                Click="QuickClean_Click"
+                                Margin="0,0,12,8"
+                                ToolTip="Clean temporary files and cache">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"
+                                      Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                <TextBlock Text="{DynamicResource Dashboard_QuickClean}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Optimize RAM -->
+                        <Button Style="{StaticResource WarningButtonStyle}"
+                                Click="OptimizeRam_Click"
+                                Margin="0,0,12,8"
+                                ToolTip="Free up memory by optimizing RAM usage">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M17,17H7V7H17M21,11V9H19V7C19,5.89 18.1,5 17,5H15V3H13V5H11V3H9V5H7C5.89,5 5,5.89 5,7V9H3V11H5V13H3V15H5V17A2,2 0 0,0 7,19H9V21H11V19H13V21H15V19H17A2,2 0 0,0 19,17V15H21V13H19V11M9,9H15V15H9V9Z"
+                                      Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                <TextBlock Text="Optimize RAM" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Flush DNS -->
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Click="FlushDns_Click"
+                                Margin="0,0,12,8"
+                                ToolTip="Clear DNS cache to fix connection issues">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M12,6V9L16,5L12,1V4A8,8 0 0,0 4,12C4,13.57 4.46,15.03 5.24,16.26L6.7,14.8C6.25,13.97 6,13 6,12A6,6 0 0,1 12,6M18.76,7.74L17.3,9.2C17.74,10.04 18,11 18,12A6,6 0 0,1 12,18V15L8,19L12,23V20A8,8 0 0,0 20,12C20,10.43 19.54,8.97 18.76,7.74Z"
+                                      Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                <TextBlock Text="Flush DNS" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Reset Network -->
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Click="ResetNetwork_Click"
+                                Margin="0,0,12,8"
+                                ToolTip="Reset network adapter to fix connectivity problems">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M12,4C14.21,4 16.21,4.79 17.79,6.09L16.25,8.18C15.06,7.35 13.58,6.86 12,6.86C10.42,6.86 8.94,7.35 7.75,8.18L6.21,6.09C7.79,4.79 9.79,4 12,4M19.2,7.5L17.06,9.64C18.05,10.8 18.65,12.28 18.65,13.93C18.65,17.37 15.94,20.14 12.5,20.14C9.06,20.14 6.35,17.37 6.35,13.93C6.35,12.28 6.95,10.8 7.94,9.64L5.8,7.5C4.27,9.23 3.35,11.47 3.35,13.93C3.35,19.09 7.34,23.14 12.5,23.14C17.66,23.14 21.65,19.09 21.65,13.93C21.65,11.47 20.73,9.23 19.2,7.5M12,11A3,3 0 0,0 9,14A3,3 0 0,0 12,17A3,3 0 0,0 15,14A3,3 0 0,0 12,11Z"
+                                      Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                <TextBlock Text="Reset Network" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
                 </Grid>
             </Border>
         </Grid>

@@ -2,35 +2,19 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Threading;
 using NetX.Core.Helpers;
 using NetX.Core.Data;
 using NetX.Core.Optimization;
-using System.Threading.Tasks;
 
 namespace NetX.App.Views;
 
 public partial class SettingsView : Page
 {
-    private readonly DispatcherTimer _ramUpdateTimer;
-
     public SettingsView()
     {
         InitializeComponent();
         LoadSettings();
         CheckAdminStatus();
-        LoadRamOptimizerSettings();
-
-        // Update RAM stats periodically
-        _ramUpdateTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(2)
-        };
-        _ramUpdateTimer.Tick += (s, e) => UpdateRamStats();
-        _ramUpdateTimer.Start();
-        UpdateRamStats();
-
-        Unloaded += (s, e) => _ramUpdateTimer.Stop();
     }
 
     private void LoadSettings()
@@ -219,143 +203,12 @@ public partial class SettingsView : Page
         }
     }
 
-    #region RAM Optimizer
-
-    private void LoadRamOptimizerSettings()
+    private void OpenRamOptimizer_Click(object sender, RoutedEventArgs e)
     {
-        try
+        // Navigate to RAM Optimizer page
+        if (Application.Current.MainWindow is MainWindow mainWindow)
         {
-            var optimizer = RamOptimizer.Instance;
-
-            // Set auto optimize toggle
-            AutoOptimizeRamToggle.IsChecked = optimizer.IsAutoOptimizeEnabled;
-
-            // Set interval combo
-            foreach (ComboBoxItem item in RamIntervalCombo.Items)
-            {
-                if (item.Tag?.ToString() == optimizer.OptimizeIntervalMinutes.ToString())
-                {
-                    item.IsSelected = true;
-                    break;
-                }
-            }
-
-            // Set threshold combo
-            foreach (ComboBoxItem item in RamThresholdCombo.Items)
-            {
-                if (item.Tag?.ToString() == optimizer.MemoryThresholdPercent.ToString())
-                {
-                    item.IsSelected = true;
-                    break;
-                }
-            }
-
-            // Subscribe to optimization events
-            optimizer.OnOptimizationComplete += result =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    if (result.Success && result.MemoryFreedMB > 0)
-                    {
-                        RamStatusText.Text = $"Freed {result.MemoryFreedMB} MB";
-                    }
-                });
-            };
-        }
-        catch { }
-    }
-
-    private void UpdateRamStats()
-    {
-        try
-        {
-            var memInfo = RamOptimizer.Instance.GetMemoryInfo();
-
-            TotalRamText.Text = $"{memInfo.TotalMemoryMB / 1024.0:F1} GB";
-            UsedRamText.Text = $"{memInfo.UsedMemoryMB / 1024.0:F1} GB";
-            AvailableRamText.Text = $"{memInfo.AvailableMemoryMB / 1024.0:F1} GB";
-            RamStatusText.Text = $"{memInfo.UsagePercent}% Used";
-
-            // Change status color based on usage
-            if (memInfo.UsagePercent >= 90)
-                RamStatusText.Foreground = Brushes.White;
-            else if (memInfo.UsagePercent >= 80)
-                RamStatusText.Foreground = Brushes.White;
-            else
-                RamStatusText.Foreground = Brushes.White;
-        }
-        catch { }
-    }
-
-    private void AutoOptimizeRam_Click(object sender, RoutedEventArgs e)
-    {
-        RamOptimizer.Instance.IsAutoOptimizeEnabled = AutoOptimizeRamToggle.IsChecked == true;
-    }
-
-    private void RamInterval_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (RamIntervalCombo.SelectedItem is ComboBoxItem item && item.Tag != null)
-        {
-            if (int.TryParse(item.Tag.ToString(), out int interval))
-            {
-                RamOptimizer.Instance.OptimizeIntervalMinutes = interval;
-            }
+            mainWindow.NavigateToRamOptimizer();
         }
     }
-
-    private void RamThreshold_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (RamThresholdCombo.SelectedItem is ComboBoxItem item && item.Tag != null)
-        {
-            if (int.TryParse(item.Tag.ToString(), out int threshold))
-            {
-                RamOptimizer.Instance.MemoryThresholdPercent = threshold;
-            }
-        }
-    }
-
-    private void OptimizeRamNow_Click(object sender, RoutedEventArgs e)
-    {
-        var button = sender as Button;
-        if (button != null)
-        {
-            button.IsEnabled = false;
-            button.Content = "Optimizing...";
-        }
-
-        Task.Run(() =>
-        {
-            var result = RamOptimizer.Instance.OptimizeNow();
-
-            Dispatcher.Invoke(() =>
-            {
-                if (button != null)
-                {
-                    button.IsEnabled = true;
-                    button.Content = "Optimize RAM Now";
-                }
-
-                UpdateRamStats();
-
-                if (result.Success)
-                {
-                    var message = result.MemoryFreedMB > 0
-                        ? $"RAM optimization complete!\n\nFreed: {result.MemoryFreedMB} MB\nProcesses optimized: {result.ProcessesOptimized}"
-                        : $"RAM optimization complete!\n\nProcesses optimized: {result.ProcessesOptimized}\nNo significant memory was freed (system is running efficiently).";
-
-                    MessageBox.Show(message, "RAM Optimized", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show(
-                        $"RAM optimization failed: {result.ErrorMessage}",
-                        "Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                }
-            });
-        });
-    }
-
-    #endregion
 }

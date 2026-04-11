@@ -33,7 +33,8 @@ public partial class WindowsTricksView : Page
                 Command = "shell:::{ED7BA470-8E54-465E-825C-99712043E01C}",
                 CommandType = TrickCommandType.ShellCommand,
                 Danger = TrickDanger.Safe,
-                Icon = "SettingsIcon"
+                Icon = "SettingsIcon",
+                Tip = "Create a folder named 'GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}' on desktop for permanent access"
             },
             new WindowsTrick
             {
@@ -113,7 +114,8 @@ public partial class WindowsTricksView : Page
                 Command = "regedit",
                 CommandType = TrickCommandType.RunCommand,
                 Danger = TrickDanger.Dangerous,
-                Icon = "ShieldIcon"
+                Icon = "ShieldIcon",
+                Tip = "Always backup the registry before making changes. File > Export to save a backup"
             },
 
             // ==================== PERFORMANCE ====================
@@ -129,7 +131,8 @@ public partial class WindowsTricksView : Page
                 CanToggle = true,
                 EnableCommand = "sc config WSearch start=auto && sc start WSearch",
                 DisableCommand = "sc stop WSearch && sc config WSearch start=disabled",
-                CheckCommand = "sc query WSearch"
+                CheckCommand = "sc query WSearch",
+                Tip = "Recommended for older PCs with HDDs. SSDs handle indexing well, so keep it enabled for SSDs"
             },
             new WindowsTrick
             {
@@ -142,7 +145,8 @@ public partial class WindowsTricksView : Page
                 Icon = "SpeedIcon",
                 CanToggle = true,
                 EnableCommand = "sc config SysMain start=auto && sc start SysMain",
-                DisableCommand = "sc stop SysMain && sc config SysMain start=disabled"
+                DisableCommand = "sc stop SysMain && sc config SysMain start=disabled",
+                Tip = "Disable only if you have an HDD and experience 100% disk usage. Keep enabled for SSDs"
             },
             new WindowsTrick
             {
@@ -162,7 +166,8 @@ public partial class WindowsTricksView : Page
                 Command = "powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61",
                 CommandType = TrickCommandType.AdminCommand,
                 Danger = TrickDanger.Safe,
-                Icon = "SpeedIcon"
+                Icon = "SpeedIcon",
+                Tip = "After running, go to Power Options in Control Panel to select Ultimate Performance"
             },
             new WindowsTrick
             {
@@ -202,7 +207,8 @@ public partial class WindowsTricksView : Page
                 Command = "reg add \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\GameDVR\" /v \"AppCaptureEnabled\" /t REG_DWORD /d 0 /f && reg add \"HKCU\\System\\GameConfigStore\" /v \"GameDVR_Enabled\" /t REG_DWORD /d 0 /f",
                 CommandType = TrickCommandType.Command,
                 Danger = TrickDanger.Safe,
-                Icon = "SpeedIcon"
+                Icon = "SpeedIcon",
+                Tip = "Recommended for gamers. Can boost FPS by 5-10% in some games. Restart required"
             },
 
             // ==================== NETWORK ====================
@@ -234,7 +240,8 @@ public partial class WindowsTricksView : Page
                 Command = "for /f \"skip=9 tokens=1,2 delims=:\" %i in ('netsh wlan show profiles') do @if \"%j\" NEQ \"\" (echo %j & netsh wlan show profiles %j key=clear | findstr \"Key Content\")",
                 CommandType = TrickCommandType.AdminCommand,
                 Danger = TrickDanger.Safe,
-                Icon = "NetworkIcon"
+                Icon = "NetworkIcon",
+                Tip = "Run in CMD. Shows all saved WiFi networks and their passwords stored on this PC"
             },
             new WindowsTrick
             {
@@ -247,7 +254,8 @@ public partial class WindowsTricksView : Page
                 RegistryValue = "TcpAckFrequency",
                 RegistryData = "1",
                 Danger = TrickDanger.Moderate,
-                Icon = "NetworkIcon"
+                Icon = "NetworkIcon",
+                Tip = "For gamers: Set TcpAckFrequency=1 and TCPNoDelay=1 in your adapter's registry key. Find your adapter GUID in Device Manager"
             },
             new WindowsTrick
             {
@@ -292,7 +300,8 @@ public partial class WindowsTricksView : Page
                 Icon = "ShieldIcon",
                 CanToggle = true,
                 EnableCommand = "sc config DiagTrack start=auto && sc start DiagTrack",
-                DisableCommand = "sc stop DiagTrack && sc config DiagTrack start=disabled"
+                DisableCommand = "sc stop DiagTrack && sc config DiagTrack start=disabled",
+                Tip = "Improves privacy and can slightly boost performance. Some Windows features may work slightly differently"
             },
             new WindowsTrick
             {
@@ -342,7 +351,8 @@ public partial class WindowsTricksView : Page
                 Command = "reg add \"HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer\" /v \"DisableSearchBoxSuggestions\" /t REG_DWORD /d 1 /f",
                 CommandType = TrickCommandType.Command,
                 Danger = TrickDanger.Safe,
-                Icon = "ShieldIcon"
+                Icon = "ShieldIcon",
+                Tip = "Makes Start menu search faster by only searching local files/apps. Restart Explorer to apply"
             },
 
             // ==================== SECURITY ====================
@@ -384,7 +394,8 @@ public partial class WindowsTricksView : Page
                 Command = "netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound",
                 CommandType = TrickCommandType.AdminCommand,
                 Danger = TrickDanger.Dangerous,
-                Icon = "ShieldIcon"
+                Icon = "ShieldIcon",
+                Tip = "WARNING: This will block ALL internet access! Only for advanced users. Use: netsh advfirewall reset to undo"
             },
             new WindowsTrick
             {
@@ -660,7 +671,8 @@ public partial class WindowsTricksView : Page
                 Command = "rd /s /q %SystemDrive%\\Windows.old",
                 CommandType = TrickCommandType.AdminCommand,
                 Danger = TrickDanger.Dangerous,
-                Icon = "FolderIcon"
+                Icon = "FolderIcon",
+                Tip = "Only run if you're sure you don't need to go back to your previous Windows version. Frees up 10-30GB"
             },
 
             // ==================== STARTUP ====================
@@ -810,6 +822,43 @@ public partial class WindowsTricksView : Page
             _ => FindResource("TextTertiaryBrush") as Brush
         };
 
+        var dangerText = trick.Danger switch
+        {
+            TrickDanger.Safe => "Safe - No risk to your system",
+            TrickDanger.Moderate => "Moderate - Use with caution",
+            TrickDanger.Dangerous => "Dangerous - May cause system issues",
+            _ => ""
+        };
+
+        var commandTypeText = trick.CommandType switch
+        {
+            TrickCommandType.RunCommand => "Opens a Windows tool",
+            TrickCommandType.ShellCommand => "Opens a special folder",
+            TrickCommandType.Command => "Runs a command",
+            TrickCommandType.AdminCommand => "Requires Administrator",
+            TrickCommandType.PowerShell => "PowerShell command",
+            TrickCommandType.Registry => "Registry modification",
+            TrickCommandType.Link => "External link",
+            TrickCommandType.Info => "Information only",
+            _ => ""
+        };
+
+        // Build comprehensive tooltip
+        var tooltipText = $"📌 {trick.Name}\n\n" +
+                         $"{trick.Description}\n\n" +
+                         $"⚡ Type: {commandTypeText}\n" +
+                         $"⚠ Risk: {dangerText}";
+
+        if (!string.IsNullOrEmpty(trick.Tip))
+        {
+            tooltipText += $"\n\n💡 Tip: {trick.Tip}";
+        }
+
+        if (trick.CanToggle)
+        {
+            tooltipText += "\n\n🔄 This setting can be toggled on/off";
+        }
+
         var card = new Border
         {
             Background = FindResource("BgSecondaryBrush") as Brush,
@@ -817,7 +866,17 @@ public partial class WindowsTricksView : Page
             Padding = new Thickness(16),
             Margin = new Thickness(0, 0, 12, 12),
             Width = 380,
-            MinHeight = 140
+            MinHeight = 140,
+            ToolTip = new ToolTip
+            {
+                Content = tooltipText,
+                Background = FindResource("BgTertiaryBrush") as Brush,
+                Foreground = FindResource("TextPrimaryBrush") as Brush,
+                BorderBrush = FindResource("BorderBrush") as Brush,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(12),
+                MaxWidth = 400
+            }
         };
 
         var stack = new StackPanel();
@@ -1077,6 +1136,7 @@ public class WindowsTrick
     public string? RegistryPath { get; set; }
     public string? RegistryValue { get; set; }
     public string? RegistryData { get; set; }
+    public string? Tip { get; set; }  // Additional tip/advice for the user
 }
 
 public enum TrickCommandType

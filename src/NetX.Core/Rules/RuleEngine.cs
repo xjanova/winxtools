@@ -204,11 +204,21 @@ public class RuleEngine
 
     private bool EvaluateBandwidthCondition(RuleCondition condition)
     {
-        // This would integrate with NetworkMonitor
         if (long.TryParse(condition.Value, out var threshold))
         {
-            // TODO: Get actual bandwidth from NetworkMonitor
-            return false;
+            var stats = Network.NetworkMonitor.Instance.GetCurrentStats();
+            long bandwidth = (long)(stats.TotalDownloadSpeed + stats.TotalUploadSpeed);
+
+            return condition.Operator switch
+            {
+                ConditionOperator.Equals => bandwidth == threshold,
+                ConditionOperator.NotEquals => bandwidth != threshold,
+                ConditionOperator.GreaterThan => bandwidth > threshold,
+                ConditionOperator.LessThan => bandwidth < threshold,
+                ConditionOperator.GreaterOrEqual => bandwidth >= threshold,
+                ConditionOperator.LessOrEqual => bandwidth <= threshold,
+                _ => false
+            };
         }
         return false;
     }
@@ -290,7 +300,24 @@ public class RuleEngine
                 break;
 
             case ActionType.LimitBandwidth:
-                // TODO: Integrate with bandwidth limiter
+                if (int.TryParse(action.Target, out var limit))
+                {
+                    var processName = action.Parameters?.GetValueOrDefault("process", "*") ?? "*";
+                    Network.BandwidthLimiter.Instance.SetProcessLimit(processName, limit, limit);
+                }
+                break;
+
+            case ActionType.UnlimitBandwidth:
+                var targetProcess = action.Target ?? "*";
+                Network.BandwidthLimiter.Instance.RemoveLimit(targetProcess);
+                break;
+
+            case ActionType.SendEmail:
+                _ = SendEmailAsync(action, rule);
+                break;
+
+            case ActionType.KillProcess:
+                KillProcess(action);
                 break;
 
             case ActionType.WriteToFile:
@@ -380,6 +407,41 @@ public class RuleEngine
         };
 
         global::System.Diagnostics.Process.Start(psi);
+    }
+
+    private async Task SendEmailAsync(RuleAction action, NetworkRule rule)
+    {
+        var to = action.Target ?? "";
+        if (string.IsNullOrEmpty(to)) return;
+
+        var subject = action.Parameters?.GetValueOrDefault("subject", $"[WinXTools] Rule Triggered: {rule.Name}") ?? "";
+        var body = action.Parameters?.GetValueOrDefault("body", $"Rule '{rule.Name}' was triggered at {DateTime.Now}") ?? "";
+
+        subject = ReplaceVariables(subject, rule);
+        body = ReplaceVariables(body, rule);
+
+        await Helpers.EmailService.Instance.SendEmailAsync(to, subject, body);
+    }
+
+    private void KillProcess(RuleAction action)
+    {
+        if (string.IsNullOrEmpty(action.Target)) return;
+
+        try
+        {
+            var processes = global::System.Diagnostics.Process.GetProcessesByName(
+                action.Target.Replace(".exe", ""));
+
+            foreach (var process in processes)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch { }
+            }
+        }
+        catch { }
     }
 
     private string ReplaceVariables(string template, NetworkRule rule)
@@ -529,6 +591,7 @@ public enum ActionType
     SendWebhook,
     SendLineNotify,
     SendSMS,
+    SendEmail,
     ExecuteCommand,
     KillProcess
 }

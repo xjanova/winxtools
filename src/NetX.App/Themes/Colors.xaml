@@ -154,6 +154,14 @@
         <GradientStop Color="#b91c1c" Offset="1"/>
     </LinearGradientBrush>
 
+    <!-- Warning Gradient (Amber/Orange) -->
+    <LinearGradientBrush x:Key="WarningGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#fbbf24" Offset="0"/>
+        <GradientStop Color="#f59e0b" Offset="0.4"/>
+        <GradientStop Color="#d97706" Offset="0.7"/>
+        <GradientStop Color="#b45309" Offset="1"/>
+    </LinearGradientBrush>
+
     <!-- Card Background Gradient (Deep Ocean Aurora) -->
     <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#122448" Offset="0"/>
@@ -250,6 +258,12 @@
                       BlurRadius="25"
                       ShadowDepth="0"
                       Color="{StaticResource DangerColor}"
+                      Opacity="0.6"/>
+
+    <DropShadowEffect x:Key="WarningGlow"
+                      BlurRadius="25"
+                      ShadowDepth="0"
+                      Color="{StaticResource WarningColor}"
                       Opacity="0.6"/>
 
     <DropShadowEffect x:Key="AuroraPurpleGlow"

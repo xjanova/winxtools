@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <!-- <ApplicationIcon>Assets\icon.ico</ApplicationIcon> -->
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <Company>xman studio</Company>
     <Product>WinXTools</Product>
     <Description>WinXTools - Advanced Windows Network &amp; System Management Tool</Description>

@@ -1,12 +1,16 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 using NetX.Core.Network;
+using NetX.Core.Optimization;
+using NetX.App.Helpers;
 
 namespace NetX.App.Views;
 
@@ -14,8 +18,9 @@ public partial class DashboardView : Page
 {
     private readonly DispatcherTimer _updateTimer;
     private readonly NetworkMonitor _networkMonitor;
-    private readonly ObservableCollection<double> _downloadHistory = new();
-    private readonly ObservableCollection<double> _uploadHistory = new();
+    private readonly ChartDataCache _chartCache = ChartDataCache.Instance;
+    private readonly ObservableCollection<double> _downloadHistory;
+    private readonly ObservableCollection<double> _uploadHistory;
     private readonly ObservableCollection<double> _downloadBarHistory = new();
     private readonly ObservableCollection<double> _uploadBarHistory = new();
     private const int MaxDataPoints = 60;
@@ -25,11 +30,19 @@ public partial class DashboardView : Page
     private ISeries[]? _columnSeries;
     private List<TopConsumerItem> _topConsumers = new();
 
+    // Responsive layout constants
+    private const double MinCardWidth = 120;
+    private const int CardCount = 6;
+
     public DashboardView()
     {
         InitializeComponent();
 
         _networkMonitor = NetworkMonitor.Instance;
+
+        // Use cached chart data for continuity across page navigation
+        _downloadHistory = _chartCache.DashboardDownloadHistory;
+        _uploadHistory = _chartCache.DashboardUploadHistory;
 
         // Setup chart
         InitializeChart();
@@ -45,21 +58,93 @@ public partial class DashboardView : Page
         // Initial update
         UpdateStats();
 
+        // Setup responsive layout
+        SizeChanged += DashboardView_SizeChanged;
+        Loaded += DashboardView_Loaded;
         Unloaded += (s, e) => _updateTimer.Stop();
+    }
+
+    private void DashboardView_Loaded(object sender, RoutedEventArgs e)
+    {
+        UpdateResponsiveLayout(ActualWidth);
+    }
+
+    private void DashboardView_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateResponsiveLayout(e.NewSize.Width);
+    }
+
+    private void UpdateResponsiveLayout(double availableWidth)
+    {
+        if (availableWidth <= 0) return;
+
+        // Available width for cards (minus padding)
+        double contentWidth = availableWidth - 48;
+
+        // Calculate how many cards fit per row (with min width and margin)
+        int cardsPerRow = Math.Max(1, (int)(contentWidth / (MinCardWidth + 12)));
+        cardsPerRow = Math.Min(cardsPerRow, CardCount);
+
+        // Calculate optimal card width to fill the row
+        double cardWidth = (contentWidth - (cardsPerRow * 12)) / cardsPerRow;
+
+        // Update each card's width
+        UpdateCardWidths(cardWidth);
+
+        // Calculate font size based on card width
+        double fontSize = CalculateCardFontSize(cardWidth);
+
+        // Update stat value font sizes
+        UpdateStatCardFontSizes(fontSize);
+    }
+
+    private void UpdateCardWidths(double cardWidth)
+    {
+        // Update each card's width to fill available space
+        if (Card1 != null) Card1.Width = cardWidth;
+        if (Card2 != null) Card2.Width = cardWidth;
+        if (Card3 != null) Card3.Width = cardWidth;
+        if (Card4 != null) Card4.Width = cardWidth;
+        if (Card5 != null) Card5.Width = cardWidth;
+        if (Card6 != null) Card6.Width = cardWidth;
+    }
+
+    private static double CalculateCardFontSize(double cardWidth)
+    {
+        // Base font size 24 at 150px width, scale down to min 12 at 80px
+        if (cardWidth >= 150) return 24;
+        if (cardWidth <= 80) return 12;
+
+        // Linear interpolation
+        double ratio = (cardWidth - 80) / (150 - 80);
+        return 12 + (24 - 12) * ratio;
+    }
+
+    private void UpdateStatCardFontSizes(double fontSize)
+    {
+        // Update stat value TextBlocks - only if they exist
+        if (DownloadSpeed != null) DownloadSpeed.FontSize = fontSize;
+        if (UploadSpeed != null) UploadSpeed.FontSize = fontSize;
+        if (ActiveAppsCount != null) ActiveAppsCount.FontSize = fontSize;
+        if (ConnectionsCount != null) ConnectionsCount.FontSize = fontSize;
+        if (TotalDownloaded != null) TotalDownloaded.FontSize = Math.Max(12, fontSize - 4);
+        if (TotalUploaded != null) TotalUploaded.FontSize = Math.Max(12, fontSize - 4);
     }
 
     private void InitializeChart()
     {
-        // Initialize with empty data
-        for (int i = 0; i < MaxDataPoints; i++)
+        // Initialize with empty data only if not already initialized (preserves data across navigation)
+        _chartCache.InitializeCollection(_downloadHistory, MaxDataPoints);
+        _chartCache.InitializeCollection(_uploadHistory, MaxDataPoints);
+
+        // Bar history is local (not cached)
+        if (_downloadBarHistory.Count == 0)
         {
-            _downloadHistory.Add(0);
-            _uploadHistory.Add(0);
-        }
-        for (int i = 0; i < MaxBarDataPoints; i++)
-        {
-            _downloadBarHistory.Add(0);
-            _uploadBarHistory.Add(0);
+            for (int i = 0; i < MaxBarDataPoints; i++)
+            {
+                _downloadBarHistory.Add(0);
+                _uploadBarHistory.Add(0);
+            }
         }
 
         // Create series ONCE - no animations for smooth updates
@@ -161,6 +246,10 @@ public partial class DashboardView : Page
             ActiveAppsCount.Text = stats.ActiveProcessCount.ToString();
             ConnectionsCount.Text = stats.TotalConnections.ToString();
 
+            // Update total received/sent stat cards
+            TotalDownloaded.Text = FormatBytes(totalBytes.received);
+            TotalUploaded.Text = FormatBytes(totalBytes.sent);
+
             // Update total data display (using card sub-labels)
             // Show total received/sent data below speed if elements exist
             UpdateTotalDataDisplay(totalBytes.received, totalBytes.sent);
@@ -214,7 +303,8 @@ public partial class DashboardView : Page
                 ProcessName = p.ProcessName,
                 Speed = FormatSpeed(p.DownloadSpeed + p.UploadSpeed),
                 Percentage = CalculatePercentage(p.DownloadSpeed + p.UploadSpeed,
-                    stats.TotalDownloadSpeed + stats.TotalUploadSpeed)
+                    stats.TotalDownloadSpeed + stats.TotalUploadSpeed),
+                Icon = ProcessIconHelper.GetProcessIcon(p.ProcessName)
             })
             .ToList();
 
@@ -304,6 +394,124 @@ public partial class DashboardView : Page
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
     }
+
+    private void OptimizeRam_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var ramOptimizer = RamOptimizer.Instance;
+            var beforeInfo = ramOptimizer.GetMemoryInfo();
+
+            var result = ramOptimizer.OptimizeNow();
+
+            var freedMB = Math.Max(0, result.MemoryFreedMB);
+            MessageBox.Show(
+                $"RAM Optimization Complete!\n\n" +
+                $"Before: {beforeInfo.UsagePercent}% used\n" +
+                $"Processes optimized: {result.ProcessesOptimized}\n" +
+                $"Memory freed: {FormatBytes(freedMB * 1024 * 1024)}",
+                "RAM Optimization",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to optimize RAM: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void FlushDns_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ipconfig",
+                Arguments = "/flushdns",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            process?.WaitForExit(5000);
+
+            MessageBox.Show(
+                "DNS cache has been flushed successfully!\n\n" +
+                "This can help resolve connection issues caused by stale DNS entries.",
+                "Flush DNS",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to flush DNS: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void ResetNetwork_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "This will reset your network adapter which may temporarily disconnect you.\n\n" +
+            "This can help fix connectivity issues. Continue?",
+            "Reset Network Adapter",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            try
+            {
+                // Disable and re-enable network adapters
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "netsh",
+                    Arguments = "interface set interface \"Wi-Fi\" admin=disable",
+                    UseShellExecute = true,
+                    Verb = "runas",
+                    CreateNoWindow = true
+                };
+
+                Process.Start(psi)?.WaitForExit(3000);
+
+                psi.Arguments = "netsh interface set interface \"Wi-Fi\" admin=enable";
+                Process.Start(psi)?.WaitForExit(3000);
+
+                // Also try Ethernet
+                psi.Arguments = "netsh interface set interface \"Ethernet\" admin=disable";
+                Process.Start(psi);
+
+                System.Threading.Thread.Sleep(1000);
+
+                psi.Arguments = "netsh interface set interface \"Ethernet\" admin=enable";
+                Process.Start(psi);
+
+                MessageBox.Show(
+                    "Network adapters have been reset.\n\n" +
+                    "Your connection should be restored shortly.",
+                    "Reset Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to reset network: {ex.Message}\n\n" +
+                    "Make sure to run the application as Administrator.",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+    }
 }
 
 public class TopConsumerItem
@@ -311,5 +519,5 @@ public class TopConsumerItem
     public string ProcessName { get; set; } = string.Empty;
     public string Speed { get; set; } = string.Empty;
     public string Percentage { get; set; } = "0%";
-    public object? Icon { get; set; }
+    public ImageSource? Icon { get; set; }
 }

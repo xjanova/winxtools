@@ -18,8 +18,11 @@
     <system:String x:Key="Nav_ConnectionMonitor">Connections</system:String>
     <system:String x:Key="Nav_PacketMonitor">Packet Monitor</system:String>
     <system:String x:Key="Nav_BandwidthControl">Bandwidth Control</system:String>
+    <system:String x:Key="Nav_NetworkTools">Network Tools</system:String>
+    <system:String x:Key="Nav_RamOptimizer">RAM Optimizer</system:String>
     <system:String x:Key="Nav_Uninstaller">Uninstaller</system:String>
     <system:String x:Key="Nav_Cleaner">System Cleaner</system:String>
+    <system:String x:Key="Nav_WinOptimizer">Windows Optimizer</system:String>
     <system:String x:Key="Nav_Rules">Automation</system:String>
     <system:String x:Key="Nav_Tricks">Windows Tricks</system:String>
     <system:String x:Key="Nav_Settings">Settings</system:String>
@@ -36,6 +39,7 @@
     <system:String x:Key="Dashboard_BlockAll">Block All</system:String>
     <system:String x:Key="Dashboard_ResumeAll">Resume All</system:String>
     <system:String x:Key="Dashboard_QuickClean">Quick Clean</system:String>
+    <system:String x:Key="Dashboard_GlobalBandwidth">Global Bandwidth Control</system:String>
 
     <!-- Network Monitor -->
     <system:String x:Key="Network_Title">Network Monitor</system:String>
@@ -113,6 +117,63 @@
     <system:String x:Key="Settings_CheckUpdates">Check for Updates</system:String>
     <system:String x:Key="Settings_ResetSettings">Reset Settings</system:String>
 
+    <!-- RAM Optimizer -->
+    <system:String x:Key="RamOptimizer_Title">RAM Optimizer</system:String>
+    <system:String x:Key="RamOptimizer_Subtitle">Monitor and optimize system memory usage</system:String>
+    <system:String x:Key="RamOptimizer_TotalMemory">Total Memory</system:String>
+    <system:String x:Key="RamOptimizer_UsedMemory">Used Memory</system:String>
+    <system:String x:Key="RamOptimizer_AvailableMemory">Available</system:String>
+    <system:String x:Key="RamOptimizer_Usage">Usage</system:String>
+    <system:String x:Key="RamOptimizer_MemoryHistory">Memory Usage History</system:String>
+    <system:String x:Key="RamOptimizer_TopConsumers">Top Memory Consumers</system:String>
+    <system:String x:Key="RamOptimizer_OptimizeNow">Optimize Now</system:String>
+    <system:String x:Key="RamOptimizer_NeverOptimized">Not optimized yet</system:String>
+    <system:String x:Key="RamOptimizer_Settings">Auto-Optimization Settings</system:String>
+    <system:String x:Key="RamOptimizer_AutoOptimize">Auto-Optimize</system:String>
+    <system:String x:Key="RamOptimizer_Threshold">Memory Threshold</system:String>
+    <system:String x:Key="RamOptimizer_Interval">Check Interval</system:String>
+    <system:String x:Key="RamOptimizer_History">Optimization History</system:String>
+    <system:String x:Key="RamOptimizer_ProcessProtection">Process Protection</system:String>
+    <system:String x:Key="RamOptimizer_SmartKill">Smart Kill</system:String>
+    <system:String x:Key="RamOptimizer_SmartKillDesc">Automatically detect and kill frozen processes</system:String>
+    <system:String x:Key="RamOptimizer_AutoKill">Auto Kill Rules</system:String>
+    <system:String x:Key="RamOptimizer_AutoKillDesc">Automatically kill processes matching rules</system:String>
+    <system:String x:Key="RamOptimizer_KillRules">Kill Rules</system:String>
+    <system:String x:Key="RamOptimizer_AddKillRuleTitle">Add Kill Rule</system:String>
+    <system:String x:Key="RamOptimizer_AddKillRuleMessage">Enter process name to auto-kill (without .exe):</system:String>
+
+    <!-- Windows Optimizer -->
+    <system:String x:Key="WinOptimizer_Title">Windows Optimizer</system:String>
+    <system:String x:Key="WinOptimizer_Subtitle">Disable unnecessary services and AI features to improve performance</system:String>
+    <system:String x:Key="WinOptimizer_CreateRestore">Create Restore Point</system:String>
+    <system:String x:Key="WinOptimizer_Services">Services</system:String>
+    <system:String x:Key="WinOptimizer_AIFeatures">AI Features</system:String>
+    <system:String x:Key="WinOptimizer_Telemetry">Telemetry</system:String>
+    <system:String x:Key="WinOptimizer_Startup">Startup</system:String>
+    <system:String x:Key="WinOptimizer_SelectAll">Select All</system:String>
+    <system:String x:Key="WinOptimizer_Summary">Summary</system:String>
+    <system:String x:Key="WinOptimizer_Selected">Selected</system:String>
+    <system:String x:Key="WinOptimizer_Disabled">Disabled</system:String>
+    <system:String x:Key="WinOptimizer_EstimatedRAM">Est. RAM Saving</system:String>
+    <system:String x:Key="WinOptimizer_TotalItems">Total Items</system:String>
+    <system:String x:Key="WinOptimizer_QuickActions">Quick Actions</system:String>
+    <system:String x:Key="WinOptimizer_ApplySelected">Apply Selected</system:String>
+    <system:String x:Key="WinOptimizer_SafeOptimize">Safe Optimize</system:String>
+    <system:String x:Key="WinOptimizer_RestoreAll">Restore All</system:String>
+    <system:String x:Key="WinOptimizer_WarningTitle">Important</system:String>
+    <system:String x:Key="WinOptimizer_WarningText">Create a restore point before making changes. Some changes require a restart to take effect.</system:String>
+    <system:String x:Key="WinOptimizer_RestorePoints">Recent Restore Points</system:String>
+    <system:String x:Key="WinOptimizer_NoRestorePoints">No restore points found</system:String>
+
+    <!-- Network Tools -->
+    <system:String x:Key="NetworkTools_Title">Network Tools</system:String>
+    <system:String x:Key="NetworkTools_Subtitle">Diagnostic and analysis tools for network troubleshooting</system:String>
+
+    <!-- Proxy VPN -->
+    <system:String x:Key="Nav_ProxyVpn">Proxy VPN</system:String>
+    <system:String x:Key="ProxyVpn_Title">Proxy VPN</system:String>
+    <system:String x:Key="ProxyVpn_Subtitle">Connect through free proxies worldwide</system:String>
+
     <!-- Common -->
     <system:String x:Key="Common_OK">OK</system:String>
     <system:String x:Key="Common_Cancel">Cancel</system:String>
@@ -127,6 +188,54 @@
     <system:String x:Key="Common_Success">Success</system:String>
     <system:String x:Key="Common_Loading">Loading...</system:String>
     <system:String x:Key="Common_Processing">Processing...</system:String>
+    <system:String x:Key="Common_Execute">Execute</system:String>
+    <system:String x:Key="Common_Refresh">Refresh</system:String>
+    <system:String x:Key="Common_Add">Add</system:String>
+
+    <!-- Settings Page -->
+    <system:String x:Key="Settings_RamOptimizerDesc">Manage RAM optimization, auto-kill rules, and process protection</system:String>
+    <system:String x:Key="Settings_OpenRamOptimizer">Open RAM Optimizer</system:String>
+
+    <!-- Blockly Visual Rule Builder -->
+    <system:String x:Key="Blockly_DragBlocksHere">Drag blocks here to build your rule</system:String>
+    <system:String x:Key="Blockly_DragBlocksHint">Conditions trigger actions when matched</system:String>
+    <system:String x:Key="Blockly_DropToDelete">Drop here to delete</system:String>
+    <system:String x:Key="Blockly_Conditions">Conditions</system:String>
+    <system:String x:Key="Blockly_Actions">Actions</system:String>
+    <system:String x:Key="Blockly_Logic">Logic</system:String>
+    <system:String x:Key="Blockly_TimeRange">Time Range</system:String>
+    <system:String x:Key="Blockly_DayOfWeek">Day of Week</system:String>
+    <system:String x:Key="Blockly_ProcessRunning">Process Running</system:String>
+    <system:String x:Key="Blockly_BandwidthExceeds">Bandwidth Exceeds</system:String>
+    <system:String x:Key="Blockly_ConnectionCount">Connection Count</system:String>
+    <system:String x:Key="Blockly_IPConnected">IP Connected</system:String>
+    <system:String x:Key="Blockly_PortInUse">Port In Use</system:String>
+    <system:String x:Key="Blockly_LimitBandwidth">Limit Bandwidth</system:String>
+    <system:String x:Key="Blockly_BlockIP">Block IP</system:String>
+    <system:String x:Key="Blockly_BlockPort">Block Port</system:String>
+    <system:String x:Key="Blockly_Notify">Send Notification</system:String>
+    <system:String x:Key="Blockly_Email">Send Email</system:String>
+    <system:String x:Key="Blockly_Command">Execute Command</system:String>
+    <system:String x:Key="Blockly_KillProcess">Kill Process</system:String>
+    <system:String x:Key="Blockly_Clear">Clear</system:String>
+    <system:String x:Key="Blockly_SaveRule">Save Rule</system:String>
+    <system:String x:Key="Blockly_RuleCanvas">Visual Rule Canvas</system:String>
+    <system:String x:Key="Blockly_NoRules">No rules configured</system:String>
+    <system:String x:Key="Blockly_Ready">Ready</system:String>
+    <system:String x:Key="Blockly_Blocks">Blocks</system:String>
+    <system:String x:Key="Blockly_ActiveRules">Active Rules</system:String>
+    <system:String x:Key="Blockly_ClearConfirm">Clear all blocks from canvas?</system:String>
+    <system:String x:Key="Blockly_NoBlocksError">Please add at least one block to create a rule.</system:String>
+    <system:String x:Key="Blockly_NeedConditionAndAction">A rule needs at least one condition and one action.</system:String>
+    <system:String x:Key="Blockly_RuleNameTitle">Save Rule</system:String>
+    <system:String x:Key="Blockly_RuleNameMessage">Enter a name for this rule:</system:String>
+    <system:String x:Key="Blockly_RuleSaved">Rule saved successfully!</system:String>
+    <system:String x:Key="Blockly_NewRule">New Rule</system:String>
+    <system:String x:Key="Blockly_CreateNew">Drag blocks to create a new rule</system:String>
+    <system:String x:Key="Blockly_DeleteConfirm">Delete rule</system:String>
+
+    <!-- Bandwidth Control -->
+    <system:String x:Key="Bandwidth_VisualBuilderDesc">Create automation rules with visual blocks - drag, connect, and control</system:String>
 
     <!-- Units -->
     <system:String x:Key="Unit_BytesPerSec">B/s</system:String>

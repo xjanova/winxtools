@@ -29,7 +29,21 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(move \"D:\\Code\\NetX\\src\\NetX.Core\\System\\UpdateChecker.cs\" \"D:\\Code\\NetX\\src\\NetX.Core\\Optimization\\UpdateChecker.cs\")",
-      "Bash(cmd /c move:*)"
+      "Bash(cmd /c move:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd auto-update system and UI improvements\n\n- Add UpdateChecker to check GitHub releases for updates\n- Improve scrollbar styling with sleek, minimal design  \n- Add status bar at bottom showing live bandwidth stats\n- Fix namespace conflicts with global:: prefix\n- Update Settings view to use WinXTools branding\n- Connect \"Check for Updates\" button to GitHub releases API\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(cd:*)",
+      "Bash(move \"D:\\Code\\NetX\\src\\NetX.Core\\Helpers\\ProcessIconHelper.cs\" \"D:\\Code\\NetX\\src\\NetX.App\\Helpers\\ProcessIconHelper.cs\")",
+      "Bash(cmd /c:*)",
+      "Bash(del \"D:\\Code\\NetX\\src\\NetX.Core\\Helpers\\ProcessIconHelper.cs\")",
+      "Bash(ls -la \"D:\\Code\\NetX\\src\\NetX.App\\Views\"\" | grep -E \".xaml)",
+      "Bash(.cs \")",
+      "Bash(where:*)",
+      "Bash(magick --version:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Set-Location ''D:\\Code\\NetX\\src\\NetX.App\\Assets''; & ''.\\create-icon.ps1''\")",
+      "Bash(start \"\" \"D:\\\\Code\\\\NetX\\\\NetX.sln\")",
+      "Bash(./ralph-once.sh)",
+      "mcp__3187de44-d8cd-4954-abb8-6bbd50dccb42__create-design-from-candidate"
     ]
   }
 }

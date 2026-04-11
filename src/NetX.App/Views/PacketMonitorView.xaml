@@ -15,7 +15,7 @@
         <Geometry x:Key="UDPIcon">M12,2L22,12L12,22L2,12L12,2Z</Geometry>
     </Page.Resources>
 
-    <Grid Background="{StaticResource BgPrimaryBrush}">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>

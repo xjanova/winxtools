@@ -1,8 +1,12 @@
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Security.Principal;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using NetX.Core.Helpers;
 using NetX.Core.Data;
+using NetX.Core.Network;
 
 namespace NetX.App;
 
@@ -12,6 +16,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Enable hardware acceleration and optimize rendering
+        OptimizeRendering();
+
         // Set process priority to High for best performance
         SetHighPriority();
 
@@ -20,6 +27,33 @@ public partial class App : Application
 
         // Check and set language
         InitializeLanguage();
+
+        // Apply saved bandwidth limits on startup
+        ApplySavedBandwidthLimits();
+    }
+
+    private void OptimizeRendering()
+    {
+        try
+        {
+            // Use hardware rendering if available (Tier 2 = full hardware acceleration)
+            var renderingTier = RenderCapability.Tier >> 16;
+            if (renderingTier >= 2)
+            {
+                // Hardware acceleration is available and enabled by default
+                // Disable software rendering fallback for better performance
+                RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.Default;
+            }
+
+            // Set global rendering options for performance
+            Timeline.DesiredFrameRateProperty.OverrideMetadata(
+                typeof(Timeline),
+                new FrameworkPropertyMetadata { DefaultValue = 30 }); // Lower frame rate to reduce CPU usage
+        }
+        catch
+        {
+            // Ignore rendering optimization failures
+        }
     }
 
     private void SetHighPriority()
@@ -109,5 +143,88 @@ public partial class App : Application
         var identity = WindowsIdentity.GetCurrent();
         var principal = new WindowsPrincipal(identity);
         return principal.IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    /// <summary>
+    /// Apply saved bandwidth limits on application startup
+    /// </summary>
+    private void ApplySavedBandwidthLimits()
+    {
+        try
+        {
+            // Find active network interface
+            var activeInterface = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.OperationalStatus == OperationalStatus.Up
+                          && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback
+                          && IsPhysicalAdapter(ni))
+                .Select(ni => {
+                    try
+                    {
+                        var stats = ni.GetIPStatistics();
+                        return (ni, total: stats.BytesReceived + stats.BytesSent);
+                    }
+                    catch { return (ni, total: 0L); }
+                })
+                .OrderByDescending(x => x.total)
+                .FirstOrDefault().ni;
+
+            if (activeInterface == null) return;
+
+            // Check if there are saved limits for this interface
+            var savedRule = BandwidthLimiter.Instance.GetLimit($"interface:{activeInterface.Id}");
+            if (savedRule == null) return;
+
+            // Only apply if not both unlimited
+            if (savedRule.DownloadLimitKBps < 0 && savedRule.UploadLimitKBps < 0) return;
+
+            // Values are stored as Kbps
+            var dlKbps = savedRule.DownloadLimitKBps;
+            var ulKbps = savedRule.UploadLimitKBps;
+            Debug.WriteLine($"Applying saved bandwidth limits: DL={dlKbps} Kbps, UL={ulKbps} Kbps");
+
+            // Start PacketEngine and apply throttle
+            var packetEngine = PacketEngine.Instance;
+            if (packetEngine.IsDriverLoaded)
+            {
+                packetEngine.Start();
+
+                // Convert Kbps to bytes per second (1 Kbps = 125 bytes/sec)
+                // 0 = blocked (use 1 byte/sec for extreme throttle)
+                long dlBytesPerSec = dlKbps > 0 ? dlKbps * 125 : (dlKbps == 0 ? 1 : 0);
+                long ulBytesPerSec = ulKbps > 0 ? ulKbps * 125 : (ulKbps == 0 ? 1 : 0);
+
+                if (dlBytesPerSec > 0 || ulBytesPerSec > 0)
+                {
+                    packetEngine.SetGlobalThrottle(dlBytesPerSec, ulBytesPerSec);
+                    Debug.WriteLine($"PacketEngine throttle applied on startup: {dlBytesPerSec} B/s down, {ulBytesPerSec} B/s up");
+                }
+            }
+
+            BandwidthLimiter.Instance.IsEnabled = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error applying saved bandwidth limits: {ex.Message}");
+        }
+    }
+
+    private static bool IsPhysicalAdapter(NetworkInterface ni)
+    {
+        var desc = ni.Description.ToLowerInvariant();
+        var name = ni.Name.ToLowerInvariant();
+
+        if (desc.Contains("virtual") || desc.Contains("vmware") || desc.Contains("virtualbox") ||
+            desc.Contains("hyper-v") || desc.Contains("vpn") || desc.Contains("tap-") ||
+            desc.Contains("tunnel") || desc.Contains("pseudo") || desc.Contains("miniport") ||
+            desc.Contains("wan") || desc.Contains("teredo") || desc.Contains("isatap") ||
+            desc.Contains("6to4") || desc.Contains("bluetooth") ||
+            name.Contains("vethernet") || name.Contains("docker") || name.Contains("wsl"))
+        {
+            return false;
+        }
+
+        return ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet ||
+               ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ||
+               ni.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet;
     }
 }

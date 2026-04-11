@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
       Title="Network Monitor"
-      Background="{StaticResource BgPrimaryBrush}">
+      Background="Transparent">
 
     <Page.Resources>
         <Geometry x:Key="SortUpIcon">M7,15L12,10L17,15H7Z</Geometry>
@@ -13,11 +13,12 @@
         <Geometry x:Key="AutoKillIcon">M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M15.5,7.5L17,9L13.5,12.5L17,16L15.5,17.5L12,14L8.5,17.5L7,16L10.5,12.5L7,9L8.5,7.5L12,11L15.5,7.5Z</Geometry>
     </Page.Resources>
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -127,9 +128,9 @@
         <!-- Main Content -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*" MinWidth="450"/>
                 <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="420"/>
+                <ColumnDefinition Width="420" MinWidth="380"/>
             </Grid.ColumnDefinitions>
 
             <!-- Process List -->
@@ -143,17 +144,22 @@
                     <!-- Sortable Column Headers -->
                     <Grid Grid.Row="0" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="32"/>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="85"/>
+                            <ColumnDefinition Width="85"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="90"/>
                         </Grid.ColumnDefinitions>
 
+                        <!-- Icon Header -->
+                        <TextBlock Grid.Column="0" Text="" Style="{StaticResource BodyTextStyle}"
+                                   FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
                         <!-- PID Header -->
-                        <Button Grid.Column="0" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="SortColumn_Click" Tag="ProcessId"
                                 HorizontalContentAlignment="Left" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
@@ -164,7 +170,7 @@
                         </Button>
 
                         <!-- Process Name Header -->
-                        <Button Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="SortColumn_Click" Tag="ProcessName"
                                 HorizontalContentAlignment="Left" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
@@ -175,44 +181,45 @@
                         </Button>
 
                         <!-- Download Header -->
-                        <Button Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Grid.Column="3" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="SortColumn_Click" Tag="DownloadSpeed"
                                 HorizontalContentAlignment="Right" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="↓ Download" FontWeight="SemiBold" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                <TextBlock Text="↓ Speed" FontWeight="SemiBold" Foreground="{StaticResource AccentPrimaryBrush}"/>
                                 <Path x:Name="SortDownload" Width="10" Height="10" Stretch="Uniform" Margin="4,0,0,0"
                                       Fill="{StaticResource AccentPrimaryBrush}" Data="{StaticResource SortDownIcon}"/>
                             </StackPanel>
                         </Button>
 
                         <!-- Upload Header -->
-                        <Button Grid.Column="3" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Grid.Column="4" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="SortColumn_Click" Tag="UploadSpeed"
                                 HorizontalContentAlignment="Right" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="↑ Upload" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}"/>
+                                <TextBlock Text="↑ Speed" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}"/>
                                 <Path x:Name="SortUpload" Width="10" Height="10" Stretch="Uniform" Margin="4,0,0,0"
                                       Fill="{StaticResource TextTertiaryBrush}" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- Mini Chart Header -->
-                        <TextBlock Grid.Column="4" Text="Activity" Style="{StaticResource BodyTextStyle}"
-                                   FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <!-- Limit Header -->
+                        <TextBlock Grid.Column="5" Text="Limit" Style="{StaticResource BodyTextStyle}"
+                                   FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                         <!-- Connections Header -->
-                        <Button Grid.Column="5" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Grid.Column="6" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="SortColumn_Click" Tag="ConnectionCount"
                                 HorizontalContentAlignment="Center" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Conn" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Cn" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
                                 <Path x:Name="SortConn" Width="10" Height="10" Stretch="Uniform" Margin="4,0,0,0"
                                       Fill="{StaticResource TextTertiaryBrush}" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>
 
                         <!-- Actions Header -->
-                        <TextBlock Grid.Column="6" Text="Actions" Style="{StaticResource BodyTextStyle}"
+                        <TextBlock Grid.Column="7" Text="Actions" Style="{StaticResource BodyTextStyle}"
                                    FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
 
@@ -256,30 +263,39 @@
                             <DataTemplate>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/>
                                         <ColumnDefinition Width="50"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="85"/>
+                                        <ColumnDefinition Width="85"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="40"/>
                                         <ColumnDefinition Width="80"/>
-                                        <ColumnDefinition Width="90"/>
-                                        <ColumnDefinition Width="90"/>
-                                        <ColumnDefinition Width="50"/>
-                                        <ColumnDefinition Width="90"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Grid.Column="0"
+                                    <!-- Process Icon -->
+                                    <Image Grid.Column="0"
+                                           Source="{Binding Icon}"
+                                           Width="20" Height="20"
+                                           RenderOptions.BitmapScalingMode="HighQuality"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="1"
                                                Text="{Binding ProcessId}"
                                                Foreground="{StaticResource TextTertiaryBrush}"
                                                FontFamily="{StaticResource MonoFont}"
                                                FontSize="11"
                                                VerticalAlignment="Center"/>
 
-                                    <TextBlock Grid.Column="1"
+                                    <TextBlock Grid.Column="2"
                                                Text="{Binding ProcessName}"
                                                Foreground="{StaticResource TextPrimaryBrush}"
                                                FontWeight="SemiBold"
                                                VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis"/>
 
-                                    <TextBlock Grid.Column="2"
+                                    <TextBlock Grid.Column="3"
                                                Text="{Binding DownloadSpeedText}"
                                                Foreground="{StaticResource AccentPrimaryBrush}"
                                                FontFamily="{StaticResource MonoFont}"
@@ -287,7 +303,7 @@
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"/>
 
-                                    <TextBlock Grid.Column="3"
+                                    <TextBlock Grid.Column="4"
                                                Text="{Binding UploadSpeedText}"
                                                Foreground="{StaticResource SuccessBrush}"
                                                FontFamily="{StaticResource MonoFont}"
@@ -295,28 +311,24 @@
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"/>
 
-                                    <!-- Mini Bandwidth Bar Chart -->
-                                    <Grid Grid.Column="4" Height="20" Margin="4,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Background="{StaticResource AccentPrimaryBrush}" Opacity="0.3"
-                                                CornerRadius="2" VerticalAlignment="Bottom"
-                                                Height="{Binding DownloadBarHeight}"/>
-                                        <Border Grid.Column="1" Background="{StaticResource SuccessBrush}" Opacity="0.3"
-                                                CornerRadius="2" VerticalAlignment="Bottom"
-                                                Height="{Binding UploadBarHeight}"/>
-                                    </Grid>
-
+                                    <!-- Limit Display -->
                                     <TextBlock Grid.Column="5"
+                                               Text="{Binding LimitDisplayText}"
+                                               Foreground="{StaticResource WarningBrush}"
+                                               FontFamily="{StaticResource MonoFont}"
+                                               FontSize="9"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <TextBlock Grid.Column="6"
                                                Text="{Binding ConnectionCount}"
                                                Foreground="{StaticResource TextSecondaryBrush}"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
 
                                     <!-- Action Buttons -->
-                                    <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="7" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <!-- Kill Process Button -->
                                         <Button Style="{StaticResource SecondaryButtonStyle}"
                                                 Padding="5,4"
@@ -392,6 +404,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Text="Bandwidth Control"
@@ -400,7 +414,7 @@
                                        Margin="0,0,0,12"/>
 
                             <!-- Current Speed Display -->
-                            <Grid Grid.Row="1" Margin="0,0,0,12">
+                            <Grid Grid.Row="1" Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
@@ -427,46 +441,90 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Bandwidth Limit Slider -->
+                            <!-- Download Limit Slider -->
                             <Grid Grid.Row="2" Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="70"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="90"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" Text="Limit:"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Path Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"
+                                          Fill="{StaticResource AccentPrimaryBrush}"
+                                          Width="12" Height="12" Stretch="Uniform" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Down:"
+                                               Foreground="{StaticResource AccentPrimaryBrush}"
+                                               VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                </StackPanel>
 
-                                <Slider x:Name="BandwidthLimitSlider" Grid.Column="1"
+                                <Slider x:Name="DownloadLimitSlider" Grid.Column="1"
                                         Minimum="0" Maximum="100" Value="0"
-                                        ValueChanged="BandwidthLimitSlider_ValueChanged"
+                                        ValueChanged="DownloadLimitSlider_ValueChanged"
                                         VerticalAlignment="Center"/>
 
-                                <TextBlock x:Name="BandwidthLimitText" Grid.Column="2"
+                                <TextBlock x:Name="DownloadLimitText" Grid.Column="2"
                                            Text="Unlimited"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
-                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentPrimaryBrush}"
+                                           FontWeight="SemiBold" FontSize="11"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <!-- Upload Limit Slider -->
+                            <Grid Grid.Row="3" Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="90"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Path Data="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"
+                                          Fill="{StaticResource SuccessBrush}"
+                                          Width="12" Height="12" Stretch="Uniform" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Up:"
+                                               Foreground="{StaticResource SuccessBrush}"
+                                               VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                </StackPanel>
+
+                                <Slider x:Name="UploadLimitSlider" Grid.Column="1"
+                                        Minimum="0" Maximum="100" Value="0"
+                                        ValueChanged="UploadLimitSlider_ValueChanged"
+                                        VerticalAlignment="Center"/>
+
+                                <TextBlock x:Name="UploadLimitText" Grid.Column="2"
+                                           Text="Unlimited"
+                                           Foreground="{StaticResource SuccessBrush}"
+                                           FontWeight="SemiBold" FontSize="11"
                                            VerticalAlignment="Center"
                                            HorizontalAlignment="Right"/>
                             </Grid>
 
                             <!-- Speed Preset Buttons -->
-                            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Grid.Row="4" Text="Quick Presets" FontSize="10"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Margin="0,0,0,6"/>
+                            <WrapPanel Grid.Row="5" HorizontalAlignment="Center">
                                 <Button Content="Unlimited" Style="{StaticResource SecondaryButtonStyle}"
-                                        Padding="12,6" Margin="0,0,6,0"
-                                        Click="SpeedPreset_Click" Tag="0"/>
+                                        Padding="8,4" Margin="2"
+                                        Click="SpeedPreset_Click" Tag="unlimited"/>
+                                <Button Content="10 MB/s" Style="{StaticResource SecondaryButtonStyle}"
+                                        Padding="8,4" Margin="2"
+                                        Click="SpeedPreset_Click" Tag="10240"/>
+                                <Button Content="5 MB/s" Style="{StaticResource SecondaryButtonStyle}"
+                                        Padding="8,4" Margin="2"
+                                        Click="SpeedPreset_Click" Tag="5120"/>
                                 <Button Content="1 MB/s" Style="{StaticResource SecondaryButtonStyle}"
-                                        Padding="12,6" Margin="0,0,6,0"
-                                        Click="SpeedPreset_Click" Tag="25"/>
+                                        Padding="8,4" Margin="2"
+                                        Click="SpeedPreset_Click" Tag="1024"/>
                                 <Button Content="512 KB/s" Style="{StaticResource SecondaryButtonStyle}"
-                                        Padding="12,6" Margin="0,0,6,0"
-                                        Click="SpeedPreset_Click" Tag="50"/>
+                                        Padding="8,4" Margin="2"
+                                        Click="SpeedPreset_Click" Tag="512"/>
                                 <Button Content="Block" Style="{StaticResource SecondaryButtonStyle}"
-                                        Padding="12,6"
-                                        Click="SpeedPreset_Click" Tag="100"/>
-                            </StackPanel>
+                                        Padding="8,4" Margin="2" Foreground="{StaticResource DangerBrush}"
+                                        Click="SpeedPreset_Click" Tag="0"/>
+                            </WrapPanel>
                         </Grid>
                     </Border>
 
@@ -521,13 +579,66 @@
             </Border>
         </Grid>
 
-        <!-- Status Bar -->
+        <!-- Status Bar with Pagination -->
         <Border Grid.Row="3" Margin="0,16,0,0" Padding="12,8" Background="{StaticResource BgSecondaryBrush}" CornerRadius="8">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="StatusText"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" x:Name="StatusText"
                            Text="Monitoring network activity..."
-                           Style="{StaticResource BodyTextStyle}"/>
-            </StackPanel>
+                           Style="{StaticResource BodyTextStyle}"
+                           VerticalAlignment="Center"/>
+
+                <!-- Pagination Controls -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="PageInfoText" Text="Page 1 of 1"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,16,0"/>
+
+                    <Button x:Name="FirstPageBtn" Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="8,4" Click="FirstPage_Click" ToolTip="First Page">
+                        <TextBlock Text="««" FontWeight="Bold"/>
+                    </Button>
+                    <Button x:Name="PrevPageBtn" Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="8,4" Margin="4,0" Click="PrevPage_Click" ToolTip="Previous Page">
+                        <TextBlock Text="«" FontWeight="Bold"/>
+                    </Button>
+
+                    <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="6" Padding="12,4" Margin="4,0">
+                        <TextBlock x:Name="CurrentPageText" Text="1"
+                                   Foreground="{StaticResource AccentPrimaryBrush}"
+                                   FontWeight="Bold" FontSize="14"/>
+                    </Border>
+
+                    <Button x:Name="NextPageBtn" Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="8,4" Margin="4,0" Click="NextPage_Click" ToolTip="Next Page">
+                        <TextBlock Text="»" FontWeight="Bold"/>
+                    </Button>
+                    <Button x:Name="LastPageBtn" Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="8,4" Click="LastPage_Click" ToolTip="Last Page">
+                        <TextBlock Text="»»" FontWeight="Bold"/>
+                    </Button>
+
+                    <Border Width="1" Background="{StaticResource BorderBrush}" Margin="12,4"/>
+
+                    <!-- Items Per Page -->
+                    <TextBlock Text="Show:" Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ItemsPerPageCombo" SelectedIndex="0"
+                              SelectionChanged="ItemsPerPage_Changed"
+                              Background="{StaticResource BgTertiaryBrush}"
+                              Foreground="{StaticResource TextPrimaryBrush}"
+                              BorderThickness="0" Padding="8,4">
+                        <ComboBoxItem Content="10"/>
+                        <ComboBoxItem Content="20"/>
+                        <ComboBoxItem Content="50"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
+    </ScrollViewer>
 </Page>

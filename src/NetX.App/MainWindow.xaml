@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="WinXTools"
         Height="800" Width="1400"
-        MinHeight="600" MinWidth="1000"
+        MinHeight="600" MinWidth="800"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -27,6 +27,10 @@
         <Geometry x:Key="RulesIcon">M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z</Geometry>
         <Geometry x:Key="PacketIcon">M12,3L2,12H5V20H19V12H22L12,3M12,8.5C14.34,8.5 16.46,9.43 18,10.94L16.8,12.12C15.58,10.91 13.88,10.17 12,10.17C10.12,10.17 8.42,10.91 7.2,12.12L6,10.94C7.54,9.43 9.66,8.5 12,8.5M12,11.83C13.4,11.83 14.67,12.39 15.6,13.3L14.4,14.47C13.79,13.87 12.94,13.5 12,13.5C11.06,13.5 10.21,13.87 9.6,14.47L8.4,13.3C9.33,12.39 10.6,11.83 12,11.83M12,15.17C12.94,15.17 13.7,15.91 13.7,16.83C13.7,17.75 12.94,18.5 12,18.5C11.06,18.5 10.3,17.75 10.3,16.83C10.3,15.91 11.06,15.17 12,15.17Z</Geometry>
         <Geometry x:Key="TricksIcon">M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z</Geometry>
+        <Geometry x:Key="RamIcon">M17,17H7V7H17M21,11V9H19V7C19,5.89 18.1,5 17,5H15V3H13V5H11V3H9V5H7C5.89,5 5,5.89 5,7V9H3V11H5V13H3V15H5V17A2,2 0 0,0 7,19H9V21H11V19H13V21H15V19H17A2,2 0 0,0 19,17V15H21V13H19V11M13,13H11V11H13M15,9H9V15H15V9Z</Geometry>
+        <Geometry x:Key="ToolsIcon">M21.71,20.29L20.29,21.71A1,1 0 0,1 18.88,21.71L7,9.85A3.81,3.81 0 0,1 6,10A4,4 0 0,1 2,6A4,4 0 0,1 6,2A4,4 0 0,1 10,6A3.81,3.81 0 0,1 9.85,7L21.71,18.88A1,1 0 0,1 21.71,20.29M18,10A1,1 0 0,0 19,9A1,1 0 0,0 18,8A1,1 0 0,0 17,9A1,1 0 0,0 18,10M14.66,6.66L15.5,7.5L18.5,4.5L17.66,3.66L14.66,6.66Z</Geometry>
+        <Geometry x:Key="ProxyVpnIcon">M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z</Geometry>
+        <Geometry x:Key="WinOptimizerIcon">M3,12V6.75L9,5.43V11.91L3,12M20,3V11.75L10,11.9V5.21L20,3M3,13L9,13.09V19.9L3,18.75V13M20,13.25V22L10,20.09V13.1L20,13.25Z</Geometry>
         <Geometry x:Key="MinimizeIcon">M20,14H4V10H20</Geometry>
         <Geometry x:Key="MaximizeIcon">M4,4H20V20H4V4M6,8V18H18V8H6Z</Geometry>
         <Geometry x:Key="RestoreIcon">M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z</Geometry>
@@ -104,12 +108,13 @@
             <!-- Main Content Area -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="220"/>
+                    <ColumnDefinition Width="200"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Sidebar Navigation -->
                 <Border Grid.Column="0"
+                        Width="200"
                         Background="{StaticResource SidebarGradientBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="0,0,1,0">
@@ -120,20 +125,44 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Logo Section -->
-                        <StackPanel Grid.Row="0" Margin="20,24,20,20">
-                            <TextBlock Text="WinXTools"
-                                       FontFamily="{StaticResource PrimaryFont}"
-                                       FontSize="24"
-                                       FontWeight="Bold"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"/>
-                            <TextBlock Text="{DynamicResource AppTagline}"
-                                       Style="{StaticResource BodyTextStyle}"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
+                        <!-- Subtle Logo Watermark Background -->
+                        <Image Grid.RowSpan="3"
+                               Source="Assets/logo.png"
+                               Opacity="0.03"
+                               Stretch="Uniform"
+                               Width="280"
+                               Height="280"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Margin="0,60,0,0"
+                               IsHitTestVisible="False"/>
 
-                        <!-- Navigation Buttons -->
-                        <StackPanel Grid.Row="1" Margin="8,0">
+                        <!-- Logo Section -->
+                        <Grid Grid.Row="0">
+                            <!-- Logo Image - fills full width, no crop -->
+                            <Image Source="Assets/logo.png"
+                                   Stretch="Uniform"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Top"
+                                   Margin="0,10,0,0"/>
+
+                            <!-- Fade effect at bottom -->
+                            <Rectangle VerticalAlignment="Bottom" Height="40" IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="Transparent" Offset="0"/>
+                                        <GradientStop Color="#0a1428" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Grid>
+
+                        <!-- Navigation Buttons with ScrollViewer -->
+                        <ScrollViewer Grid.Row="1"
+                                      Style="{StaticResource ModernScrollViewer}"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8,0">
                             <!-- Dashboard -->
                             <Button x:Name="NavDashboard"
                                     Style="{StaticResource NavButtonActiveStyle}"
@@ -157,6 +186,19 @@
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                           Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
                                     <TextBlock Text="{DynamicResource Nav_NetworkMonitor}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Bandwidth Control -->
+                            <Button x:Name="NavBandwidth"
+                                    Style="{StaticResource NavButtonStyle}"
+                                    Click="NavButton_Click"
+                                    Tag="Bandwidth">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource ControlIcon}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
+                                    <TextBlock Text="{DynamicResource Nav_BandwidthControl}" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -186,16 +228,42 @@
                                 </StackPanel>
                             </Button>
 
-                            <!-- Bandwidth Control -->
-                            <Button x:Name="NavBandwidth"
+                            <!-- Network Tools -->
+                            <Button x:Name="NavNetworkTools"
                                     Style="{StaticResource NavButtonStyle}"
                                     Click="NavButton_Click"
-                                    Tag="Bandwidth">
+                                    Tag="NetworkTools">
                                 <StackPanel Orientation="Horizontal">
-                                    <Path Data="{StaticResource ControlIcon}"
+                                    <Path Data="{StaticResource ToolsIcon}"
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                           Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
-                                    <TextBlock Text="{DynamicResource Nav_BandwidthControl}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{DynamicResource Nav_NetworkTools}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Proxy VPN -->
+                            <Button x:Name="NavProxyVpn"
+                                    Style="{StaticResource NavButtonStyle}"
+                                    Click="NavButton_Click"
+                                    Tag="ProxyVpn">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource ProxyVpnIcon}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
+                                    <TextBlock Text="{DynamicResource Nav_ProxyVpn}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- RAM Optimizer -->
+                            <Button x:Name="NavRamOptimizer"
+                                    Style="{StaticResource NavButtonStyle}"
+                                    Click="NavButton_Click"
+                                    Tag="RamOptimizer">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource RamIcon}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
+                                    <TextBlock Text="{DynamicResource Nav_RamOptimizer}" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -222,6 +290,19 @@
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                           Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
                                     <TextBlock Text="{DynamicResource Nav_Cleaner}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Windows Optimizer -->
+                            <Button x:Name="NavWinOptimizer"
+                                    Style="{StaticResource NavButtonStyle}"
+                                    Click="NavButton_Click"
+                                    Tag="WinOptimizer">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource WinOptimizerIcon}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"/>
+                                    <TextBlock Text="{DynamicResource Nav_WinOptimizer}" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -266,6 +347,7 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
+                        </ScrollViewer>
 
                         <!-- Footer with Sponsor Banner -->
                         <StackPanel Grid.Row="2" Margin="12,0,12,12">
@@ -294,7 +376,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Animated Icon -->
+                                    <!-- Icon (No animation for performance) -->
                                     <Border Grid.Column="0"
                                             Width="36" Height="36"
                                             Background="{StaticResource AuroraPurplePinkBrush}"
@@ -306,17 +388,6 @@
                                                    Foreground="White"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"/>
-                                        <Border.Triggers>
-                                            <EventTrigger RoutedEvent="Loaded">
-                                                <BeginStoryboard>
-                                                    <Storyboard RepeatBehavior="Forever">
-                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                         From="0.8" To="1" Duration="0:0:1.5"
-                                                                         AutoReverse="True"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Border.Triggers>
                                     </Border>
 
                                     <!-- Banner Text -->
@@ -358,119 +429,43 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Lava Lamp Animated Background -->
-                        <Canvas Grid.Row="0" x:Name="LavaLampCanvas" ClipToBounds="True" IsHitTestVisible="False">
-                            <!-- Blob 1 - Purple/Cyan -->
-                            <Ellipse x:Name="LavaBlob1"
-                                     Width="400" Height="400"
-                                     Fill="{StaticResource LavaLamp1Brush}"
-                                     Canvas.Left="-100" Canvas.Top="-100">
-                                <Ellipse.RenderTransform>
-                                    <TransformGroup>
-                                        <ScaleTransform x:Name="Blob1Scale" ScaleX="1" ScaleY="1"/>
-                                        <TranslateTransform x:Name="Blob1Translate"/>
-                                    </TransformGroup>
-                                </Ellipse.RenderTransform>
-                                <Ellipse.Triggers>
-                                    <EventTrigger RoutedEvent="Loaded">
-                                        <BeginStoryboard>
-                                            <Storyboard RepeatBehavior="Forever">
-                                                <DoubleAnimation Storyboard.TargetName="Blob1Translate"
-                                                                 Storyboard.TargetProperty="X"
-                                                                 From="0" To="600" Duration="0:0:25"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob1Translate"
-                                                                 Storyboard.TargetProperty="Y"
-                                                                 From="0" To="400" Duration="0:0:20"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob1Scale"
-                                                                 Storyboard.TargetProperty="ScaleX"
-                                                                 From="1" To="1.3" Duration="0:0:15"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob1Scale"
-                                                                 Storyboard.TargetProperty="ScaleY"
-                                                                 From="1" To="1.2" Duration="0:0:18"
-                                                                 AutoReverse="True"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Ellipse.Triggers>
+                        <!-- Static Gradient Background (No Animation for Performance) -->
+                        <Grid Grid.Row="0" IsHitTestVisible="False">
+                            <!-- Subtle gradient blobs - static for performance -->
+                            <Ellipse Width="400" Height="400"
+                                     HorizontalAlignment="Left" VerticalAlignment="Top"
+                                     Margin="-100,-100,0,0">
+                                <Ellipse.Fill>
+                                    <RadialGradientBrush GradientOrigin="0.3,0.3" Center="0.5,0.5" RadiusX="0.8" RadiusY="0.8">
+                                        <GradientStop Color="#208b5cf6" Offset="0"/>
+                                        <GradientStop Color="#1006b6d4" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Ellipse.Fill>
                             </Ellipse>
-
-                            <!-- Blob 2 - Pink/Orange -->
-                            <Ellipse x:Name="LavaBlob2"
-                                     Width="350" Height="350"
-                                     Fill="{StaticResource LavaLamp2Brush}"
-                                     Canvas.Right="-50" Canvas.Bottom="-50">
-                                <Ellipse.RenderTransform>
-                                    <TransformGroup>
-                                        <ScaleTransform x:Name="Blob2Scale" ScaleX="1" ScaleY="1"/>
-                                        <TranslateTransform x:Name="Blob2Translate"/>
-                                    </TransformGroup>
-                                </Ellipse.RenderTransform>
-                                <Ellipse.Triggers>
-                                    <EventTrigger RoutedEvent="Loaded">
-                                        <BeginStoryboard>
-                                            <Storyboard RepeatBehavior="Forever">
-                                                <DoubleAnimation Storyboard.TargetName="Blob2Translate"
-                                                                 Storyboard.TargetProperty="X"
-                                                                 From="0" To="-500" Duration="0:0:22"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob2Translate"
-                                                                 Storyboard.TargetProperty="Y"
-                                                                 From="0" To="-350" Duration="0:0:28"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob2Scale"
-                                                                 Storyboard.TargetProperty="ScaleX"
-                                                                 From="1" To="1.4" Duration="0:0:20"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob2Scale"
-                                                                 Storyboard.TargetProperty="ScaleY"
-                                                                 From="1" To="1.1" Duration="0:0:16"
-                                                                 AutoReverse="True"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Ellipse.Triggers>
+                            <Ellipse Width="350" Height="350"
+                                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                     Margin="0,0,-50,-50">
+                                <Ellipse.Fill>
+                                    <RadialGradientBrush GradientOrigin="0.7,0.7" Center="0.5,0.5" RadiusX="0.6" RadiusY="0.6">
+                                        <GradientStop Color="#18ec4899" Offset="0"/>
+                                        <GradientStop Color="#08f59e0b" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Ellipse.Fill>
                             </Ellipse>
-
-                            <!-- Blob 3 - Cyan/Green -->
-                            <Ellipse x:Name="LavaBlob3"
-                                     Width="300" Height="300"
-                                     Fill="{StaticResource LavaLamp3Brush}"
-                                     Canvas.Left="200" Canvas.Top="150">
-                                <Ellipse.RenderTransform>
-                                    <TransformGroup>
-                                        <ScaleTransform x:Name="Blob3Scale" ScaleX="1" ScaleY="1"/>
-                                        <TranslateTransform x:Name="Blob3Translate"/>
-                                    </TransformGroup>
-                                </Ellipse.RenderTransform>
-                                <Ellipse.Triggers>
-                                    <EventTrigger RoutedEvent="Loaded">
-                                        <BeginStoryboard>
-                                            <Storyboard RepeatBehavior="Forever">
-                                                <DoubleAnimation Storyboard.TargetName="Blob3Translate"
-                                                                 Storyboard.TargetProperty="X"
-                                                                 From="0" To="400" Duration="0:0:30"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob3Translate"
-                                                                 Storyboard.TargetProperty="Y"
-                                                                 From="0" To="200" Duration="0:0:25"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob3Scale"
-                                                                 Storyboard.TargetProperty="ScaleX"
-                                                                 From="1" To="1.2" Duration="0:0:18"
-                                                                 AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetName="Blob3Scale"
-                                                                 Storyboard.TargetProperty="ScaleY"
-                                                                 From="1" To="1.35" Duration="0:0:22"
-                                                                 AutoReverse="True"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Ellipse.Triggers>
+                            <Ellipse Width="300" Height="300"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Margin="100,50,0,0">
+                                <Ellipse.Fill>
+                                    <RadialGradientBrush GradientOrigin="0.5,0.2" Center="0.5,0.5" RadiusX="0.7" RadiusY="0.7">
+                                        <GradientStop Color="#1506b6d4" Offset="0"/>
+                                        <GradientStop Color="#0810b981" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Ellipse.Fill>
                             </Ellipse>
-                        </Canvas>
+                        </Grid>
 
                         <!-- Main Content Frame -->
                         <Frame Grid.Row="0" x:Name="MainFrame"
@@ -487,9 +482,10 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
@@ -507,7 +503,7 @@
                                 </StackPanel>
 
                                 <!-- Upload Speed -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,20,0">
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,20,0">
                                     <Path Data="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"
                                           Fill="{StaticResource SuccessBrush}"
                                           Width="12" Height="12" Stretch="Uniform" Margin="0,0,6,0"/>
@@ -518,8 +514,34 @@
                                                VerticalAlignment="Center"/>
                                 </StackPanel>
 
+                                <!-- Bandwidth Limit Status -->
+                                <Border Grid.Column="2"
+                                        x:Name="BandwidthLimitBadge"
+                                        Background="{StaticResource BgTertiaryBrush}"
+                                        CornerRadius="8"
+                                        Padding="8,4"
+                                        Margin="0,0,20,0"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"
+                                              Fill="{StaticResource WarningBrush}"
+                                              Width="10" Height="10" Stretch="Uniform" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Limit:"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="StatusBandwidthLimit" Text=""
+                                                   FontFamily="{StaticResource MonoFont}"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource WarningBrush}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- Mini Bandwidth Bars -->
-                                <Grid Grid.Column="2" Width="60" Height="16" Margin="0,0,20,0" VerticalAlignment="Center">
+                                <Grid Grid.Column="3" Width="60" Height="16" Margin="0,0,20,0" VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="2"/>
@@ -540,7 +562,7 @@
                                 </Grid>
 
                                 <!-- Total Data -->
-                                <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,0,20,0">
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,20,0">
                                     <TextBlock Text="Total: "
                                                FontSize="10"
                                                Foreground="{StaticResource TextTertiaryBrush}"
@@ -562,7 +584,7 @@
                                 </StackPanel>
 
                                 <!-- Connections -->
-                                <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="0,0,20,0">
+                                <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="0,0,20,0">
                                     <Path Data="M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z"
                                           Fill="{StaticResource TextTertiaryBrush}"
                                           Width="12" Height="12" Stretch="Uniform" Margin="0,0,4,0"/>
@@ -574,7 +596,7 @@
                                 </StackPanel>
 
                                 <!-- Active Processes -->
-                                <StackPanel Grid.Column="5" Orientation="Horizontal">
+                                <StackPanel Grid.Column="6" Orientation="Horizontal">
                                     <Path Data="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6"
                                           Fill="{StaticResource TextTertiaryBrush}"
                                           Width="10" Height="10" Stretch="Uniform" Margin="0,0,4,0"/>
