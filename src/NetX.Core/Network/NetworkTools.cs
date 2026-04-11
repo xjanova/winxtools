@@ -746,14 +746,14 @@ public static class NetworkTools
             using var client = new TcpClient();
             await client.ConnectAsync(hostname, port);
 
-            using var sslStream = new System.Net.Security.SslStream(
+            using var sslStream = new global::System.Net.Security.SslStream(
                 client.GetStream(),
                 false,
                 (sender, cert, chain, errors) =>
                 {
                     if (cert != null)
                     {
-                        var x509 = new System.Security.Cryptography.X509Certificates.X509Certificate2(cert);
+                        var x509 = new global::System.Security.Cryptography.X509Certificates.X509Certificate2(cert);
                         result.Subject = x509.Subject;
                         result.Issuer = x509.Issuer;
                         result.ValidFrom = x509.NotBefore;
@@ -775,14 +775,14 @@ public static class NetworkTools
                         var now = DateTime.Now;
                         result.IsExpired = now > x509.NotAfter;
                         result.DaysUntilExpiry = (int)(x509.NotAfter - now).TotalDays;
-                        result.IsValid = errors == System.Net.Security.SslPolicyErrors.None;
+                        result.IsValid = errors == global::System.Net.Security.SslPolicyErrors.None;
                     }
                     return true;
                 });
 
             await sslStream.AuthenticateAsClientAsync(hostname);
             result.Protocol = sslStream.SslProtocol.ToString();
-            result.CipherAlgorithm = sslStream.CipherAlgorithm.ToString();
+            result.CipherAlgorithm = sslStream.NegotiatedCipherSuite.ToString();
             result.Success = true;
         }
         catch (Exception ex)

@@ -11,7 +11,9 @@ public partial class RuleEditorDialog : Window
 
     private readonly ObservableCollection<ConditionEditModel> _conditions = new();
     private readonly ObservableCollection<ActionEditModel> _actions = new();
+#pragma warning disable CS0414 // Reserved for future edit-mode UI
     private readonly bool _isEditMode;
+#pragma warning restore CS0414
 
     public RuleEditorDialog(NetworkRule? existingRule = null)
     {

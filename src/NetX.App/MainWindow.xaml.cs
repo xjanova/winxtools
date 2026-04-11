@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using NetX.App.Views;
 using NetX.Core.Network;
+using NetX.Core.System;
 
 namespace NetX.App;
 
@@ -37,6 +38,20 @@ public partial class MainWindow : Window
         _statusTimer.Start();
 
         Closed += MainWindow_Closed;
+
+        // Hide Pro banner if user already has Pro license
+        UpdateProBannerVisibility();
+        XmanLicenseService.Instance.OnLicenseValidated += _ => Dispatcher.Invoke(UpdateProBannerVisibility);
+    }
+
+    private void UpdateProBannerVisibility()
+    {
+        if (ProBanner != null)
+        {
+            ProBanner.Visibility = XmanLicenseService.Instance.CachedStatus.IsPremium
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+        }
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)
@@ -211,8 +226,8 @@ public partial class MainWindow : Window
         }
         catch { }
 
-        // Exit immediately
-        Environment.Exit(0);
+        // Shutdown properly via WPF
+        Application.Current.Shutdown();
     }
 
     private void MainWindow_StateChanged(object? sender, EventArgs e)
@@ -316,15 +331,15 @@ public partial class MainWindow : Window
 
     #endregion
 
-    #region Sponsor Banner
+    #region Pro Banner
 
-    private void SponsorBanner_Click(object sender, MouseButtonEventArgs e)
+    private void ProBanner_Click(object sender, MouseButtonEventArgs e)
     {
         try
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = "https://thaiprompt.online",
+                FileName = "https://xman4289.com/products/winx-tools",
                 UseShellExecute = true
             });
         }

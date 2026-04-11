@@ -117,6 +117,19 @@
     <system:String x:Key="Settings_CheckUpdates">ตรวจสอบอัพเดท</system:String>
     <system:String x:Key="Settings_ResetSettings">รีเซ็ตการตั้งค่า</system:String>
 
+    <!-- License -->
+    <system:String x:Key="Settings_License">ใบอนุญาต</system:String>
+    <system:String x:Key="Settings_LicenseStatus">สถานะใบอนุญาต</system:String>
+    <system:String x:Key="Settings_Activate">เปิดใช้งาน</system:String>
+    <system:String x:Key="Settings_Deactivate">ยกเลิกการเปิดใช้งาน</system:String>
+    <system:String x:Key="Settings_LicenseKeyPlaceholder">ใส่คีย์ใบอนุญาต (WXT-XXXX-XXXX-XXXX)</system:String>
+
+    <!-- Updates -->
+    <system:String x:Key="Settings_Updates">อัพเดท</system:String>
+    <system:String x:Key="Settings_UpToDate">WinXTools เป็นเวอร์ชันล่าสุดแล้ว</system:String>
+    <system:String x:Key="Settings_UpdateNow">อัพเดทเดี๋ยวนี้</system:String>
+    <system:String x:Key="Settings_Downloading">กำลังดาวน์โหลดอัพเดท...</system:String>
+
     <!-- RAM Optimizer -->
     <system:String x:Key="RamOptimizer_Title">เพิ่มประสิทธิภาพ RAM</system:String>
     <system:String x:Key="RamOptimizer_Subtitle">ตรวจสอบและเพิ่มประสิทธิภาพการใช้หน่วยความจำ</system:String>
@@ -173,6 +186,10 @@
     <system:String x:Key="Nav_ProxyVpn">มุดประเทศ</system:String>
     <system:String x:Key="ProxyVpn_Title">มุดประเทศ (Proxy VPN)</system:String>
     <system:String x:Key="ProxyVpn_Subtitle">เชื่อมต่อผ่าน Proxy ฟรีทั่วโลก</system:String>
+
+    <!-- Pro Banner -->
+    <system:String x:Key="Pro_UpgradeTitle">อัพเกรดเป็น Pro</system:String>
+    <system:String x:Key="Pro_UpgradeDesc">ปลดล็อคฟีเจอร์พรีเมียมทั้งหมด</system:String>
 
     <!-- Common -->
     <system:String x:Key="Common_OK">ตกลง</system:String>

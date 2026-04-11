@@ -349,23 +349,37 @@
                         </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Footer with Sponsor Banner -->
+                        <!-- Footer with Pro Upgrade Banner -->
                         <StackPanel Grid.Row="2" Margin="12,0,12,12">
-                            <!-- Sponsor Banner - Elegant & Non-intrusive -->
-                            <Border x:Name="SponsorBanner"
-                                    Background="{StaticResource CardGradientBrush}"
-                                    BorderBrush="{StaticResource BorderBrush}"
-                                    BorderThickness="1"
+                            <!-- Pro Upgrade Banner - Gold Metallic -->
+                            <Border x:Name="ProBanner"
+                                    Background="{StaticResource GoldMetallicDarkBrush}"
+                                    BorderThickness="1.5"
                                     CornerRadius="10"
                                     Padding="12,10"
                                     Margin="0,0,0,10"
                                     Cursor="Hand"
-                                    MouseLeftButtonDown="SponsorBanner_Click">
+                                    MouseLeftButtonDown="ProBanner_Click">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#fbbf24" Offset="0"/>
+                                        <GradientStop Color="#92400e" Offset="0.4"/>
+                                        <GradientStop Color="#fde68a" Offset="0.7"/>
+                                        <GradientStop Color="#b45309" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                                <Border.Effect>
+                                    <DropShadowEffect ShadowDepth="0" BlurRadius="8" Opacity="0.3" Color="#f59e0b"/>
+                                </Border.Effect>
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="BorderBrush" Value="{StaticResource AuroraPurpleBrush}"/>
+                                                <Setter Property="Effect">
+                                                    <Setter.Value>
+                                                        <DropShadowEffect ShadowDepth="0" BlurRadius="14" Opacity="0.5" Color="#fbbf24"/>
+                                                    </Setter.Value>
+                                                </Setter>
                                             </Trigger>
                                         </Style.Triggers>
                                     </Style>
@@ -374,33 +388,60 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Icon (No animation for performance) -->
+                                    <!-- Gold Crown Icon -->
                                     <Border Grid.Column="0"
                                             Width="36" Height="36"
-                                            Background="{StaticResource AuroraPurplePinkBrush}"
                                             CornerRadius="8"
                                             Margin="0,0,10,0">
-                                        <TextBlock Text="AI"
-                                                   FontSize="14"
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#fde68a" Offset="0"/>
+                                                <GradientStop Color="#f59e0b" Offset="0.5"/>
+                                                <GradientStop Color="#d97706" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="&#x265B;"
+                                                   FontSize="18"
                                                    FontWeight="Bold"
-                                                   Foreground="White"
+                                                   Foreground="#1a1505"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"/>
                                     </Border>
 
                                     <!-- Banner Text -->
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock FontSize="11" FontWeight="SemiBold">
-                                            <Run Text="ThaiPrompt" Foreground="{StaticResource AuroraPurpleBrush}"/>
-                                            <Run Text=".online" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock FontSize="12" FontWeight="Bold">
+                                            <TextBlock.Foreground>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#fef3c7" Offset="0"/>
+                                                    <GradientStop Color="#fbbf24" Offset="0.5"/>
+                                                    <GradientStop Color="#fde68a" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </TextBlock.Foreground>
+                                            <Run Text="{DynamicResource Pro_UpgradeTitle}"/>
                                         </TextBlock>
-                                        <TextBlock Text="AI Tools for Everyone"
+                                        <TextBlock Text="{DynamicResource Pro_UpgradeDesc}"
                                                    FontSize="9"
-                                                   Foreground="{StaticResource TextTertiaryBrush}"
-                                                   Margin="0,2,0,0"/>
+                                                   Margin="0,2,0,0">
+                                            <TextBlock.Foreground>
+                                                <SolidColorBrush Color="#d4a254"/>
+                                            </TextBlock.Foreground>
+                                        </TextBlock>
                                     </StackPanel>
+
+                                    <!-- Arrow -->
+                                    <TextBlock Grid.Column="2"
+                                               Text="&#x276F;"
+                                               FontSize="14"
+                                               VerticalAlignment="Center"
+                                               Margin="6,0,0,0">
+                                        <TextBlock.Foreground>
+                                            <SolidColorBrush Color="#fbbf24"/>
+                                        </TextBlock.Foreground>
+                                    </TextBlock>
                                 </Grid>
                             </Border>
 

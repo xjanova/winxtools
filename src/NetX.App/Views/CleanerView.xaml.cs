@@ -135,7 +135,6 @@ public partial class CleanerView : Page
         CleanProgress.IsIndeterminate = false;
         CleanProgress.Value = 0;
 
-        long cleanedSize = 0;
         int steps = 7;
         int currentStep = 0;
 

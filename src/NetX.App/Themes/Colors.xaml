@@ -32,6 +32,12 @@
     <Color x:Key="SteelDarkColor">#475569</Color>
     <Color x:Key="SteelHighlightColor">#cbd5e1</Color>
 
+    <!-- Gold Metallic Colors -->
+    <Color x:Key="GoldLightColor">#fde68a</Color>
+    <Color x:Key="GoldColor">#f59e0b</Color>
+    <Color x:Key="GoldDarkColor">#b45309</Color>
+    <Color x:Key="GoldHighlightColor">#fef3c7</Color>
+
     <!-- Status Colors (Vibrant Neon) -->
     <Color x:Key="SuccessColor">#10b981</Color>
     <Color x:Key="WarningColor">#f59e0b</Color>
@@ -160,6 +166,30 @@
         <GradientStop Color="#f59e0b" Offset="0.4"/>
         <GradientStop Color="#d97706" Offset="0.7"/>
         <GradientStop Color="#b45309" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Gold Metallic Gradient (Premium Badge) -->
+    <LinearGradientBrush x:Key="GoldMetallicBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#fef3c7" Offset="0"/>
+        <GradientStop Color="#fde68a" Offset="0.2"/>
+        <GradientStop Color="#f59e0b" Offset="0.5"/>
+        <GradientStop Color="#d97706" Offset="0.75"/>
+        <GradientStop Color="#fbbf24" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Gold Metallic Border -->
+    <LinearGradientBrush x:Key="GoldMetallicBorderBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#fbbf24" Offset="0"/>
+        <GradientStop Color="#b45309" Offset="0.5"/>
+        <GradientStop Color="#fde68a" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Gold Metallic Dark (for banner background) -->
+    <LinearGradientBrush x:Key="GoldMetallicDarkBrush" StartPoint="0,0" EndPoint="1,0.5">
+        <GradientStop Color="#1a1505" Offset="0"/>
+        <GradientStop Color="#2d1f08" Offset="0.3"/>
+        <GradientStop Color="#1f1606" Offset="0.7"/>
+        <GradientStop Color="#14100a" Offset="1"/>
     </LinearGradientBrush>
 
     <!-- Card Background Gradient (Deep Ocean Aurora) -->

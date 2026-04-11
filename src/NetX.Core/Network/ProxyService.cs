@@ -75,8 +75,7 @@ public class ProxyService : IDisposable
     {
         var handler = new HttpClientHandler
         {
-            UseProxy = false,
-            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+            UseProxy = false
         };
         _httpClient = new HttpClient(handler)
         {
@@ -421,7 +420,7 @@ public class ProxyService : IDisposable
         }
     }
 
-    [System.Runtime.InteropServices.DllImport("wininet.dll")]
+    [global::System.Runtime.InteropServices.DllImport("wininet.dll")]
     private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
 
     private const int INTERNET_OPTION_SETTINGS_CHANGED = 39;

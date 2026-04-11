@@ -26,8 +26,8 @@ public partial class DashboardView : Page
     private const int MaxDataPoints = 60;
     private const int MaxBarDataPoints = 20;
     private bool _isLineChart = true;
-    private ISeries[]? _lineSeries;
-    private ISeries[]? _columnSeries;
+    private ISeries[] _lineSeries = [];
+    private ISeries[] _columnSeries = [];
     private List<TopConsumerItem> _topConsumers = new();
 
     // Responsive layout constants
@@ -482,16 +482,16 @@ public partial class DashboardView : Page
 
                 Process.Start(psi)?.WaitForExit(3000);
 
-                psi.Arguments = "netsh interface set interface \"Wi-Fi\" admin=enable";
+                psi.Arguments = "interface set interface \"Wi-Fi\" admin=enable";
                 Process.Start(psi)?.WaitForExit(3000);
 
                 // Also try Ethernet
-                psi.Arguments = "netsh interface set interface \"Ethernet\" admin=disable";
+                psi.Arguments = "interface set interface \"Ethernet\" admin=disable";
                 Process.Start(psi);
 
                 System.Threading.Thread.Sleep(1000);
 
-                psi.Arguments = "netsh interface set interface \"Ethernet\" admin=enable";
+                psi.Arguments = "interface set interface \"Ethernet\" admin=enable";
                 Process.Start(psi);
 
                 MessageBox.Show(

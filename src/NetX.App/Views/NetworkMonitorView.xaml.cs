@@ -27,8 +27,8 @@ public partial class NetworkMonitorView : Page
     private readonly Dictionary<int, ProcessDisplayItem> _processMap = new();
     private const int MaxDataPoints = 30;
     private bool _isLineChart = true;
-    private ISeries[]? _lineSeries;
-    private ISeries[]? _columnSeries;
+    private ISeries[] _lineSeries = [];
+    private ISeries[] _columnSeries = [];
 
     // Sorting
     private string _currentSortColumn = "DownloadSpeed";

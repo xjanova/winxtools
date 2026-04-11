@@ -7,6 +7,7 @@ using System.Windows.Media.Animation;
 using NetX.Core.Helpers;
 using NetX.Core.Data;
 using NetX.Core.Network;
+using NetX.Core.System;
 
 namespace NetX.App;
 
@@ -30,6 +31,61 @@ public partial class App : Application
 
         // Apply saved bandwidth limits on startup
         ApplySavedBandwidthLimits();
+
+        // Register device and validate license in background
+        _ = InitializeLicenseAsync();
+
+        // Check for updates in background (non-blocking)
+        _ = CheckForUpdatesOnStartupAsync();
+    }
+
+    private async Task InitializeLicenseAsync()
+    {
+        try
+        {
+            // Register device with xman studio
+            await XmanLicenseService.Instance.RegisterDeviceAsync();
+
+            // Validate saved license key if exists
+            var savedKey = DatabaseService.Instance.GetSetting("LicenseKey");
+            if (!string.IsNullOrEmpty(savedKey))
+            {
+                await XmanLicenseService.Instance.ValidateAsync(savedKey);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"License init failed: {ex.Message}");
+        }
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            // Delay to not slow down app launch
+            await Task.Delay(5000);
+
+            var updateInfo = await AutoUpdateService.Instance.CheckForUpdatesAsync();
+            if (updateInfo?.IsUpdateAvailable == true)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    var result = MessageBox.Show(
+                        $"A new version of WinXTools is available!\n\n" +
+                        $"Current: v{updateInfo.CurrentVersion}\n" +
+                        $"New: v{updateInfo.LatestVersion}\n\n" +
+                        $"Go to Settings to update.",
+                        "Update Available",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Startup update check failed: {ex.Message}");
+        }
     }
 
     private void OptimizeRendering()

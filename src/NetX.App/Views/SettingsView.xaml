@@ -236,6 +236,137 @@
                 </Grid>
             </Border>
 
+            <!-- License Key -->
+            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Settings_License}"
+                               Style="{StaticResource SubHeaderTextStyle}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- License Status -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{DynamicResource Settings_LicenseStatus}"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="LicenseStatusText"
+                                       Text="Free"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       FontSize="11"/>
+                        </StackPanel>
+
+                        <Border Grid.Column="1"
+                                x:Name="LicenseBadge"
+                                Background="{StaticResource BgTertiaryBrush}"
+                                CornerRadius="4"
+                                Padding="12,6">
+                            <TextBlock x:Name="LicenseBadgeText"
+                                       Text="Free"
+                                       FontWeight="SemiBold"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- License Key Input -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="LicenseKeyInput"
+                                 Grid.Column="0"
+                                 Background="{StaticResource BgTertiaryBrush}"
+                                 Foreground="{StaticResource TextPrimaryBrush}"
+                                 BorderThickness="1"
+                                 BorderBrush="{StaticResource BorderBrush}"
+                                 Padding="10,8"
+                                 FontFamily="Consolas"
+                                 FontSize="13"
+                                 VerticalContentAlignment="Center"/>
+
+                        <Button Grid.Column="1"
+                                x:Name="ActivateButton"
+                                Content="{DynamicResource Settings_Activate}"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Click="ActivateLicense_Click"
+                                Margin="8,0,0,0"
+                                Padding="16,8"/>
+                    </Grid>
+
+                    <!-- Deactivate -->
+                    <Button x:Name="DeactivateButton"
+                            Content="{DynamicResource Settings_Deactivate}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="DeactivateLicense_Click"
+                            Visibility="Collapsed"
+                            Padding="16,8"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Updates -->
+            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Settings_Updates}"
+                               Style="{StaticResource SubHeaderTextStyle}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Update Status -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock x:Name="UpdateStatusText"
+                                       Text="{DynamicResource Settings_UpToDate}"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="UpdateVersionText"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       FontSize="11"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button x:Name="UpdateNowButton"
+                                    Content="{DynamicResource Settings_UpdateNow}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Click="UpdateNow_Click"
+                                    Visibility="Collapsed"
+                                    Padding="16,8"
+                                    Margin="0,0,8,0"/>
+
+                            <Button x:Name="CheckUpdateButton"
+                                    Content="{DynamicResource Settings_CheckUpdates}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Click="CheckUpdates_Click"
+                                    Padding="16,8"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Download Progress -->
+                    <StackPanel x:Name="DownloadProgressPanel" Visibility="Collapsed">
+                        <ProgressBar x:Name="DownloadProgressBar"
+                                     Height="6"
+                                     Minimum="0" Maximum="100"
+                                     Background="{StaticResource BgTertiaryBrush}"
+                                     Foreground="{StaticResource AccentPrimaryBrush}"
+                                     Margin="0,0,0,4"/>
+                        <TextBlock x:Name="DownloadProgressText"
+                                   Text="Downloading..."
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontSize="11"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- About -->
             <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16">
                 <StackPanel>
@@ -263,7 +394,7 @@
                                        FontSize="20"/>
                             <TextBlock Text="{DynamicResource AppTagline}"
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Text="{DynamicResource AppVersion}"
+                            <TextBlock x:Name="VersionText"
                                        Foreground="{StaticResource TextTertiaryBrush}"
                                        FontSize="11"
                                        Margin="0,4,0,0"/>
@@ -276,16 +407,9 @@
                                Margin="0,0,0,16"/>
 
                     <!-- Actions -->
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="{DynamicResource Settings_CheckUpdates}"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="CheckUpdates_Click"
-                                Margin="0,0,8,0"/>
-
-                        <Button Content="{DynamicResource Settings_ResetSettings}"
-                                Style="{StaticResource DangerButtonStyle}"
-                                Click="ResetSettings_Click"/>
-                    </StackPanel>
+                    <Button Content="{DynamicResource Settings_ResetSettings}"
+                            Style="{StaticResource DangerButtonStyle}"
+                            Click="ResetSettings_Click"/>
                 </StackPanel>
             </Border>
 

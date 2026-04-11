@@ -117,6 +117,19 @@
     <system:String x:Key="Settings_CheckUpdates">Check for Updates</system:String>
     <system:String x:Key="Settings_ResetSettings">Reset Settings</system:String>
 
+    <!-- License -->
+    <system:String x:Key="Settings_License">License</system:String>
+    <system:String x:Key="Settings_LicenseStatus">License Status</system:String>
+    <system:String x:Key="Settings_Activate">Activate</system:String>
+    <system:String x:Key="Settings_Deactivate">Deactivate</system:String>
+    <system:String x:Key="Settings_LicenseKeyPlaceholder">Enter license key (WXT-XXXX-XXXX-XXXX)</system:String>
+
+    <!-- Updates -->
+    <system:String x:Key="Settings_Updates">Updates</system:String>
+    <system:String x:Key="Settings_UpToDate">WinXTools is up to date</system:String>
+    <system:String x:Key="Settings_UpdateNow">Update Now</system:String>
+    <system:String x:Key="Settings_Downloading">Downloading update...</system:String>
+
     <!-- RAM Optimizer -->
     <system:String x:Key="RamOptimizer_Title">RAM Optimizer</system:String>
     <system:String x:Key="RamOptimizer_Subtitle">Monitor and optimize system memory usage</system:String>
@@ -173,6 +186,10 @@
     <system:String x:Key="Nav_ProxyVpn">Proxy VPN</system:String>
     <system:String x:Key="ProxyVpn_Title">Proxy VPN</system:String>
     <system:String x:Key="ProxyVpn_Subtitle">Connect through free proxies worldwide</system:String>
+
+    <!-- Pro Banner -->
+    <system:String x:Key="Pro_UpgradeTitle">Upgrade to Pro</system:String>
+    <system:String x:Key="Pro_UpgradeDesc">Unlock all premium features</system:String>
 
     <!-- Common -->
     <system:String x:Key="Common_OK">OK</system:String>

@@ -31,11 +31,17 @@ public class PacketEngine : IDisposable
     }
 
     private WinDivert? _divert;
-    private Thread? _captureThread;
+    private Thread[] _captureThreads = [];
+    private Thread[] _reinjectThreads = [];
     private volatile bool _isRunning;
     private readonly ConcurrentDictionary<int, ProcessTrafficStats> _processStats = new();
     private readonly ConcurrentDictionary<ushort, int> _portToProcessMap = new();
     private readonly ConcurrentDictionary<string, BandwidthThrottle> _throttleRules = new();
+
+    // Packet queue for multi-thread throttling (capture workers → reinject workers)
+    private readonly ConcurrentQueue<QueuedPacket> _throttledQueue = new();
+    private int _queueCount;
+    private const int MAX_QUEUE_PACKETS = 16384;
 
     // Aggregate stats
     private long _totalBytesReceived;
@@ -46,15 +52,31 @@ public class PacketEngine : IDisposable
     private long _lastBytesReceived;
     private long _lastBytesSent;
 
-    // Port-to-process mapping refresh
+    // Port-to-process mapping refresh (with thundering-herd prevention)
     private DateTime _lastPortMapRefresh = DateTime.MinValue;
     private readonly TimeSpan _portMapRefreshInterval = TimeSpan.FromSeconds(2);
+    private int _portMapRefreshing; // 0 = idle, 1 = refreshing (atomic flag)
 
     public event Action<PacketInfo>? OnPacketCaptured;
     public event Action<string>? OnError;
 
     public bool IsRunning => _isRunning;
     public bool IsDriverLoaded { get; private set; }
+
+    /// <summary>
+    /// Number of capture worker threads (scales with CPU cores)
+    /// </summary>
+    public int CaptureWorkerCount { get; private set; }
+
+    /// <summary>
+    /// Number of reinject worker threads (scales with CPU cores)
+    /// </summary>
+    public int ReinjectWorkerCount { get; private set; }
+
+    /// <summary>
+    /// Current throttle queue depth (for monitoring)
+    /// </summary>
+    public int QueueDepth => _queueCount;
 
     private PacketEngine()
     {
@@ -66,11 +88,9 @@ public class PacketEngine : IDisposable
     {
         try
         {
-            // Try to create a test filter to check if driver is available
-            var testFilter = Filter.True;
-            using var testDivert = new WinDivert(testFilter, WinDivertLayer.Network);
-            testDivert.Dispose();
-            return true;
+            // Use Reflect layer to verify driver availability without intercepting any network traffic
+            using var testDivert = new WinDivert(Filter.True, WinDivertLayer.Reflect);
+            return true; // Driver loaded successfully
         }
         catch
         {
@@ -86,6 +106,39 @@ public class PacketEngine : IDisposable
     /// <summary>
     /// Start capturing all network packets
     /// </summary>
+    /// <summary>
+    /// Calculate optimal capture thread count based on CPU cores.
+    /// Scales from 1 thread (2 cores) up to 8 threads (16+ cores).
+    /// </summary>
+    private static int CalcCaptureWorkers()
+    {
+        int cores = Environment.ProcessorCount;
+        return cores switch
+        {
+            <= 2 => 1,
+            <= 4 => 2,
+            <= 8 => Math.Max(2, cores / 2),
+            <= 16 => Math.Max(4, cores / 2),
+            _ => Math.Min(cores / 2, 16)    // 16 workers max
+        };
+    }
+
+    /// <summary>
+    /// Calculate optimal reinject thread count.
+    /// Fewer needed because they spend most time sleeping (pacing).
+    /// </summary>
+    private static int CalcReinjectWorkers()
+    {
+        int cores = Environment.ProcessorCount;
+        return cores switch
+        {
+            <= 4 => 1,
+            <= 8 => 2,
+            <= 16 => Math.Max(2, cores / 4),
+            _ => Math.Min(cores / 4, 8)     // 8 workers max
+        };
+    }
+
     public bool Start()
     {
         if (_isRunning) return true;
@@ -96,21 +149,58 @@ public class PacketEngine : IDisposable
             var filter = Filter.True;
             _divert = new WinDivert(filter, WinDivertLayer.Network);
 
+            // Increase WinDivert internal buffer for multi-threaded burst handling
+            try
+            {
+                _divert.QueueLength = 16384;
+                _divert.QueueTime = TimeSpan.FromMilliseconds(4000);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Could not set WinDivert queue params: {ex.Message}");
+            }
+
             _isRunning = true;
 
-            // Start capture thread
-            _captureThread = new Thread(CaptureLoop)
+            // Calculate worker counts based on CPU cores
+            CaptureWorkerCount = CalcCaptureWorkers();
+            ReinjectWorkerCount = CalcReinjectWorkers();
+
+            // Start capture worker pool
+            // Each worker independently calls WinDivert.Recv() — the driver distributes
+            // packets across all waiting threads automatically (kernel-level load balancing)
+            _captureThreads = new Thread[CaptureWorkerCount];
+            for (int i = 0; i < CaptureWorkerCount; i++)
             {
-                Name = "PacketEngine-Capture",
-                IsBackground = true,
-                Priority = ThreadPriority.AboveNormal
-            };
-            _captureThread.Start();
+                int workerId = i;
+                _captureThreads[i] = new Thread(() => CaptureLoop(workerId))
+                {
+                    Name = $"PacketEngine-Capture-{i}",
+                    IsBackground = true,
+                    Priority = ThreadPriority.AboveNormal
+                };
+                _captureThreads[i].Start();
+            }
 
-            // Start speed calculation timer
-            Task.Run(SpeedCalculationLoop);
+            // Start reinject worker pool
+            // Multiple reinject workers drain the throttled queue in parallel
+            _reinjectThreads = new Thread[ReinjectWorkerCount];
+            for (int i = 0; i < ReinjectWorkerCount; i++)
+            {
+                int workerId = i;
+                _reinjectThreads[i] = new Thread(() => ReinjectLoop(workerId))
+                {
+                    Name = $"PacketEngine-Reinject-{i}",
+                    IsBackground = true,
+                    Priority = ThreadPriority.AboveNormal
+                };
+                _reinjectThreads[i].Start();
+            }
 
-            Debug.WriteLine("PacketEngine started successfully with WinDivert");
+            // Start speed calculation in background
+            _ = Task.Run(SpeedCalculationLoop);
+
+            Debug.WriteLine($"PacketEngine started: {CaptureWorkerCount} capture + {ReinjectWorkerCount} reinject workers ({Environment.ProcessorCount} CPU cores)");
             return true;
         }
         catch (Exception ex)
@@ -134,15 +224,41 @@ public class PacketEngine : IDisposable
             _divert?.Dispose();
             _divert = null;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error disposing WinDivert: {ex.Message}");
+        }
 
-        _captureThread?.Join(1000);
-        _captureThread = null;
+        // Join all capture workers
+        foreach (var t in _captureThreads)
+        {
+            try { if (t.IsAlive) t.Join(2000); } catch { }
+        }
+        _captureThreads = [];
+
+        // Join all reinject workers
+        foreach (var t in _reinjectThreads)
+        {
+            try { if (t.IsAlive) t.Join(2000); } catch { }
+        }
+        _reinjectThreads = [];
+
+        // Drain and dispose queued packets
+        while (_throttledQueue.TryDequeue(out var queued))
+        {
+            queued.Dispose();
+        }
+        _queueCount = 0;
 
         Debug.WriteLine("PacketEngine stopped");
     }
 
-    private void CaptureLoop()
+    /// <summary>
+    /// Capture worker: receives packets, processes stats, and classifies.
+    /// Multiple instances run in parallel — WinDivert distributes packets across all workers.
+    /// NEVER sleeps — packets that need throttling are queued for reinject workers.
+    /// </summary>
+    private void CaptureLoop(int workerId)
     {
         using var packet = new WinDivertPacket();
         using var addr = new WinDivertAddress();
@@ -151,28 +267,26 @@ public class PacketEngine : IDisposable
         {
             try
             {
-                // Receive packet synchronously (blocking)
+                // Receive packet synchronously (blocking on WinDivert, NOT on our logic)
                 _divert.Recv(packet, addr);
 
                 if (packet.Length == 0) continue;
 
-                // Process packet
+                // Process stats (always, regardless of throttle)
                 ProcessPacket(packet, addr);
 
                 // Determine packet direction
                 bool isOutbound = IsOutbound(addr);
 
-                // Check throttling - first check global throttle, then per-process
+                // Check throttling - global first, then per-process
                 BandwidthThrottle? throttle = null;
 
-                // Check global throttle first
                 if (_throttleRules.TryGetValue("global", out var globalThrottle))
                 {
                     throttle = globalThrottle;
                 }
                 else
                 {
-                    // Check per-process throttle
                     var throttleKey = GetThrottleKey(packet, addr);
                     if (throttleKey != null && _throttleRules.TryGetValue(throttleKey, out var processThrottle))
                     {
@@ -180,30 +294,96 @@ public class PacketEngine : IDisposable
                     }
                 }
 
-                if (throttle != null)
+                // No throttle active → reinject immediately (fast path, zero latency)
+                if (throttle == null)
                 {
-                    // Apply throttling using token bucket algorithm
-                    int delayMs = throttle.ConsumeAndGetDelay((uint)packet.Length, isOutbound);
-                    if (delayMs > 0)
-                    {
-                        Thread.Sleep(delayMs);
-                    }
-
-                    // Check if should drop (for blocked direction)
-                    if (throttle.ShouldDrop(isOutbound))
-                    {
-                        continue; // Don't reinject = drop packet
-                    }
+                    _divert.Send(packet, addr);
+                    continue;
                 }
 
-                // Re-inject the packet
-                _divert.Send(packet, addr);
+                // Check if direction is BLOCKED → drop immediately (don't waste queue space)
+                if (throttle.ShouldDrop(isOutbound))
+                {
+                    continue; // Packet dropped
+                }
+
+                // Throttle active → try Token Bucket
+                int delayMs = throttle.ConsumeAndGetDelay((uint)packet.Length, isOutbound);
+
+                if (delayMs == 0)
+                {
+                    // Enough tokens → pass through immediately (no queue overhead)
+                    _divert.Send(packet, addr);
+                    continue;
+                }
+
+                if (delayMs < 0)
+                {
+                    // Blocked by token bucket → drop
+                    continue;
+                }
+
+                // Needs delay → clone packet to queue for reinject thread
+                // This way the capture thread NEVER blocks
+                if (_queueCount < MAX_QUEUE_PACKETS)
+                {
+                    var queued = new QueuedPacket(packet, addr, isOutbound, delayMs);
+                    _throttledQueue.Enqueue(queued);
+                    Interlocked.Increment(ref _queueCount);
+                }
+                // else: queue full → drop packet (natural backpressure)
             }
             catch (Exception ex)
             {
                 if (_isRunning)
                 {
                     Debug.WriteLine($"Packet capture error: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reinject worker: dequeues throttled packets and paces them using Token Bucket delays.
+    /// Multiple instances drain the queue in parallel for higher throughput.
+    /// Only reinject workers sleep — capture workers run at full speed.
+    /// </summary>
+    private void ReinjectLoop(int workerId)
+    {
+        while (_isRunning)
+        {
+            try
+            {
+                if (_throttledQueue.TryDequeue(out var queued))
+                {
+                    Interlocked.Decrement(ref _queueCount);
+
+                    using (queued)
+                    {
+                        // Apply the delay calculated by capture thread's Token Bucket
+                        if (queued.DelayMs > 0)
+                        {
+                            Thread.Sleep(queued.DelayMs);
+                        }
+
+                        // Reinject the packet (WinDivert Send is thread-safe)
+                        if (_isRunning && _divert != null)
+                        {
+                            _divert.Send(queued.Packet, queued.Address);
+                        }
+                    }
+                }
+                else
+                {
+                    // No packets waiting → yield to avoid busy-spinning
+                    Thread.Sleep(1);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_isRunning)
+                {
+                    Debug.WriteLine($"Reinject error: {ex.Message}");
                 }
             }
         }
@@ -248,7 +428,12 @@ public class PacketEngine : IDisposable
 
             if (processId != 0)
             {
-                var stats = _processStats.GetOrAdd(processId, pid => new ProcessTrafficStats { ProcessId = pid });
+                var stats = _processStats.GetOrAdd(processId, pid =>
+                {
+                    string name = "";
+                    try { using var p = Process.GetProcessById(pid); name = p.ProcessName; } catch { }
+                    return new ProcessTrafficStats { ProcessId = pid, ProcessName = name };
+                });
 
                 if (outbound)
                 {
@@ -337,39 +522,64 @@ public class PacketEngine : IDisposable
         if ((DateTime.Now - _lastPortMapRefresh) < _portMapRefreshInterval)
             return;
 
-        _lastPortMapRefresh = DateTime.Now;
+        // Prevent thundering herd: only one worker refreshes at a time
+        if (Interlocked.CompareExchange(ref _portMapRefreshing, 1, 0) != 0)
+            return; // Another worker is already refreshing
 
         try
         {
+            _lastPortMapRefresh = DateTime.Now;
             RefreshPortToProcessMap();
         }
         catch { }
+        finally
+        {
+            Interlocked.Exchange(ref _portMapRefreshing, 0);
+        }
     }
 
     private void RefreshPortToProcessMap()
     {
-        _portToProcessMap.Clear();
-
         try
         {
+            // Build new map first, then swap atomically — never leave the map empty
+            var newMap = new ConcurrentDictionary<ushort, int>();
+
             // Get TCP connections
             var tcpTable = GetTcpConnections();
             foreach (var conn in tcpTable)
             {
-                _portToProcessMap[conn.LocalPort] = conn.ProcessId;
+                newMap[conn.LocalPort] = conn.ProcessId;
             }
 
             // Get UDP endpoints
             var udpTable = GetUdpEndpoints();
             foreach (var ep in udpTable)
             {
-                _portToProcessMap[ep.LocalPort] = ep.ProcessId;
+                newMap[ep.LocalPort] = ep.ProcessId;
+            }
+
+            // Merge into existing map (don't clear — keep stale entries until overwritten)
+            // This prevents a gap where BitTorrent DHT connections lose their process mapping
+            foreach (var kvp in newMap)
+            {
+                _portToProcessMap[kvp.Key] = kvp.Value;
+            }
+
+            // Remove entries whose port is no longer active (clean up stale mappings)
+            var activeLocalPorts = new HashSet<ushort>(newMap.Keys);
+            foreach (var existingPort in _portToProcessMap.Keys.ToArray())
+            {
+                if (!activeLocalPorts.Contains(existingPort))
+                {
+                    _portToProcessMap.TryRemove(existingPort, out _);
+                }
             }
         }
         catch { }
     }
 
-    private async void SpeedCalculationLoop()
+    private async Task SpeedCalculationLoop()
     {
         while (_isRunning)
         {
@@ -421,7 +631,7 @@ public class PacketEngine : IDisposable
     {
         try
         {
-            var proc = Process.GetProcessById(processId);
+            using var proc = Process.GetProcessById(processId);
             return !proc.HasExited;
         }
         catch
@@ -472,15 +682,10 @@ public class PacketEngine : IDisposable
 
         foreach (var kv in _processStats)
         {
-            try
+            if (kv.Value.ProcessName.ToLowerInvariant() == cleanName)
             {
-                var proc = Process.GetProcessById(kv.Key);
-                if (proc.ProcessName.ToLowerInvariant() == cleanName)
-                {
-                    return kv.Value.ToSnapshot();
-                }
+                return kv.Value.ToSnapshot();
             }
-            catch { }
         }
 
         return null;
@@ -530,7 +735,7 @@ public class PacketEngine : IDisposable
     /// </summary>
     public void BlockProcess(int processId)
     {
-        SetThrottle(processId, 0, 0);
+        SetThrottle(processId, 1, 1); // 1 B/s ≤ BLOCK_THRESHOLD = drops all packets
     }
 
     /// <summary>
@@ -667,6 +872,33 @@ public class PacketEngine : IDisposable
         Stop();
         _instance = null;
     }
+
+    /// <summary>
+    /// Holds a cloned packet + address for the reinject queue.
+    /// Capture thread creates these; reinject thread consumes and disposes them.
+    /// </summary>
+    private sealed class QueuedPacket : IDisposable
+    {
+        public WinDivertPacket Packet { get; }
+        public WinDivertAddress Address { get; }
+        public bool IsOutbound { get; }
+        public int DelayMs { get; }
+
+        public QueuedPacket(WinDivertPacket srcPacket, WinDivertAddress srcAddr, bool isOutbound, int delayMs)
+        {
+            // Clone packet data + address so the capture thread can reuse its buffers
+            Packet = srcPacket.Clone();
+            Address = srcAddr.Clone();
+            IsOutbound = isOutbound;
+            DelayMs = Math.Min(delayMs, 500); // Cap delay per packet
+        }
+
+        public void Dispose()
+        {
+            Packet?.Dispose();
+            Address?.Dispose();
+        }
+    }
 }
 
 /// <summary>
@@ -675,11 +907,19 @@ public class PacketEngine : IDisposable
 public class ProcessTrafficStats
 {
     public int ProcessId { get; set; }
-    public long _bytesReceived;
-    public long _bytesSent;
+    public string ProcessName { get; set; } = "";  // Cached at creation time
+    internal long _bytesReceived;
+    internal long _bytesSent;
     public double DownloadSpeed { get; private set; }
     public double UploadSpeed { get; private set; }
-    public DateTime LastActivity { get; set; } = DateTime.Now;
+
+    private long _lastActivityTicks = DateTime.Now.Ticks;
+
+    public DateTime LastActivity
+    {
+        get => new DateTime(Interlocked.Read(ref _lastActivityTicks));
+        set => Interlocked.Exchange(ref _lastActivityTicks, value.Ticks);
+    }
 
     private long _lastBytesReceived;
     private long _lastBytesSent;
@@ -702,17 +942,10 @@ public class ProcessTrafficStats
 
     public ProcessStatsSnapshot ToSnapshot()
     {
-        string processName = "";
-        try
-        {
-            processName = Process.GetProcessById(ProcessId).ProcessName;
-        }
-        catch { }
-
         return new ProcessStatsSnapshot
         {
             ProcessId = ProcessId,
-            ProcessName = processName,
+            ProcessName = ProcessName,
             DownloadSpeed = DownloadSpeed,
             UploadSpeed = UploadSpeed,
             TotalBytesReceived = _bytesReceived,
@@ -756,22 +989,29 @@ public class BandwidthThrottle
         _uploadTokens = 0;
     }
 
+    // Threshold: any limit at or below this value = BLOCK (drop packets)
+    private const long BLOCK_THRESHOLD_BPS = 10;
+
     /// <summary>
-    /// Try to consume tokens for a packet. Returns delay in ms if should wait, 0 if can proceed.
+    /// Try to consume tokens for a packet. Returns:
+    ///   -1 = packet should be DROPPED (blocked direction)
+    ///    0 = proceed immediately (no delay)
+    ///   >0 = delay in ms before reinjecting
     /// Uses Token Bucket algorithm for accurate rate limiting.
-    /// 0 = no limit, >0 = limit in bytes/sec (1 B/s = effectively blocked)
     /// </summary>
     public int ConsumeAndGetDelay(uint packetSize, bool isOutbound)
     {
         if (isOutbound)
         {
             if (UploadLimitBps <= 0) return 0; // No limit
+            if (UploadLimitBps <= BLOCK_THRESHOLD_BPS) return -1; // BLOCKED → drop
             return ConsumeTokens(ref _uploadTokens, ref _uploadLastRefill, _uploadLock,
                                   UploadLimitBps, packetSize);
         }
         else
         {
             if (DownloadLimitBps <= 0) return 0; // No limit
+            if (DownloadLimitBps <= BLOCK_THRESHOLD_BPS) return -1; // BLOCKED → drop
             return ConsumeTokens(ref _downloadTokens, ref _downloadLastRefill, _downloadLock,
                                   DownloadLimitBps, packetSize);
         }
@@ -807,7 +1047,7 @@ public class BandwidthThrottle
             // Consume whatever tokens we have (packet will be delayed)
             tokens = 0;
 
-            // Cap delay to prevent extreme waits (max 500ms)
+            // Cap delay to prevent extreme waits (max 500ms per packet)
             return Math.Min(500, Math.Max(1, delayMs));
         }
     }
@@ -817,8 +1057,6 @@ public class BandwidthThrottle
     /// </summary>
     public bool ShouldDelay(uint packetSize, bool isOutbound)
     {
-        // Always return false - we handle delay in ConsumeAndGetDelay
-        // This is kept for API compatibility
         return ConsumeAndGetDelay(packetSize, isOutbound) > 0;
     }
 
@@ -830,6 +1068,7 @@ public class BandwidthThrottle
     {
         long limit = isOutbound ? UploadLimitBps : DownloadLimitBps;
         if (limit <= 0) return 0;
+        if (limit <= BLOCK_THRESHOLD_BPS) return -1; // Blocked
 
         // Calculate delay based on packet size and limit
         double delaySeconds = (double)packetSize / limit;
@@ -840,11 +1079,13 @@ public class BandwidthThrottle
     }
 
     /// <summary>
-    /// Check if packet should be dropped (not used - blocking done via extreme throttling)
+    /// Check if packet should be dropped (blocked direction).
+    /// A direction is blocked when its limit is > 0 but ≤ BLOCK_THRESHOLD_BPS.
     /// </summary>
     public bool ShouldDrop(bool isOutbound)
     {
-        return false;
+        long limit = isOutbound ? UploadLimitBps : DownloadLimitBps;
+        return limit > 0 && limit <= BLOCK_THRESHOLD_BPS;
     }
 }
 

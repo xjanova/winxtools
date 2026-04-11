@@ -19,7 +19,7 @@ public class RuleEngine
     public event EventHandler<RuleTriggeredEventArgs>? RuleTriggered;
     public event EventHandler<RuleActionExecutedEventArgs>? ActionExecuted;
 
-    public RuleEngine()
+    private RuleEngine()
     {
         _rulesFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -88,6 +88,7 @@ public class RuleEngine
     public void StartAutoEvaluation(int intervalMs = 5000)
     {
         _evaluationTimer?.Stop();
+        _evaluationTimer?.Dispose();
         _evaluationTimer = new global::System.Timers.Timer(intervalMs);
         _evaluationTimer.Elapsed += (s, e) => EvaluateAllRules();
         _evaluationTimer.Start();
@@ -126,7 +127,11 @@ public class RuleEngine
             }
         }
 
-        SaveRules();
+        // Save with lock to avoid concurrent modification
+        lock (_lock)
+        {
+            SaveRules();
+        }
     }
 
     private bool EvaluateConditions(NetworkRule rule)
@@ -194,12 +199,19 @@ public class RuleEngine
     private bool EvaluateProcessCondition(RuleCondition condition)
     {
         var processes = global::System.Diagnostics.Process.GetProcessesByName(condition.Value ?? "");
-        return condition.Operator switch
+        try
         {
-            ConditionOperator.Equals => processes.Length > 0,
-            ConditionOperator.NotEquals => processes.Length == 0,
-            _ => processes.Length > 0
-        };
+            return condition.Operator switch
+            {
+                ConditionOperator.Equals => processes.Length > 0,
+                ConditionOperator.NotEquals => processes.Length == 0,
+                _ => processes.Length > 0
+            };
+        }
+        finally
+        {
+            foreach (var p in processes) p.Dispose();
+        }
     }
 
     private bool EvaluateBandwidthCondition(RuleCondition condition)
@@ -252,7 +264,7 @@ public class RuleEngine
 
     private bool EvaluatePortCondition(RuleCondition condition)
     {
-        if (int.TryParse(condition.Value, out var port))
+        if (int.TryParse(condition.Value, out var port) && port > 0 && port <= 65535)
         {
             var connections = Network.ConnectionMonitor.Instance.GetActiveConnections();
             return connections.Any(c => c.LocalPort == port || c.RemotePort == port);
@@ -348,15 +360,31 @@ public class RuleEngine
 
     private void WriteToLogFile(RuleAction action, NetworkRule rule)
     {
-        var logPath = action.Target ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "NetX", "rule_log.txt");
+        try
+        {
+            var logPath = action.Target ?? "rule_log.txt";
 
-        var message = action.Parameters?.GetValueOrDefault("message", "") ?? "";
-        message = ReplaceVariables(message, rule);
+            // Prevent path traversal: only allow filenames, write to app's data directory
+            var safeName = Path.GetFileName(logPath); // Strip any directory components
+            if (string.IsNullOrEmpty(safeName)) safeName = "rule_log.txt";
 
-        var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Rule: {rule.Name} | {message}{Environment.NewLine}";
-        File.AppendAllText(logPath, logEntry);
+            var logDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "NetX", "Logs");
+            Directory.CreateDirectory(logDir);
+
+            var fullPath = Path.Combine(logDir, safeName);
+
+            var message = action.Parameters?.GetValueOrDefault("message", "") ?? "";
+            message = ReplaceVariables(message, rule);
+
+            var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Rule: {rule.Name} | {message}{Environment.NewLine}";
+            File.AppendAllText(fullPath, logEntry);
+        }
+        catch (Exception ex)
+        {
+            global::System.Diagnostics.Debug.WriteLine($"Failed to write log: {ex.Message}");
+        }
     }
 
     private async Task SendWebhookAsync(RuleAction action, NetworkRule rule)
@@ -398,6 +426,18 @@ public class RuleEngine
     {
         if (string.IsNullOrEmpty(action.Target)) return;
 
+        // Security: Block dangerous commands that could harm the system
+        var lowerTarget = action.Target.ToLowerInvariant();
+        string[] blockedPatterns = ["format ", "del /", "rmdir", "rm -rf", "rd /s", "reg delete", "shutdown", "taskkill /f /im"];
+        foreach (var blocked in blockedPatterns)
+        {
+            if (lowerTarget.Contains(blocked))
+            {
+                global::System.Diagnostics.Debug.WriteLine($"Blocked dangerous command: {action.Target}");
+                return;
+            }
+        }
+
         var psi = new global::System.Diagnostics.ProcessStartInfo
         {
             FileName = "cmd.exe",
@@ -406,7 +446,8 @@ public class RuleEngine
             CreateNoWindow = true
         };
 
-        global::System.Diagnostics.Process.Start(psi);
+        using var proc = global::System.Diagnostics.Process.Start(psi);
+        proc?.WaitForExit(10000);
     }
 
     private async Task SendEmailAsync(RuleAction action, NetworkRule rule)
@@ -431,17 +472,23 @@ public class RuleEngine
         {
             var processes = global::System.Diagnostics.Process.GetProcessesByName(
                 action.Target.Replace(".exe", ""));
-
-            foreach (var process in processes)
+            try
             {
-                try
+                foreach (var process in processes)
                 {
-                    process.Kill();
+                    try { process.Kill(); }
+                    catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"Kill failed: {ex.Message}"); }
                 }
-                catch { }
+            }
+            finally
+            {
+                foreach (var process in processes) process.Dispose();
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            global::System.Diagnostics.Debug.WriteLine($"KillProcess failed: {ex.Message}");
+        }
     }
 
     private string ReplaceVariables(string template, NetworkRule rule)

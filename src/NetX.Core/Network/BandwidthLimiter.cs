@@ -259,7 +259,7 @@ public class BandwidthLimiter : IDisposable
                 }
 
                 // For complete block, use firewall
-                if (rule.DownloadLimitKBps == 0 || rule.UploadLimitKBps == 0)
+                if (rule.DownloadLimitKBps == 0 && rule.UploadLimitKBps == 0)
                 {
                     return BlockInterfaceWithFirewall(ni.Name,
                         rule.DownloadLimitKBps == 0,
@@ -305,8 +305,8 @@ public class BandwidthLimiter : IDisposable
                 {
                     // Set throttle in PacketEngine (real packet queuing/dropping)
                     packetEngine.SetThrottle(cleanName,
-                        rule.DownloadLimitKBps * 1024,
-                        rule.UploadLimitKBps * 1024);
+                        rule.DownloadLimitKBps * 125,
+                        rule.UploadLimitKBps * 125);
 
                     Debug.WriteLine($"PacketEngine throttle applied for {processName}: {rule.DownloadLimitKBps} KB/s down, {rule.UploadLimitKBps} KB/s up");
                     return true;
@@ -325,8 +325,8 @@ public class BandwidthLimiter : IDisposable
                     {
                         ProcessId = process.Id,
                         ProcessName = processName,
-                        DownloadLimitBps = rule.DownloadLimitKBps * 1024,
-                        UploadLimitBps = rule.UploadLimitKBps * 1024,
+                        DownloadLimitBps = rule.DownloadLimitKBps * 125,
+                        UploadLimitBps = rule.UploadLimitKBps * 125,
                         IsActive = true
                     };
                 }
@@ -460,22 +460,19 @@ public class BandwidthLimiter : IDisposable
             // Use netsh to apply bandwidth limit via Policy-based QoS
             // Note: This requires Windows Pro/Enterprise and proper QoS setup
 
-            var policyName = $"NetX_QoS_{interfaceName.Replace(" ", "_")}";
+            // Sanitize interface name to prevent injection
+            var safeName = global::System.Text.RegularExpressions.Regex.Replace(
+                interfaceName.Replace(" ", "_"), @"[^a-zA-Z0-9._\-]", "");
+            var policyName = $"NetX_QoS_{safeName}";
             long throttleBitsPerSecond = rule.DownloadLimitKBps * 1024 * 8;
 
             // Remove existing policy
-            var removeCmd = $"powershell -NoProfile -Command \"Remove-NetQosPolicy -Name '{policyName}' -Confirm:$false -ErrorAction SilentlyContinue\"";
-            RunCommandHidden("cmd", $"/c {removeCmd}");
+            RunCommandHidden("powershell",
+                $"-NoProfile -Command \"Remove-NetQosPolicy -Name '{policyName}' -Confirm:$false -ErrorAction SilentlyContinue\"");
 
-            // For actual throttling, we need to use Group Policy or netsh approach
-            // Try using BITS-style throttling for background transfers
-            var cmd = $"powershell -NoProfile -Command \"" +
-                $"try {{ " +
-                $"New-NetQosPolicy -Name '{policyName}' -NetworkProfile All -ThrottleRateActionBitsPerSecond {throttleBitsPerSecond} -ErrorAction Stop; " +
-                $"Write-Host 'SUCCESS' " +
-                $"}} catch {{ Write-Host 'FAILED:' $_.Exception.Message }}\"";
-
-            var result = RunCommandWithOutput("powershell", $"-NoProfile -Command \"{cmd}\"");
+            // Apply QoS throttle using PowerShell cmdlet directly
+            var result = RunCommandWithOutput("powershell",
+                $"-NoProfile -Command \"try {{ New-NetQosPolicy -Name '{policyName}' -NetworkProfile All -ThrottleRateActionBitsPerSecond {throttleBitsPerSecond} -ErrorAction Stop; Write-Host 'SUCCESS' }} catch {{ Write-Host 'FAILED:' $_.Exception.Message }}\"");
 
             if (result.Contains("SUCCESS"))
             {
@@ -604,7 +601,10 @@ public class BandwidthLimiter : IDisposable
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error in enforcement cycle: {ex.Message}");
+        }
     }
 
     private void CheckForNewProcesses()
@@ -622,8 +622,8 @@ public class BandwidthLimiter : IDisposable
                     {
                         ProcessId = proc.Id,
                         ProcessName = rule.ProcessName,
-                        DownloadLimitBps = rule.DownloadLimitKBps * 1024,
-                        UploadLimitBps = rule.UploadLimitKBps * 1024,
+                        DownloadLimitBps = rule.DownloadLimitKBps * 125,
+                        UploadLimitBps = rule.UploadLimitKBps * 125,
                         IsActive = true
                     };
                     Debug.WriteLine($"Started tracking process {cleanName} (PID: {proc.Id})");
@@ -694,30 +694,44 @@ public class BandwidthLimiter : IDisposable
 
     private void SuspendProcess(int processId)
     {
+        IntPtr handle = IntPtr.Zero;
         try
         {
-            IntPtr handle = OpenProcess(PROCESS_SUSPEND_RESUME, false, processId);
+            handle = OpenProcess(PROCESS_SUSPEND_RESUME, false, processId);
             if (handle != IntPtr.Zero)
             {
                 NtSuspendProcess(handle);
-                CloseHandle(handle);
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SuspendProcess({processId}) failed: {ex.Message}");
+        }
+        finally
+        {
+            if (handle != IntPtr.Zero) CloseHandle(handle);
+        }
     }
 
     private void ResumeProcess(int processId)
     {
+        IntPtr handle = IntPtr.Zero;
         try
         {
-            IntPtr handle = OpenProcess(PROCESS_SUSPEND_RESUME, false, processId);
+            handle = OpenProcess(PROCESS_SUSPEND_RESUME, false, processId);
             if (handle != IntPtr.Zero)
             {
                 NtResumeProcess(handle);
-                CloseHandle(handle);
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ResumeProcess({processId}) failed: {ex.Message}");
+        }
+        finally
+        {
+            if (handle != IntPtr.Zero) CloseHandle(handle);
+        }
     }
 
     #endregion
@@ -762,7 +776,10 @@ public class BandwidthLimiter : IDisposable
 
             Process.Start(psi)?.WaitForExit(5000);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"RunCommandHidden failed ({fileName}): {ex.Message}");
+        }
     }
 
     private string RunCommandWithOutput(string fileName, string arguments)
@@ -865,7 +882,10 @@ public class BandwidthLimiter : IDisposable
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error loading bandwidth rules: {ex.Message}");
+        }
     }
 
     private void SaveRules()
@@ -880,7 +900,10 @@ public class BandwidthLimiter : IDisposable
                 new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_settingsPath, json);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error saving bandwidth rules: {ex.Message}");
+        }
     }
 
     #endregion

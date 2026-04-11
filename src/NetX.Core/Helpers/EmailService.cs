@@ -109,7 +109,7 @@ public class EmailService : IDisposable
         try
         {
             var client = GetSmtpClient();
-            var message = CreateMailMessage(to, subject, body, isHtml, attachments);
+            using var message = CreateMailMessage(to, subject, body, isHtml, attachments);
 
             await client.SendMailAsync(message, cancellationToken);
 
@@ -129,7 +129,8 @@ public class EmailService : IDisposable
     public bool SendEmail(string to, string subject, string body,
         bool isHtml = false, List<string>? attachments = null)
     {
-        return SendEmailAsync(to, subject, body, isHtml, attachments).GetAwaiter().GetResult();
+        // Use Task.Run to avoid deadlock from blocking on async in UI/sync context
+        return Task.Run(() => SendEmailAsync(to, subject, body, isHtml, attachments)).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -164,12 +165,9 @@ public class EmailService : IDisposable
             Timeout = 30000
         };
 
-        // Handle certificate validation for self-signed certs
-        if (_settings.AllowInvalidCertificates)
-        {
-            ServicePointManager.ServerCertificateValidationCallback =
-                (sender, certificate, chain, sslPolicyErrors) => true;
-        }
+        // Note: AllowInvalidCertificates is intentionally NOT applied globally.
+        // ServicePointManager.ServerCertificateValidationCallback affects ALL connections.
+        // Use per-connection validation if needed in the future via HttpClientHandler.
 
         return _smtpClient;
     }
@@ -260,7 +258,7 @@ public class EmailService : IDisposable
             var client = GetSmtpClient();
 
             // Test SMTP connection
-            using var tcpClient = new System.Net.Sockets.TcpClient();
+            using var tcpClient = new global::System.Net.Sockets.TcpClient();
             await tcpClient.ConnectAsync(_settings.SmtpServer, _settings.SmtpPort);
             result.CanConnect = true;
 
@@ -338,10 +336,10 @@ public class EmailService : IDisposable
             var encrypted = ProtectedData.Protect(data, _entropy, DataProtectionScope.CurrentUser);
             return Convert.ToBase64String(encrypted);
         }
-        catch
+        catch (Exception ex)
         {
-            // If encryption fails, store base64 encoded (less secure fallback)
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+            global::System.Diagnostics.Debug.WriteLine($"DPAPI encryption failed: {ex.Message}");
+            throw; // Don't silently fall back to insecure storage
         }
     }
 

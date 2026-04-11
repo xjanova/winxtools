@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace NetX.Core.Network;
 
@@ -10,16 +11,23 @@ public class FirewallManager
     private readonly Dictionary<string, FirewallRule> _rules = new();
     private readonly object _lock = new();
 
+    // Only allow safe characters in rule names and IPs
+    private static readonly Regex SafeNameRegex = new(@"^[a-zA-Z0-9._\-:/ ]+$", RegexOptions.Compiled);
+    private static readonly Regex IpRegex = new(@"^[\d.:a-fA-F/]+$", RegexOptions.Compiled);
+
     public event EventHandler<FirewallRuleEventArgs>? RuleAdded;
     public event EventHandler<FirewallRuleEventArgs>? RuleRemoved;
 
+    private static bool IsValidIp(string ip) => !string.IsNullOrEmpty(ip) && IpRegex.IsMatch(ip);
+    private static string SanitizeName(string name) => SafeNameRegex.IsMatch(name) ? name : Regex.Replace(name, @"[^a-zA-Z0-9._\-]", "_");
+
     public bool BlockIP(string ipAddress, string? ruleName = null)
     {
-        if (string.IsNullOrEmpty(ipAddress)) return false;
+        if (!IsValidIp(ipAddress)) return false;
 
         try
         {
-            ruleName ??= $"NetX_Block_{ipAddress.Replace(".", "_")}";
+            ruleName = SanitizeName(ruleName ?? $"NetX_Block_{ipAddress.Replace(".", "_")}");
 
             // Block inbound
             var inboundResult = RunNetshCommand(
@@ -59,11 +67,11 @@ public class FirewallManager
 
     public bool AllowIP(string ipAddress, string? ruleName = null)
     {
-        if (string.IsNullOrEmpty(ipAddress)) return false;
+        if (!IsValidIp(ipAddress)) return false;
 
         try
         {
-            ruleName ??= $"NetX_Allow_{ipAddress.Replace(".", "_")}";
+            ruleName = SanitizeName(ruleName ?? $"NetX_Allow_{ipAddress.Replace(".", "_")}");
 
             // First remove any existing block rules
             UnblockIP(ipAddress);
@@ -96,7 +104,7 @@ public class FirewallManager
 
     public bool UnblockIP(string ipAddress)
     {
-        if (string.IsNullOrEmpty(ipAddress)) return false;
+        if (!IsValidIp(ipAddress)) return false;
 
         try
         {
@@ -130,10 +138,12 @@ public class FirewallManager
     public bool BlockPort(int port, string protocol = "TCP", string? ruleName = null)
     {
         if (port <= 0 || port > 65535) return false;
+        // Only allow TCP/UDP protocol values
+        if (protocol != "TCP" && protocol != "UDP") protocol = "TCP";
 
         try
         {
-            ruleName ??= $"NetX_BlockPort_{protocol}_{port}";
+            ruleName = SanitizeName(ruleName ?? $"NetX_BlockPort_{protocol}_{port}");
 
             // Block inbound
             var inboundResult = RunNetshCommand(
@@ -194,12 +204,15 @@ public class FirewallManager
     {
         try
         {
-            // Delete all rules starting with NetX_
-            RunNetshCommand("advfirewall firewall delete rule name=all dir=in | findstr /i \"NetX_\"");
-            RunNetshCommand("advfirewall firewall delete rule name=all dir=out | findstr /i \"NetX_\"");
-
+            // Delete each tracked NetX rule individually
             lock (_lock)
             {
+                foreach (var rule in _rules.Values.ToList())
+                {
+                    var name = SanitizeName(rule.Name);
+                    RunNetshCommand($"advfirewall firewall delete rule name=\"{name}_In\"");
+                    RunNetshCommand($"advfirewall firewall delete rule name=\"{name}_Out\"");
+                }
                 _rules.Clear();
             }
         }
