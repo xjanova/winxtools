@@ -17,7 +17,9 @@ public partial class PacketMonitorView : Page
     private readonly ObservableCollection<PacketDisplayItem> _packets = new();
     private readonly List<PacketDisplayItem> _allPackets = new();
     private readonly object _packetLock = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, string> _pidNames = new();
     private bool _isCapturing = false;
+    private bool _startedEngine = false;
     private int _packetNumber = 0;
     private int _inboundCount = 0;
     private int _outboundCount = 0;
@@ -106,16 +108,32 @@ public partial class PacketMonitorView : Page
 
     private void StartCapture()
     {
+        var engine = PacketEngine.Instance;
+
+        // Honest failure instead of fabricated packets: no driver = no capture.
+        if (!engine.IsDriverLoaded)
+        {
+            StatusText.Text = "WinDivert driver unavailable — run WinXTools as Administrator to capture live packets.";
+            CaptureIndicator.Fill = (Brush)FindResource("DangerBrush");
+            return;
+        }
+
         _isCapturing = true;
         StartStopText.Text = "Stop Capture";
         StartStopIcon.Data = (Geometry)FindResource("StopIcon");
         CaptureIndicator.Fill = (Brush)FindResource("SuccessBrush");
-        StatusText.Text = "Capturing packets...";
+        StatusText.Text = "Capturing live packets (WinDivert)...";
 
         _updateTimer.Start();
 
-        // Start simulated packet capture (in real implementation, use raw sockets or WinPcap/Npcap)
-        Task.Run(SimulatePacketCapture);
+        // Real capture: start the kernel engine if it isn't already running for
+        // bandwidth limiting, and receive every packet via its event.
+        if (!engine.IsRunning)
+        {
+            engine.Start();
+            _startedEngine = true;
+        }
+        engine.OnPacketCaptured += OnEnginePacket;
     }
 
     private void StopCapture()
@@ -127,86 +145,78 @@ public partial class PacketMonitorView : Page
         StatusText.Text = $"Capture stopped. {_allPackets.Count} packets captured.";
 
         _updateTimer.Stop();
+
+        var engine = PacketEngine.Instance;
+        engine.OnPacketCaptured -= OnEnginePacket;
+
+        // Only stop the engine if WE started it and no bandwidth limit needs it.
+        if (_startedEngine && !engine.HasThrottleRules)
+        {
+            engine.Stop();
+        }
+        _startedEngine = false;
     }
 
-    private async Task SimulatePacketCapture()
+    /// <summary>
+    /// Real packet handler — called on WinDivert capture threads for every
+    /// captured packet. All fields come straight from the kernel; nothing is
+    /// fabricated. Runs off the UI thread, so it only mutates locked state; the
+    /// DispatcherTimer renders it on the UI thread.
+    /// </summary>
+    private void OnEnginePacket(PacketInfo info)
     {
-        // This simulates packet capture using connection data
-        // In a real implementation, you would use raw sockets, WinPcap/Npcap, or ETW
-        var random = new Random();
+        if (!_isCapturing) return;
 
-        while (_isCapturing)
+        bool isInbound = !info.IsOutbound;
+        string protocol = info.Protocol switch { 6 => "TCP", 17 => "UDP", 1 => "ICMP", _ => "OTHER" };
+
+        // Source pairs with the actual packet source address/port.
+        string srcPort = (info.IsOutbound ? info.LocalPort : info.RemotePort).ToString();
+        string dstPort = (info.IsOutbound ? info.RemotePort : info.LocalPort).ToString();
+
+        var packet = new PacketDisplayItem
         {
-            try
-            {
-                var connections = ConnectionMonitor.Instance.GetActiveConnections();
+            Number = 0, // assigned under lock below
+            Time = info.Timestamp,
+            TimeStr = info.Timestamp.ToString("HH:mm:ss.fff"),
+            IsInbound = isInbound,
+            DirectionIcon = isInbound ? _inboundIcon : _outboundIcon,
+            DirectionColor = isInbound ? _inboundBrush : _outboundBrush,
+            Protocol = protocol,
+            ProtocolColor = protocol == "TCP" ? _tcpBrush : (protocol == "UDP" ? _udpBrush : _icmpBrush),
+            SourceIP = info.SourceAddress ?? "-",
+            SourcePort = srcPort,
+            DestIP = info.DestAddress ?? "-",
+            DestPort = dstPort,
+            Size = info.Length,
+            SizeStr = $"{info.Length} B",
+            ProcessName = ResolveProcessName(info.ProcessId),
+            ProcessId = info.ProcessId,
+            State = info.TcpFlags,
+            TcpFlags = info.TcpFlags
+        };
 
-                foreach (var conn in connections.Take(5))
-                {
-                    if (!_isCapturing) break;
+        lock (_packetLock)
+        {
+            packet.Number = ++_packetNumber;
+            _allPackets.Add(packet);
 
-                    var isInbound = random.Next(2) == 0;
-                    var protocol = conn.Protocol;
-                    var size = random.Next(64, 1500);
+            if (isInbound) _inboundCount++;
+            else _outboundCount++;
 
-                    var packet = new PacketDisplayItem
-                    {
-                        Number = ++_packetNumber,
-                        Time = DateTime.Now,
-                        TimeStr = DateTime.Now.ToString("HH:mm:ss.fff"),
-                        IsInbound = isInbound,
-                        DirectionIcon = isInbound ? _inboundIcon : _outboundIcon,
-                        DirectionColor = isInbound ? _inboundBrush : _outboundBrush,
-                        Protocol = protocol,
-                        ProtocolColor = protocol == "TCP" ? _tcpBrush : (protocol == "UDP" ? _udpBrush : _icmpBrush),
-                        SourceIP = isInbound ? conn.RemoteAddress : conn.LocalAddress,
-                        SourcePort = isInbound ? conn.RemotePort.ToString() : conn.LocalPort.ToString(),
-                        DestIP = isInbound ? conn.LocalAddress : conn.RemoteAddress,
-                        DestPort = isInbound ? conn.LocalPort.ToString() : conn.RemotePort.ToString(),
-                        Size = size,
-                        SizeStr = $"{size} B",
-                        ProcessName = conn.ProcessName,
-                        ProcessId = conn.ProcessId,
-                        State = conn.State,
-                        Payload = GenerateRandomHex(Math.Min(size, 64))
-                    };
-
-                    lock (_packetLock)
-                    {
-                        _allPackets.Add(packet);
-
-                        if (isInbound) _inboundCount++;
-                        else _outboundCount++;
-
-                        // Trim if over limit
-                        while (_allPackets.Count > MaxPackets)
-                        {
-                            _allPackets.RemoveAt(0);
-                        }
-                    }
-                }
-
-                await Task.Delay(random.Next(100, 500));
-            }
-            catch
-            {
-                await Task.Delay(1000);
-            }
+            while (_allPackets.Count > MaxPackets)
+                _allPackets.RemoveAt(0);
         }
     }
 
-    private static string GenerateRandomHex(int length)
+    private string ResolveProcessName(int pid)
     {
-        var random = new Random();
-        var hex = new System.Text.StringBuilder();
-        for (int i = 0; i < length; i++)
+        if (pid == 0) return "System/Unknown";
+        return _pidNames.GetOrAdd(pid, id =>
         {
-            if (i > 0 && i % 16 == 0) hex.AppendLine();
-            else if (i > 0 && i % 8 == 0) hex.Append("  ");
-            else if (i > 0) hex.Append(' ');
-            hex.Append(random.Next(256).ToString("X2"));
-        }
-        return hex.ToString();
+            try { using var p = Process.GetProcessById(id); return p.ProcessName; }
+            catch { return $"PID {id}"; }
+        });
     }
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
@@ -396,12 +406,13 @@ public partial class PacketMonitorView : Page
         if (packet.Protocol == "TCP")
         {
             FlagsPanel.Children.Clear();
-            var flags = new[] { "SYN", "ACK", "FIN", "RST", "PSH", "URG" };
-            var random = new Random(packet.Number); // Deterministic based on packet number
+            var allFlags = new[] { "SYN", "ACK", "FIN", "RST", "PSH", "URG" };
+            var setFlags = (packet.TcpFlags ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            foreach (var flag in flags)
+            foreach (var flag in allFlags)
             {
-                var isSet = random.Next(3) == 0;
+                var isSet = setFlags.Contains(flag); // real flags from the captured packet
                 var border = new Border
                 {
                     Background = isSet ? FindResource("AccentPrimaryBrush") as Brush : FindResource("BgTertiaryBrush") as Brush,
@@ -419,7 +430,15 @@ public partial class PacketMonitorView : Page
             }
         }
 
-        HexView.Text = packet.Payload ?? "No payload data";
+        // Headers are captured live; raw payload bytes are not buffered (kept
+        // lightweight for line-rate capture), so show the real header summary.
+        HexView.Text =
+            $"{packet.Protocol}  {packet.SourceIP}:{packet.SourcePort} → {packet.DestIP}:{packet.DestPort}\n" +
+            $"Direction: {(packet.IsInbound ? "Inbound" : "Outbound")}   Size: {packet.Size} bytes\n" +
+            (packet.Protocol == "TCP"
+                ? $"TCP flags: {(string.IsNullOrEmpty(packet.TcpFlags) ? "(none)" : packet.TcpFlags)}\n"
+                : "") +
+            "\n(Live headers captured via WinDivert. Raw payload buffering is disabled for performance.)";
     }
 
     private void BlockIP_Click(object sender, RoutedEventArgs e)
@@ -454,9 +473,7 @@ public partial class PacketMonitorView : Page
                 Destination: {packet.DestIP}:{packet.DestPort}
                 Size: {packet.Size} bytes
                 Process: {packet.ProcessName} (PID: {packet.ProcessId})
-
-                Payload:
-                {packet.Payload}
+                TCP Flags: {(string.IsNullOrEmpty(packet.TcpFlags) ? "-" : packet.TcpFlags)}
                 """;
 
             Clipboard.SetText(details);
@@ -485,4 +502,5 @@ public class PacketDisplayItem
     public int ProcessId { get; set; }
     public string? State { get; set; }
     public string? Payload { get; set; }
+    public string? TcpFlags { get; set; }
 }

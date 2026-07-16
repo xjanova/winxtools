@@ -78,6 +78,12 @@ public class PacketEngine : IDisposable
     /// </summary>
     public int QueueDepth => _queueCount;
 
+    /// <summary>
+    /// True if any process/global throttle rule is active. Used so the packet
+    /// monitor can stop the engine on close without breaking bandwidth limits.
+    /// </summary>
+    public bool HasThrottleRules => !_throttleRules.IsEmpty;
+
     private PacketEngine()
     {
         // Check if WinDivert driver can be loaded
@@ -461,17 +467,55 @@ public class PacketEngine : IDisposable
                 }
             }
 
-            // Fire event for interested listeners
-            OnPacketCaptured?.Invoke(new PacketInfo
+            // Fire event for interested listeners. IP/flag extraction (which
+            // allocates) only runs when something is actually subscribed — the
+            // throttle-only path stays allocation-free.
+            var handler = OnPacketCaptured;
+            if (handler != null)
             {
-                ProcessId = processId,
-                Length = packetLen,
-                IsOutbound = outbound,
-                Protocol = protocol,
-                LocalPort = localPort,
-                RemotePort = outbound ? dstPort : srcPort,
-                Timestamp = DateTime.Now
-            });
+                string? srcAddr = null, dstAddr = null, tcpFlags = null;
+                try
+                {
+                    if (parseResult.IPV4Header != null)
+                    {
+                        srcAddr = parseResult.IPV4Header->SrcAddr.ToString();
+                        dstAddr = parseResult.IPV4Header->DstAddr.ToString();
+                    }
+                    else if (parseResult.IPV6Header != null)
+                    {
+                        srcAddr = parseResult.IPV6Header->SrcAddr.ToString();
+                        dstAddr = parseResult.IPV6Header->DstAddr.ToString();
+                    }
+
+                    if (parseResult.TcpHeader != null)
+                    {
+                        var t = parseResult.TcpHeader;
+                        var flags = new List<string>(6);
+                        if (t->Syn) flags.Add("SYN");
+                        if (t->Ack) flags.Add("ACK");
+                        if (t->Psh) flags.Add("PSH");
+                        if (t->Fin) flags.Add("FIN");
+                        if (t->Rst) flags.Add("RST");
+                        if (t->Urg) flags.Add("URG");
+                        tcpFlags = string.Join(",", flags);
+                    }
+                }
+                catch { }
+
+                handler(new PacketInfo
+                {
+                    ProcessId = processId,
+                    Length = packetLen,
+                    IsOutbound = outbound,
+                    Protocol = protocol,
+                    LocalPort = localPort,
+                    RemotePort = outbound ? dstPort : srcPort,
+                    SourceAddress = srcAddr,
+                    DestAddress = dstAddr,
+                    TcpFlags = tcpFlags,
+                    Timestamp = DateTime.Now
+                });
+            }
         }
         catch { }
     }
@@ -1100,6 +1144,9 @@ public struct PacketInfo
     public byte Protocol;
     public ushort LocalPort;
     public ushort RemotePort;
+    public string? SourceAddress;  // real packet source IP (null for non-IP)
+    public string? DestAddress;    // real packet destination IP
+    public string? TcpFlags;       // real TCP flags, e.g. "SYN,ACK" (null for non-TCP)
     public DateTime Timestamp;
 }
 
