@@ -1,286 +1,150 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using NetX.Core.System;
 
 namespace NetX.App.Views;
 
 public partial class CleanerView : Page
 {
-    private long _totalSize = 0;
-    private int _totalFiles = 0;
-    private bool _isScanning = false;
+    private bool _isBusy = false;
+    private readonly Dictionary<CleanTarget, CleanScanResult> _scanResults = new();
 
     public CleanerView()
     {
         InitializeComponent();
     }
 
+    /// <summary>Maps each cleanup category to its checkbox + size label.</summary>
+    private (CleanTarget Target, CheckBox Check, TextBlock SizeText)[] Categories() =>
+    [
+        (CleanTarget.TempFiles,     TempFilesCheck,     TempFilesSize),
+        (CleanTarget.BrowserCache,  BrowserCacheCheck,  BrowserCacheSize),
+        (CleanTarget.WindowsUpdate, WindowsUpdateCheck, WindowsUpdateSize),
+        (CleanTarget.RecycleBin,    RecycleBinCheck,    RecycleBinSize),
+        (CleanTarget.Thumbnails,    ThumbnailCheck,     ThumbnailSize),
+        (CleanTarget.LogFiles,      LogFilesCheck,      LogFilesSize),
+        (CleanTarget.WindowsOld,    OldWindowsCheck,    OldWindowsSize),
+    ];
+
     private async void Scan_Click(object sender, RoutedEventArgs e)
     {
-        if (_isScanning) return;
+        if (_isBusy) return;
 
-        _isScanning = true;
+        _isBusy = true;
         ScanButton.IsEnabled = false;
         CleanButton.IsEnabled = false;
         StatusText.Text = "Scanning...";
         CleanProgress.Visibility = Visibility.Visible;
         CleanProgress.IsIndeterminate = true;
 
-        _totalSize = 0;
-        _totalFiles = 0;
+        _scanResults.Clear();
+        long totalSize = 0;
+        int totalFiles = 0;
 
-        await Task.Run(() =>
+        var categories = Categories();
+        foreach (var (target, _, sizeText) in categories)
         {
-            // Simulate scanning with realistic delays
-            System.Threading.Thread.Sleep(500);
+            StatusText.Text = $"Scanning {DisplayName(target)}...";
 
-            // Temp Files
-            var tempSize = GetDirectorySize(Path.GetTempPath());
-            Dispatcher.Invoke(() =>
-            {
-                TempFilesSize.Text = FormatSize(tempSize);
-                _totalSize += tempSize;
-            });
+            // Real disk walk per category — sizes come from actual files.
+            var scan = await Task.Run(() => SystemCleaner.Scan(target));
+            _scanResults[target] = scan;
 
-            System.Threading.Thread.Sleep(300);
+            sizeText.Text = !scan.Found ? "Not found"
+                          : scan.Bytes > 0 ? FormatSize(scan.Bytes)
+                          : "0 B";
+            totalSize += scan.Bytes;
+            totalFiles += scan.FileCount;
 
-            // Browser Cache (simulated)
-            long browserSize = new Random().Next(100, 500) * 1024 * 1024;
-            Dispatcher.Invoke(() =>
-            {
-                BrowserCacheSize.Text = FormatSize(browserSize);
-                _totalSize += browserSize;
-            });
+            TotalSizeText.Text = FormatSize(totalSize);
+            FilesCountText.Text = $"{totalFiles:N0} files";
+        }
 
-            System.Threading.Thread.Sleep(300);
-
-            // Windows Update
-            long updateSize = new Random().Next(200, 800) * 1024 * 1024;
-            Dispatcher.Invoke(() =>
-            {
-                WindowsUpdateSize.Text = FormatSize(updateSize);
-                _totalSize += updateSize;
-            });
-
-            System.Threading.Thread.Sleep(200);
-
-            // Recycle Bin (simulated)
-            long recycleBinSize = new Random().Next(50, 300) * 1024 * 1024;
-            Dispatcher.Invoke(() =>
-            {
-                RecycleBinSize.Text = FormatSize(recycleBinSize);
-                _totalSize += recycleBinSize;
-            });
-
-            System.Threading.Thread.Sleep(200);
-
-            // Thumbnails
-            long thumbSize = new Random().Next(50, 200) * 1024 * 1024;
-            Dispatcher.Invoke(() =>
-            {
-                ThumbnailSize.Text = FormatSize(thumbSize);
-                _totalSize += thumbSize;
-            });
-
-            System.Threading.Thread.Sleep(200);
-
-            // Log Files
-            long logSize = new Random().Next(20, 100) * 1024 * 1024;
-            Dispatcher.Invoke(() =>
-            {
-                LogFilesSize.Text = FormatSize(logSize);
-                _totalSize += logSize;
-            });
-
-            System.Threading.Thread.Sleep(200);
-
-            // Old Windows
-            var oldWindowsPath = @"C:\Windows.old";
-            long oldWindowsSize = Directory.Exists(oldWindowsPath)
-                ? GetDirectorySize(oldWindowsPath)
-                : 0;
-            Dispatcher.Invoke(() =>
-            {
-                OldWindowsSize.Text = oldWindowsSize > 0 ? FormatSize(oldWindowsSize) : "Not found";
-                _totalSize += oldWindowsSize;
-            });
-
-            _totalFiles = new Random().Next(1000, 10000);
-        });
-
-        TotalSizeText.Text = FormatSize(_totalSize);
-        FilesCountText.Text = $"{_totalFiles:N0} files";
         StatusText.Text = "Scan complete! Select items and click 'Clean' to free up space.";
         CleanProgress.IsIndeterminate = false;
         CleanProgress.Visibility = Visibility.Collapsed;
         ScanButton.IsEnabled = true;
         CleanButton.IsEnabled = true;
-        _isScanning = false;
+        _isBusy = false;
     }
 
     private async void Clean_Click(object sender, RoutedEventArgs e)
     {
+        if (_isBusy) return;
+
+        var selected = Categories().Where(c => c.Check.IsChecked == true).ToList();
+        if (selected.Count == 0)
+        {
+            MessageBox.Show("Select at least one item to clean.", "Nothing Selected",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         var result = MessageBox.Show(
-            "Are you sure you want to clean the selected items?\n\nThis action cannot be undone.",
+            $"Clean {selected.Count} selected item(s)?\n\nFiles currently in use are skipped automatically.\nThis action cannot be undone.",
             "Confirm Cleanup",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
         if (result != MessageBoxResult.Yes) return;
 
+        _isBusy = true;
         CleanButton.IsEnabled = false;
         ScanButton.IsEnabled = false;
-        StatusText.Text = "Cleaning...";
         CleanProgress.Visibility = Visibility.Visible;
         CleanProgress.IsIndeterminate = false;
         CleanProgress.Value = 0;
 
-        int steps = 7;
-        int currentStep = 0;
+        long totalFreed = 0;
+        int totalDeleted = 0;
+        var notes = new List<string>();
 
-        await Task.Run(() =>
+        for (int i = 0; i < selected.Count; i++)
         {
-            // Clean Temp Files
-            if (TempFilesCheck.Dispatcher.Invoke(() => TempFilesCheck.IsChecked == true))
-            {
-                CleanTempFiles();
-                currentStep++;
-                Dispatcher.Invoke(() =>
-                {
-                    CleanProgress.Value = (currentStep / (double)steps) * 100;
-                    StatusText.Text = "Cleaning temporary files...";
-                });
-                System.Threading.Thread.Sleep(500);
-            }
+            var (target, _, sizeText) = selected[i];
+            StatusText.Text = $"Cleaning {DisplayName(target)}...";
 
-            // Simulate other cleaning operations
-            string[] items = { "Browser cache", "Thumbnails", "Log files", "Recycle Bin" };
-            foreach (var item in items)
-            {
-                currentStep++;
-                Dispatcher.Invoke(() =>
-                {
-                    CleanProgress.Value = (currentStep / (double)steps) * 100;
-                    StatusText.Text = $"Cleaning {item}...";
-                });
-                System.Threading.Thread.Sleep(400);
-            }
-        });
+            // Real deletion — freed bytes are summed from files actually removed.
+            var clean = await Task.Run(() => SystemCleaner.Clean(target));
 
-        CleanProgress.Value = 100;
-        StatusText.Text = $"Cleanup complete! Freed {FormatSize(_totalSize)}";
+            totalFreed += clean.BytesFreed;
+            totalDeleted += clean.FilesDeleted;
+            if (!string.IsNullOrEmpty(clean.Note)) notes.Add(clean.Note!);
 
-        MessageBox.Show(
-            $"Cleanup Complete!\n\nFreed: {FormatSize(_totalSize)}\nFiles deleted: {_totalFiles:N0}",
-            "Success",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            sizeText.Text = "--";
+            CleanProgress.Value = ((i + 1) / (double)selected.Count) * 100;
+        }
 
-        // Reset
+        StatusText.Text = $"Cleanup complete! Freed {FormatSize(totalFreed)}";
+
+        var summary = $"Cleanup Complete!\n\nFreed: {FormatSize(totalFreed)}\nFiles deleted: {totalDeleted:N0}";
+        if (notes.Count > 0)
+            summary += "\n\n" + string.Join("\n", notes.Distinct());
+
+        MessageBox.Show(summary, "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+        // Reset totals; user can rescan to see the new state
         TotalSizeText.Text = "0 B";
         FilesCountText.Text = "0 files";
-        TempFilesSize.Text = "--";
-        BrowserCacheSize.Text = "--";
-        WindowsUpdateSize.Text = "--";
-        RecycleBinSize.Text = "--";
-        ThumbnailSize.Text = "--";
-        LogFilesSize.Text = "--";
-        OldWindowsSize.Text = "--";
+        _scanResults.Clear();
 
         CleanProgress.Visibility = Visibility.Collapsed;
         ScanButton.IsEnabled = true;
         CleanButton.IsEnabled = false;
+        _isBusy = false;
     }
 
-    private void CleanTempFiles()
+    private static string DisplayName(CleanTarget target) => target switch
     {
-        try
-        {
-            var tempPath = Path.GetTempPath();
-
-            // Safety check: Ensure we're only cleaning temp directories
-            if (!tempPath.Contains("Temp", StringComparison.OrdinalIgnoreCase))
-            {
-                return; // Safety: Don't proceed if path doesn't look like temp folder
-            }
-
-            var di = new DirectoryInfo(tempPath);
-
-            // Skip files that are in use or too new (less than 1 hour old)
-            var cutoffTime = DateTime.Now.AddHours(-1);
-
-            foreach (var file in di.GetFiles())
-            {
-                try
-                {
-                    // Skip files that are too new - they might be in use
-                    if (file.LastWriteTime > cutoffTime) continue;
-
-                    // Skip protected file types
-                    if (IsProtectedFile(file.Name)) continue;
-
-                    file.Delete();
-                }
-                catch { }
-            }
-
-            foreach (var dir in di.GetDirectories())
-            {
-                try
-                {
-                    // Skip protected directories
-                    if (IsProtectedDirectory(dir.Name)) continue;
-
-                    // Skip directories that are too new
-                    if (dir.LastWriteTime > cutoffTime) continue;
-
-                    dir.Delete(true);
-                }
-                catch { }
-            }
-        }
-        catch { }
-    }
-
-    // Safety: List of protected files that should never be deleted
-    private static bool IsProtectedFile(string fileName)
-    {
-        var protectedPatterns = new[] {
-            "desktop.ini", "thumbs.db", ".sys", ".dll", ".exe",
-            "ntuser", "usrclass", ".dat"
-        };
-
-        var lowerName = fileName.ToLowerInvariant();
-        return protectedPatterns.Any(p => lowerName.Contains(p));
-    }
-
-    // Safety: List of protected directories that should never be deleted
-    private static bool IsProtectedDirectory(string dirName)
-    {
-        var protectedDirs = new[] {
-            "windows", "system", "program", "users", "microsoft",
-            "appdata", "roaming", "local", ".net", "assembly"
-        };
-
-        var lowerName = dirName.ToLowerInvariant();
-        return protectedDirs.Any(p => lowerName.Contains(p));
-    }
-
-    private static long GetDirectorySize(string path)
-    {
-        try
-        {
-            if (!Directory.Exists(path)) return 0;
-
-            var di = new DirectoryInfo(path);
-            return di.EnumerateFiles("*", SearchOption.AllDirectories)
-                .Sum(fi => { try { return fi.Length; } catch { return 0; } });
-        }
-        catch
-        {
-            return 0;
-        }
-    }
+        CleanTarget.TempFiles => "temporary files",
+        CleanTarget.BrowserCache => "browser cache",
+        CleanTarget.WindowsUpdate => "Windows Update cache",
+        CleanTarget.RecycleBin => "Recycle Bin",
+        CleanTarget.Thumbnails => "thumbnail cache",
+        CleanTarget.LogFiles => "log files",
+        CleanTarget.WindowsOld => "old Windows installation",
+        _ => target.ToString()
+    };
 
     private static string FormatSize(long bytes)
     {

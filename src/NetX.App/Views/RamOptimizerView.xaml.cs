@@ -247,7 +247,8 @@ public partial class RamOptimizerView : Page
             _history.Insert(0, new OptimizationHistoryItem
             {
                 TimeText = result.EndTime.ToString("HH:mm:ss"),
-                ResultText = $"{result.ProcessesOptimized} processes optimized",
+                ResultText = $"{result.ProcessesOptimized} processes optimized" +
+                             (result.StandbyCleared ? " • standby cache cleared" : ""),
                 FreedText = result.MemoryFreedMB > 0 ? $"+{FormatMemory(result.MemoryFreedMB)}" : "0 MB"
             });
 
