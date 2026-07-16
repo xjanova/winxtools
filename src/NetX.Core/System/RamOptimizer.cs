@@ -25,6 +25,45 @@ public class RamOptimizer : IDisposable
     [DllImport("psapi.dll")]
     private static extern bool EmptyWorkingSet(IntPtr hProcess);
 
+    // --- Standby-list purge (the real "clear cached memory") ---
+    // NtSetSystemInformation(SystemMemoryListInformation, &command, sizeof(int)).
+    [DllImport("ntdll.dll")]
+    private static extern int NtSetSystemInformation(int infoClass, ref int info, int length);
+
+    private const int SystemMemoryListInformation = 0x50;
+    private const int MemoryPurgeStandbyList = 4;      // free the standby cache
+    private const int MemoryEmptyWorkingSets = 2;      // trim all working sets
+
+    // --- Privilege elevation for the purge (needs SeProfileSingleProcessPrivilege) ---
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
+
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool LookupPrivilegeValue(string? host, string name, out LUID luid);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool AdjustTokenPrivileges(IntPtr tokenHandle, bool disableAllPrivileges,
+        ref TOKEN_PRIVILEGES newState, int bufferLength, IntPtr previousState, IntPtr returnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LUID { public uint LowPart; public int HighPart; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TOKEN_PRIVILEGES
+    {
+        public uint PrivilegeCount;
+        public LUID Luid;
+        public uint Attributes;
+    }
+
+    private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+    private const uint TOKEN_QUERY = 0x0008;
+    private const uint SE_PRIVILEGE_ENABLED = 0x0002;
+    private const string SE_PROFILE_SINGLE_PROCESS_NAME = "SeProfileSingleProcessPrivilege";
+
     public RamOptimizer()
     {
         _settingsPath = Path.Combine(
@@ -83,37 +122,28 @@ public class RamOptimizer : IDisposable
     {
         var info = new MemoryInfo();
 
+        // Authoritative physical-RAM totals come from the kernel, NOT from
+        // GC.GetGCMemoryInfo() (which reports the managed heap limit, not RAM).
+        var memStatus = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
+        if (GlobalMemoryStatusEx(ref memStatus))
+        {
+            info.TotalMemoryMB = (long)(memStatus.ullTotalPhys / (1024 * 1024));
+            info.AvailableMemoryMB = (long)(memStatus.ullAvailPhys / (1024 * 1024));
+            info.UsedMemoryMB = info.TotalMemoryMB - info.AvailableMemoryMB;
+            info.UsagePercent = (int)memStatus.dwMemoryLoad;
+        }
+
+        // Cached / standby detail is best-effort (performance counters may be
+        // disabled on some machines) and only enriches the display.
         try
         {
-            var gc = GC.GetGCMemoryInfo();
-            info.TotalMemoryMB = gc.TotalAvailableMemoryBytes / (1024 * 1024);
-
-            // Use Performance Counter for more accurate info
-            using var ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-            info.AvailableMemoryMB = (long)ramCounter.NextValue();
-            info.UsedMemoryMB = info.TotalMemoryMB - info.AvailableMemoryMB;
-            info.UsagePercent = (int)((info.UsedMemoryMB * 100) / info.TotalMemoryMB);
-
-            // Get cached memory
             using var cacheCounter = new PerformanceCounter("Memory", "Cache Bytes");
             info.CachedMemoryMB = (long)(cacheCounter.NextValue() / (1024 * 1024));
 
-            // Get standby memory (can be cleared)
             using var standbyCounter = new PerformanceCounter("Memory", "Standby Cache Normal Priority Bytes");
             info.StandbyMemoryMB = (long)(standbyCounter.NextValue() / (1024 * 1024));
         }
-        catch
-        {
-            // Fallback if performance counters not available
-            var memStatus = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
-            if (GlobalMemoryStatusEx(ref memStatus))
-            {
-                info.TotalMemoryMB = (long)(memStatus.ullTotalPhys / (1024 * 1024));
-                info.AvailableMemoryMB = (long)(memStatus.ullAvailPhys / (1024 * 1024));
-                info.UsedMemoryMB = info.TotalMemoryMB - info.AvailableMemoryMB;
-                info.UsagePercent = (int)memStatus.dwMemoryLoad;
-            }
-        }
+        catch { /* counters unavailable — totals above are still valid */ }
 
         return info;
     }
@@ -182,10 +212,10 @@ public class RamOptimizer : IDisposable
 
             result.ProcessesOptimized = processesOptimized;
 
-            // 3. Clear file system cache (requires admin)
+            // 3. Purge the standby (cached) memory list — real free, needs admin
             try
             {
-                ClearFileSystemCache();
+                result.StandbyCleared = ClearStandbyList();
             }
             catch { }
 
@@ -225,23 +255,69 @@ public class RamOptimizer : IDisposable
         }
     }
 
-    private static void ClearFileSystemCache()
+    /// <summary>
+    /// Actually purges the Windows standby (cached) memory list via
+    /// NtSetSystemInformation. This is the real "free cached RAM" operation —
+    /// the previous version only echoed text and did nothing. Requires elevation
+    /// plus SeProfileSingleProcessPrivilege; returns false (no-op) when not admin.
+    /// </summary>
+    public bool ClearStandbyList()
     {
-        // This requires admin privileges
-        // Uses NtSetSystemInformation to clear standby list
         try
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = "/c echo Clearing cache...",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Verb = "runas"
-            };
-            Process.Start(psi)?.WaitForExit(1000);
+            if (!EnablePrivilege(SE_PROFILE_SINGLE_PROCESS_NAME))
+                return false; // not elevated / privilege unavailable
+
+            // Trim all working sets first, then purge the standby list.
+            int emptyCmd = MemoryEmptyWorkingSets;
+            NtSetSystemInformation(SystemMemoryListInformation, ref emptyCmd, sizeof(int));
+
+            int purgeCmd = MemoryPurgeStandbyList;
+            int status = NtSetSystemInformation(SystemMemoryListInformation, ref purgeCmd, sizeof(int));
+
+            return status == 0; // STATUS_SUCCESS
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ClearStandbyList failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    private static bool EnablePrivilege(string privilegeName)
+    {
+        IntPtr token = IntPtr.Zero;
+        try
+        {
+            var process = Process.GetCurrentProcess().Handle;
+            if (!OpenProcessToken(process, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out token))
+                return false;
+
+            if (!LookupPrivilegeValue(null, privilegeName, out var luid))
+                return false;
+
+            var tp = new TOKEN_PRIVILEGES
+            {
+                PrivilegeCount = 1,
+                Luid = luid,
+                Attributes = SE_PRIVILEGE_ENABLED
+            };
+
+            if (!AdjustTokenPrivileges(token, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero))
+                return false;
+
+            // AdjustTokenPrivileges can succeed but not assign the privilege
+            // (ERROR_NOT_ALL_ASSIGNED = 1300) when the process isn't elevated.
+            return Marshal.GetLastWin32Error() == 0;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (token != IntPtr.Zero) CloseHandle(token);
+        }
     }
 
     public void OptimizeProcess(int processId)
@@ -398,6 +474,7 @@ public class OptimizeResult
     public MemoryInfo MemoryAfter { get; set; } = new();
     public long MemoryFreedMB { get; set; }
     public int ProcessesOptimized { get; set; }
+    public bool StandbyCleared { get; set; }
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
 }

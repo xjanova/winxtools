@@ -23,6 +23,7 @@
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -57,8 +58,66 @@
             </Button>
         </Grid>
 
+        <!-- Gamer Mode quick access -->
+        <Border Grid.Row="1" Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Path Grid.Column="0"
+                      Data="{StaticResource GamingIcon}"
+                      Fill="{StaticResource AccentPrimaryBrush}"
+                      Width="28" Height="28"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center"
+                      Margin="4,0,16,0"/>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{DynamicResource GameMode_Title}"
+                                   Style="{StaticResource HeaderTextStyle}"
+                                   FontSize="16"/>
+                        <Border x:Name="GameModeStatusBadge"
+                                CornerRadius="10" Padding="10,2"
+                                Margin="12,0,0,0"
+                                VerticalAlignment="Center"
+                                Background="#28808080">
+                            <TextBlock x:Name="GameModeStatusText"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       Foreground="Gray"
+                                       Text="{DynamicResource GameMode_Off}"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock x:Name="GameModeOsText"
+                               Style="{StaticResource BodyTextStyle}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12"
+                               Margin="0,4,0,0"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="GameModeApplyBtn"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Padding="16,10"
+                            Click="GameModeApplyBtn_Click">
+                        <TextBlock Text="{DynamicResource GameMode_Apply}" FontSize="12"/>
+                    </Button>
+                    <Button x:Name="GameModeRevertBtn"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="16,10" Margin="8,0,0,0"
+                            Click="GameModeRevertBtn_Click">
+                        <TextBlock Text="{DynamicResource GameMode_Revert}" FontSize="12"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Main Content -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>

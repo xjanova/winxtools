@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using NetX.Core.Optimization;
+using NetX.Core.System;
 
 namespace NetX.App.Views;
 
@@ -26,6 +27,7 @@ public partial class WindowsOptimizerView : Page
         LoadCategory("Services");
         LoadRestorePoints();
         UpdateSummary();
+        UpdateGameModeUi();
 
         Unloaded += (s, e) =>
         {
@@ -248,7 +250,7 @@ public partial class WindowsOptimizerView : Page
 
         // Confirm with user
         var result = MessageBox.Show(
-            $"This will disable {selectedItems.Count} item(s).\n\nIt is recommended to create a restore point first.\n\nContinue?",
+            $"This will disable {selectedItems.Count} item(s).\n\nA system restore point will be created automatically first (best effort).\n\nContinue?",
             "Confirm Changes",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -274,7 +276,7 @@ public partial class WindowsOptimizerView : Page
         }
 
         var result = MessageBox.Show(
-            $"This will disable {safeItems.Count} safe item(s).\n\nEstimated RAM saving: ~{_optimizer.GetEstimatedRamSaving(safeItems)} MB\n\nIt is recommended to create a restore point first.\n\nContinue?",
+            $"This will disable {safeItems.Count} safe item(s).\n\nEstimated RAM saving: ~{_optimizer.GetEstimatedRamSaving(safeItems)} MB\n\nA system restore point will be created automatically first (best effort).\n\nContinue?",
             "Safe Optimization",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -329,11 +331,16 @@ public partial class WindowsOptimizerView : Page
                 SafeOptimizeBtn.IsEnabled = true;
                 RestoreAllBtn.IsEnabled = true;
 
+                string restoreNote = !disable ? "" : result.RestorePointCreated
+                    ? "\nRestore point created: yes"
+                    : "\nRestore point created: no (Windows limits creation to one per 24h)";
+
                 if (result.Success)
                 {
                     MessageBox.Show(
-                        $"Successfully {(disable ? "disabled" : "enabled")} {result.SuccessCount} item(s).\n\n" +
-                        (disable ? $"Estimated RAM saved: ~{result.EstimatedRamSavedMB} MB" : ""),
+                        $"Successfully {(disable ? "disabled" : "enabled")} {result.SuccessCount} item(s).\n" +
+                        (disable ? $"Estimated RAM saved: ~{result.EstimatedRamSavedMB} MB" : "") +
+                        restoreNote,
                         "Success",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
@@ -352,6 +359,7 @@ public partial class WindowsOptimizerView : Page
                 }
 
                 LoadCategory(_currentCategory);
+                LoadRestorePoints(); // show the auto-created restore point
             });
         });
     }
@@ -362,6 +370,80 @@ public partial class WindowsOptimizerView : Page
         {
             UpdateSummary();
         });
+    }
+
+    #endregion
+
+    #region Gamer Mode
+
+    private void UpdateGameModeUi()
+    {
+        var os = WindowsVersionInfo.Current;
+        var gm = GameModeService.Instance;
+
+        var osText = os.FriendlyName;
+        if (!gm.IsAdmin)
+        {
+            var needAdmin = TryFindResource("GameMode_NeedAdmin") as string ?? "Run as Administrator to apply all tweaks";
+            osText += $"  •  {needAdmin}";
+        }
+        GameModeOsText.Text = osText;
+
+        bool on = gm.IsActive;
+        GameModeStatusText.Text = TryFindResource(on ? "GameMode_On" : "GameMode_Off") as string
+                                  ?? (on ? "ON" : "OFF");
+        GameModeStatusText.Foreground = on
+            ? new SolidColorBrush(Color.FromRgb(16, 185, 129))
+            : Brushes.Gray;
+        GameModeStatusBadge.Background = on
+            ? new SolidColorBrush(Color.FromArgb(40, 16, 185, 129))
+            : new SolidColorBrush(Color.FromArgb(40, 128, 128, 128));
+    }
+
+    private void GameModeApplyBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var message = TryFindResource("GameMode_ConfirmApply") as string
+                      ?? "Apply Gamer Mode? Every setting is saved first and fully reversible.";
+        var confirm = MessageBox.Show(message,
+            TryFindResource("GameMode_Title") as string ?? "Gamer Mode",
+            MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        RunGameMode(apply: true);
+    }
+
+    private void GameModeRevertBtn_Click(object sender, RoutedEventArgs e)
+    {
+        RunGameMode(apply: false);
+    }
+
+    private async void RunGameMode(bool apply)
+    {
+        GameModeApplyBtn.IsEnabled = false;
+        GameModeRevertBtn.IsEnabled = false;
+        try
+        {
+            var result = await Task.Run(() => apply
+                ? GameModeService.Instance.ApplyGameMode()
+                : GameModeService.Instance.RevertGameMode());
+
+            MessageBox.Show(result.BuildSummary(),
+                TryFindResource("GameMode_Title") as string ?? "Gamer Mode",
+                MessageBoxButton.OK,
+                result.Failed.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message,
+                TryFindResource("GameMode_Title") as string ?? "Gamer Mode",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            GameModeApplyBtn.IsEnabled = true;
+            GameModeRevertBtn.IsEnabled = true;
+            UpdateGameModeUi();
+        }
     }
 
     #endregion

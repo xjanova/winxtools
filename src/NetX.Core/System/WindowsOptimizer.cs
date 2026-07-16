@@ -3,6 +3,7 @@ using System.Management;
 using System.ServiceProcess;
 using System.Text.Json;
 using Microsoft.Win32;
+using NetX.Core.System;
 
 namespace NetX.Core.Optimization;
 
@@ -699,8 +700,56 @@ public class WindowsOptimizer : IDisposable
             }
         };
 
+        // Drop features this Windows build doesn't have, so users never see
+        // toggles that write inert registry keys (e.g. Recall on Windows 10).
+        var os = WindowsVersionInfo.Current;
+        if (!os.SupportsCopilot)
+            AIFeatures.RemoveAll(i => i.Id == "Copilot");
+        if (!os.SupportsRecall)
+            AIFeatures.RemoveAll(i => i.Id == "Recall");
+        if (os.IsWindows11 && os.Build >= 22631)
+            AIFeatures.RemoveAll(i => i.Id == "Cortana"); // Cortana retired in Win11 23H2
+
+        // Enrich SSD/HDD-dependent advice off-thread (the WMI query can be slow).
+        Task.Run(ApplySsdAdvice);
+
         // Load saved states
         LoadItemStates();
+    }
+
+    /// <summary>
+    /// Tailors Superfetch/Search advice to the actual system drive type so the
+    /// recommendation matches this PC instead of being generic.
+    /// </summary>
+    private void ApplySsdAdvice()
+    {
+        try
+        {
+            bool? ssd = WindowsVersionInfo.Current.SystemDriveIsSsd;
+            if (ssd == null) return;
+
+            var sysMain = Services.FirstOrDefault(s => s.Id == "SysMain");
+            if (sysMain != null)
+            {
+                if (ssd == true)
+                {
+                    sysMain.Description = "Preloads apps into RAM. SSD detected on this PC — safe to disable, preloading gives little benefit on SSDs.";
+                    sysMain.RiskLevel = RiskLevel.Safe;
+                }
+                else
+                {
+                    sysMain.Description = "Preloads apps into RAM. HDD detected on this PC — keep ENABLED unless you see constant 100% disk usage.";
+                    sysMain.RiskLevel = RiskLevel.Medium;
+                }
+            }
+
+            var wsearch = Services.FirstOrDefault(s => s.Id == "WSearch");
+            if (wsearch != null && ssd == true)
+            {
+                wsearch.Description = "File indexing and search. SSD detected — indexing cost is small here; disable only if you never use Windows Search.";
+            }
+        }
+        catch { }
     }
 
     #endregion
@@ -983,6 +1032,15 @@ public class WindowsOptimizer : IDisposable
             TotalItems = items.Count
         };
 
+        // Safety net: snapshot the system before any batch of disables.
+        // Windows throttles restore-point creation (default: one per 24 h),
+        // so this is best-effort — the result records whether it succeeded.
+        if (disable && items.Count >= 3)
+        {
+            result.RestorePointCreated = CreateRestorePoint(
+                $"WinXTools - before disabling {items.Count} items ({DateTime.Now:yyyy-MM-dd HH:mm})");
+        }
+
         foreach (var item in items)
         {
             try
@@ -1203,6 +1261,9 @@ public class OptimizationResult
     public long EstimatedRamSavedMB { get; set; }
     public List<string> FailedItems { get; set; } = new();
     public bool Success { get; set; }
+
+    /// <summary>Whether the automatic pre-change restore point was created (best effort).</summary>
+    public bool RestorePointCreated { get; set; }
 }
 
 public class WindowsOptimizerSettings

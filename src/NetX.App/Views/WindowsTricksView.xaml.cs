@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using NetX.Core.System;
 
 namespace NetX.App.Views;
 
@@ -22,8 +23,46 @@ public partial class WindowsTricksView : Page
 
     private List<WindowsTrick> GetAllTricks()
     {
-        return new List<WindowsTrick>
+        var os = WindowsVersionInfo.Current;
+        var tricks = new List<WindowsTrick>
         {
+            // ==================== GAMER MODE (one-click, reversible) ====================
+            new WindowsTrick
+            {
+                Category = "Gamer Mode",
+                Name = $"Detected: {(os.IsWindows11 ? "Windows 11" : os.IsWindows10 ? "Windows 10" : os.ProductName)}",
+                Description = os.FriendlyName + " — click Run for full system report and which tweaks apply to this build.",
+                Command = os.FriendlyName,
+                CommandType = TrickCommandType.Custom,
+                Danger = TrickDanger.Safe,
+                Icon = "InfoIcon",
+                Tip = "NetX detects your exact Windows build and only applies tweaks that exist on it.",
+                CustomAction = () => GetSystemReport(os)
+            },
+            new WindowsTrick
+            {
+                Category = "Gamer Mode",
+                Name = "Apply Gamer Mode (One-Click)",
+                Description = "Applies a curated, fully reversible set of gaming tweaks tuned to your Windows version. Requires Administrator for the system-wide ones.",
+                Command = "GameDVR off · Game Mode on · HAGS · SystemResponsiveness=0 · MMCSS Games · Foreground CPU boost · Power throttling off · Ultimate power plan",
+                CommandType = TrickCommandType.Custom,
+                Danger = TrickDanger.Moderate,
+                Icon = "SpeedIcon",
+                Tip = "Every value is saved before it is changed, so 'Revert Gamer Mode' restores your exact previous settings. A restart is recommended for HAGS and CPU priority.",
+                CustomAction = () => GameModeService.Instance.ApplyGameMode().BuildSummary()
+            },
+            new WindowsTrick
+            {
+                Category = "Gamer Mode",
+                Name = "Revert Gamer Mode (Restore Defaults)",
+                Description = "Restores every setting Gamer Mode changed back to exactly what it was before — including your power plan.",
+                Command = "Restore original registry values + power plan from the saved snapshot",
+                CommandType = TrickCommandType.Custom,
+                Danger = TrickDanger.Safe,
+                Icon = "ToggleOffIcon",
+                CustomAction = () => GameModeService.Instance.RevertGameMode().BuildSummary()
+            },
+
             // ==================== GOD MODE & SPECIAL FOLDERS ====================
             new WindowsTrick
             {
@@ -720,6 +759,259 @@ public partial class WindowsTricksView : Page
                 DisableCommand = "powercfg /h off"
             }
         };
+
+        AppendExtraTricks(tricks, os);
+        return tricks;
+    }
+
+    /// <summary>
+    /// High-value performance/network/system tweaks. Version-specific ones
+    /// (HAGS, Recall/Copilot removal, Win11 taskbar) are only added when the
+    /// detected build actually supports them, so users never see dead toggles.
+    /// </summary>
+    private static void AppendExtraTricks(List<WindowsTrick> tricks, WindowsVersionInfo os)
+    {
+        // ---------- PERFORMANCE ----------
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Max System Responsiveness (Games)",
+            Description = "Let games use up to 100% of CPU/GPU by removing the multimedia reservation (default reserves 20%).",
+            Command = "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v \"SystemResponsiveness\" /t REG_DWORD /d 0 /f",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Safe,
+            Icon = "SpeedIcon",
+            CanToggle = true,
+            EnableCommand = "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v \"SystemResponsiveness\" /t REG_DWORD /d 0 /f",
+            DisableCommand = "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v \"SystemResponsiveness\" /t REG_DWORD /d 20 /f",
+            Tip = "Default is 20. Enable = 0 (gaming), Disable = 20 (Windows default)."
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Foreground CPU Priority Boost",
+            Description = "Give the active (foreground) game a larger, fixed CPU time slice for smoother frames.",
+            Command = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v \"Win32PrioritySeparation\" /t REG_DWORD /d 38 /f",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Moderate,
+            Icon = "SpeedIcon",
+            CanToggle = true,
+            EnableCommand = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v \"Win32PrioritySeparation\" /t REG_DWORD /d 38 /f",
+            DisableCommand = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v \"Win32PrioritySeparation\" /t REG_DWORD /d 2 /f",
+            Tip = "38 (0x26) = short/fixed high foreground boost. Default is 2. Takes effect after reboot."
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Disable CPU Power Throttling",
+            Description = "Stop Windows from throttling background/park-eligible cores to save power — good for gaming/streaming on desktops.",
+            Command = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling\" /v \"PowerThrottlingOff\" /t REG_DWORD /d 1 /f",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Moderate,
+            Icon = "SpeedIcon",
+            CanToggle = true,
+            EnableCommand = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling\" /v \"PowerThrottlingOff\" /t REG_DWORD /d 1 /f",
+            DisableCommand = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling\" /v \"PowerThrottlingOff\" /t REG_DWORD /d 0 /f",
+            Tip = "On laptops this can increase power draw/heat. Best for desktops on AC power."
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Disable Fullscreen Optimizations",
+            Description = "Force true exclusive fullscreen for games (lower latency on some titles).",
+            Command = "reg add \"HKCU\\System\\GameConfigStore\" /v \"GameDVR_FSEBehaviorMode\" /t REG_DWORD /d 2 /f",
+            CommandType = TrickCommandType.Command,
+            Danger = TrickDanger.Safe,
+            Icon = "SpeedIcon"
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Zero Startup App Delay",
+            Description = "Remove the artificial delay before startup apps load after sign-in.",
+            Command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize\" /v \"StartupDelayInMSec\" /t REG_DWORD /d 0 /f",
+            CommandType = TrickCommandType.Command,
+            Danger = TrickDanger.Safe,
+            Icon = "SpeedIcon"
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Disable Reserved Storage",
+            Description = "Reclaim ~7 GB Windows reserves for updates. Frees disk space (updates still work, just use free space).",
+            Command = "DISM /Online /Set-ReservedStorageState /State:Disabled",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Moderate,
+            Icon = "FolderIcon",
+            Tip = "Only works on Win10 1903+/Win11. Re-enable with /State:Enabled."
+        });
+
+        // HAGS — only if the OS exposes the toggle (Win10 2004+/Win11) and GPU-dependent.
+        if (os.SupportsHags)
+        {
+            tricks.Add(new WindowsTrick
+            {
+                Category = "Performance",
+                Name = "Hardware-Accelerated GPU Scheduling",
+                Description = "Let the GPU manage its own VRAM scheduling — can reduce latency/stutter on supported GPUs.",
+                Command = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v \"HwSchMode\" /t REG_DWORD /d 2 /f",
+                CommandType = TrickCommandType.AdminCommand,
+                Danger = TrickDanger.Moderate,
+                Icon = "SpeedIcon",
+                CanToggle = true,
+                EnableCommand = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v \"HwSchMode\" /t REG_DWORD /d 2 /f",
+                DisableCommand = "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v \"HwSchMode\" /t REG_DWORD /d 1 /f",
+                Tip = "Requires a reboot and a GPU/driver that supports it (GTX 10-series+/RX 5000+). Test both on/off for your games."
+            });
+        }
+
+        // ---------- NETWORK ----------
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Network",
+            Name = "Set TCP Auto-Tuning to Normal",
+            Description = "Restore the correct TCP receive window scaling — fixes slow downloads caused by a disabled/broken setting.",
+            Command = "netsh int tcp set global autotuninglevel=normal",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Safe,
+            Icon = "NetworkIcon"
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Network",
+            Name = "Disable Delivery Optimization (P2P Updates)",
+            Description = "Stop Windows from uploading/downloading updates to/from other PCs over your connection.",
+            Command = "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization\" /v \"DODownloadMode\" /t REG_DWORD /d 0 /f",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Safe,
+            Icon = "NetworkIcon"
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Network",
+            Name = "Set DNS to Cloudflare (1.1.1.1)",
+            Description = "Point all active adapters at Cloudflare DNS for faster, private name resolution.",
+            Command = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('1.1.1.1','1.0.0.1')",
+            CommandType = TrickCommandType.PowerShell,
+            Danger = TrickDanger.Safe,
+            Icon = "NetworkIcon",
+            CanToggle = true,
+            EnableCommand = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('1.1.1.1','1.0.0.1')",
+            DisableCommand = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ResetServerAddresses",
+            Tip = "Disable = reset to automatic (DHCP) DNS. Prefer 8.8.8.8/8.8.4.4 for Google DNS."
+        });
+
+        // ---------- DISK / SYSTEM ----------
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Performance",
+            Name = "Disable NTFS Last-Access Timestamps",
+            Description = "Skip updating a 'last accessed' time on every file read — small I/O win, especially on HDDs.",
+            Command = "fsutil behavior set disablelastaccess 1",
+            CommandType = TrickCommandType.AdminCommand,
+            Danger = TrickDanger.Safe,
+            Icon = "FolderIcon",
+            CanToggle = true,
+            EnableCommand = "fsutil behavior set disablelastaccess 1",
+            DisableCommand = "fsutil behavior set disablelastaccess 0"
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Commands",
+            Name = "Restart Windows Explorer",
+            Description = "Restart the shell to apply taskbar/registry tweaks without a full reboot.",
+            Command = "taskkill /f /im explorer.exe & start explorer.exe",
+            CommandType = TrickCommandType.Command,
+            Danger = TrickDanger.Safe,
+            Icon = "TerminalIcon"
+        });
+        tricks.Add(new WindowsTrick
+        {
+            Category = "Hidden",
+            Name = "Enable Clipboard History (Win+V)",
+            Description = "Turn on the multi-item clipboard with Win+V.",
+            Command = "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v \"EnableClipboardHistory\" /t REG_DWORD /d 1 /f",
+            CommandType = TrickCommandType.Command,
+            Danger = TrickDanger.Safe,
+            Icon = "SettingsIcon"
+        });
+
+        // ---------- WINDOWS 11 ONLY ----------
+        if (os.SupportsWidgets)
+        {
+            tricks.Add(new WindowsTrick
+            {
+                Category = "Hidden",
+                Name = "Hide Taskbar Widgets (Win11)",
+                Description = "Remove the Widgets button from the taskbar.",
+                Command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v \"TaskbarDa\" /t REG_DWORD /d 0 /f",
+                CommandType = TrickCommandType.Command,
+                Danger = TrickDanger.Safe,
+                Icon = "SettingsIcon",
+                Tip = "Restart Explorer to apply."
+            });
+            tricks.Add(new WindowsTrick
+            {
+                Category = "Hidden",
+                Name = "Classic Right-Click Menu (Win11)",
+                Description = "Bring back the full Windows 10 context menu instead of 'Show more options'.",
+                Command = "reg add \"HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32\" /f /ve",
+                CommandType = TrickCommandType.Command,
+                Danger = TrickDanger.Safe,
+                Icon = "SettingsIcon",
+                Tip = "Restart Explorer to apply. Revert: reg delete \"HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\" /f"
+            });
+        }
+
+        // ---------- AI FEATURE REMOVAL (version-gated) ----------
+        if (os.SupportsCopilot)
+        {
+            tricks.Add(new WindowsTrick
+            {
+                Category = "Privacy",
+                Name = "Disable Windows Copilot",
+                Description = "Turn off the Copilot AI assistant and remove its taskbar button.",
+                Command = "reg add \"HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot\" /v \"TurnOffWindowsCopilot\" /t REG_DWORD /d 1 /f",
+                CommandType = TrickCommandType.Command,
+                Danger = TrickDanger.Safe,
+                Icon = "ShieldIcon"
+            });
+        }
+        if (os.SupportsRecall)
+        {
+            tricks.Add(new WindowsTrick
+            {
+                Category = "Privacy",
+                Name = "Disable Windows Recall (Screenshots)",
+                Description = "Stop Recall from continuously snapshotting your screen (Win11 24H2+).",
+                Command = "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI\" /v \"DisableAIDataAnalysis\" /t REG_DWORD /d 1 /f",
+                CommandType = TrickCommandType.AdminCommand,
+                Danger = TrickDanger.Safe,
+                Icon = "ShieldIcon"
+            });
+        }
+    }
+
+    private static string GetSystemReport(WindowsVersionInfo os)
+    {
+        string ssd = os.SystemDriveIsSsd switch { true => "SSD", false => "HDD", _ => "Unknown" };
+        string family = os.IsWindows11 ? "Windows 11" : os.IsWindows10 ? "Windows 10" : "Other/Server";
+
+        return
+            "Detected system\n" +
+            $"• {os.FriendlyName}\n" +
+            $"• Edition: {os.EditionId}\n" +
+            $"• Family: {family}\n" +
+            $"• Architecture: {(os.Is64Bit ? "64-bit" : "32-bit")}\n" +
+            $"• CPU cores: {os.ProcessorCount}\n" +
+            $"• RAM: {os.TotalRamMb / 1024.0:F1} GB\n" +
+            $"• System drive: {ssd}\n\n" +
+            "Gamer-mode capabilities on this build\n" +
+            $"• HAGS (GPU scheduling): {(os.SupportsHags ? "supported" : "not available")}\n" +
+            $"• Copilot removal: {(os.SupportsCopilot ? "available" : "n/a")}\n" +
+            $"• Recall removal: {(os.SupportsRecall ? "available" : "n/a")}\n" +
+            $"• Taskbar Widgets/Chat: {(os.SupportsWidgets ? "present (removable)" : "n/a")}\n\n" +
+            "NetX only applies tweaks that exist on your build.";
     }
 
     private void BuildCategoryTabs()
@@ -840,6 +1132,7 @@ public partial class WindowsTricksView : Page
             TrickCommandType.Registry => "Registry modification",
             TrickCommandType.Link => "External link",
             TrickCommandType.Info => "Information only",
+            TrickCommandType.Custom => "One-click NetX action",
             _ => ""
         };
 
@@ -989,8 +1282,12 @@ public partial class WindowsTricksView : Page
             }
         }
 
-        var copyBtn = CreateCardButton("Copy", "CopyIcon", () => CopyCommand(trick.Command));
-        btnPanel.Children.Add(copyBtn);
+        // Custom (in-process) actions have no copyable shell command.
+        if (trick.CommandType != TrickCommandType.Custom)
+        {
+            var copyBtn = CreateCardButton("Copy", "CopyIcon", () => CopyCommand(trick.Command));
+            btnPanel.Children.Add(copyBtn);
+        }
 
         stack.Children.Add(btnPanel);
 
@@ -1050,7 +1347,38 @@ public partial class WindowsTricksView : Page
             if (result != MessageBoxResult.Yes) return;
         }
 
+        // In-process actions (Gamer Mode etc.) run through CustomAction.
+        if (trick.CustomAction != null)
+        {
+            if (trick.Danger == TrickDanger.Moderate)
+            {
+                var confirm = MessageBox.Show(
+                    $"{trick.Name}\n\n{trick.Description}\n\nContinue?",
+                    "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (confirm != MessageBoxResult.Yes) return;
+            }
+
+            RunCustomAction(trick);
+            return;
+        }
+
         RunCommand(trick.Command, trick.CommandType);
+    }
+
+    private async void RunCustomAction(WindowsTrick trick)
+    {
+        try
+        {
+            var message = await Task.Run(() => trick.CustomAction!());
+            MessageBox.Show(
+                string.IsNullOrWhiteSpace(message) ? "Done." : message,
+                trick.Name, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed: {ex.Message}", trick.Name,
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void RunCommand(string command, TrickCommandType type)
@@ -1137,6 +1465,12 @@ public class WindowsTrick
     public string? RegistryValue { get; set; }
     public string? RegistryData { get; set; }
     public string? Tip { get; set; }  // Additional tip/advice for the user
+
+    /// <summary>
+    /// In-process action (used by CommandType.Custom, e.g. Gamer Mode). Returns
+    /// a result message to show the user. Runs on a background thread.
+    /// </summary>
+    public Func<string>? CustomAction { get; set; }
 }
 
 public enum TrickCommandType
@@ -1148,7 +1482,8 @@ public enum TrickCommandType
     PowerShell,      // PowerShell command
     Registry,        // Registry edit
     Link,            // External link
-    Info             // Information only
+    Info,            // Information only
+    Custom           // In-process action (CustomAction)
 }
 
 public enum TrickDanger

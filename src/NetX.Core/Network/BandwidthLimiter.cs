@@ -299,20 +299,32 @@ public class BandwidthLimiter : IDisposable
                 var cleanName = processName.Replace(".exe", "");
                 var processes = Process.GetProcessesByName(cleanName);
 
-                // Try to use PacketEngine for real packet-level throttling
+                // Prefer the real kernel-level throttle (WinDivert token bucket).
+                // Start the engine on demand — it only needs to run while a limit
+                // is active, and this is what makes speed limiting actually work
+                // instead of freezing the whole app via suspend/resume.
                 var packetEngine = PacketEngine.Instance;
+                if (!packetEngine.IsRunning && packetEngine.IsDriverLoaded)
+                {
+                    packetEngine.Start();
+                }
+
                 if (packetEngine.IsRunning)
                 {
-                    // Set throttle in PacketEngine (real packet queuing/dropping)
+                    // Set throttle in PacketEngine (real packet pacing/dropping)
                     packetEngine.SetThrottle(cleanName,
                         rule.DownloadLimitKBps * 125,
                         rule.UploadLimitKBps * 125);
+
+                    // Keep the enforcement timer running so newly-started PIDs of
+                    // this app get the same throttle (see CheckForNewProcesses).
+                    if (!_isEnabled) IsEnabled = true;
 
                     Debug.WriteLine($"PacketEngine throttle applied for {processName}: {rule.DownloadLimitKBps} KB/s down, {rule.UploadLimitKBps} KB/s up");
                     return true;
                 }
 
-                // Fallback: Use process suspend/resume cycles
+                // Fallback (driver unavailable): process suspend/resume cycles
                 if (processes.Length == 0)
                 {
                     Debug.WriteLine($"Process not found: {processName} - rule will apply when process starts");
@@ -522,13 +534,21 @@ public class BandwidthLimiter : IDisposable
                     // Remove firewall rules
                     RemoveFirewallRulesSync(processName);
 
-                    // Remove throttle states
+                    // Remove throttle states (and the matching kernel throttle rules)
                     var cleanName = processName.Replace(".exe", "").ToLowerInvariant();
                     var toRemove = _throttleStates.Where(kv =>
                         kv.Value.ProcessName.Replace(".exe", "").ToLowerInvariant() == cleanName).ToList();
 
+                    var packetEngine = PacketEngine.Instance;
                     foreach (var kv in toRemove)
                     {
+                        if (packetEngine.IsRunning)
+                            packetEngine.RemoveThrottle(kv.Key);
+
+                        // Make sure a suspended process isn't left frozen.
+                        if (kv.Value.IsSuspended)
+                            ResumeProcess(kv.Key);
+
                         _throttleStates.TryRemove(kv.Key, out _);
                     }
                 }
@@ -609,6 +629,21 @@ public class BandwidthLimiter : IDisposable
 
     private void CheckForNewProcesses()
     {
+        // Drop tracking for PIDs that have exited so the dictionary stays bounded
+        // across long sessions with many app restarts.
+        foreach (var kv in _throttleStates.ToList())
+        {
+            if (!IsProcessAlive(kv.Key))
+            {
+                if (PacketEngine.Instance.IsRunning)
+                    PacketEngine.Instance.RemoveThrottle(kv.Key);
+                _throttleStates.TryRemove(kv.Key, out _);
+            }
+        }
+
+        var packetEngine = PacketEngine.Instance;
+        bool usePacketEngine = packetEngine.IsRunning;
+
         foreach (var rule in _rules.Values.Where(r => r.IsEnabled && !r.ProcessName.StartsWith("interface:")))
         {
             var cleanName = rule.ProcessName.Replace(".exe", "");
@@ -616,7 +651,25 @@ public class BandwidthLimiter : IDisposable
 
             foreach (var proc in processes)
             {
-                if (!_throttleStates.ContainsKey(proc.Id))
+                if (_throttleStates.ContainsKey(proc.Id)) continue;
+
+                if (usePacketEngine)
+                {
+                    // Real kernel throttle for this (possibly newly-started) PID.
+                    // IsActive=false so the suspend/resume enforcer skips it.
+                    packetEngine.SetThrottle(proc.Id,
+                        rule.DownloadLimitKBps * 125,
+                        rule.UploadLimitKBps * 125);
+                    _throttleStates[proc.Id] = new ProcessThrottleState
+                    {
+                        ProcessId = proc.Id,
+                        ProcessName = rule.ProcessName,
+                        DownloadLimitBps = rule.DownloadLimitKBps * 125,
+                        UploadLimitBps = rule.UploadLimitKBps * 125,
+                        IsActive = false
+                    };
+                }
+                else
                 {
                     _throttleStates[proc.Id] = new ProcessThrottleState
                     {
@@ -626,9 +679,22 @@ public class BandwidthLimiter : IDisposable
                         UploadLimitBps = rule.UploadLimitKBps * 125,
                         IsActive = true
                     };
-                    Debug.WriteLine($"Started tracking process {cleanName} (PID: {proc.Id})");
                 }
+                Debug.WriteLine($"Started tracking process {cleanName} (PID: {proc.Id}) via {(usePacketEngine ? "PacketEngine" : "suspend/resume")}");
             }
+        }
+    }
+
+    private static bool IsProcessAlive(int processId)
+    {
+        try
+        {
+            using var proc = Process.GetProcessById(processId);
+            return !proc.HasExited;
+        }
+        catch
+        {
+            return false;
         }
     }
 

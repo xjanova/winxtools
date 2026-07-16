@@ -178,6 +178,15 @@
     <system:String x:Key="WinOptimizer_RestorePoints">Restore Points ล่าสุด</system:String>
     <system:String x:Key="WinOptimizer_NoRestorePoints">ไม่พบ Restore Point</system:String>
 
+    <!-- Gamer Mode -->
+    <system:String x:Key="GameMode_Title">โหมดเกมเมอร์</system:String>
+    <system:String x:Key="GameMode_Apply">เปิดโหมดเกมเมอร์</system:String>
+    <system:String x:Key="GameMode_Revert">คืนค่าเดิม</system:String>
+    <system:String x:Key="GameMode_On">เปิดอยู่</system:String>
+    <system:String x:Key="GameMode_Off">ปิดอยู่</system:String>
+    <system:String x:Key="GameMode_ConfirmApply">เปิดโหมดเกมเมอร์?&#10;&#10;ปิด GameDVR · เปิด Game Mode · GPU scheduling · ให้เกมใช้ CPU/เน็ตเต็มที่ · แผนพลังงาน Ultimate&#10;&#10;ทุกค่าจะถูกบันทึกไว้ก่อน สามารถคืนค่าเดิมได้ครบทุกอย่าง</system:String>
+    <system:String x:Key="GameMode_NeedAdmin">รันแบบ Administrator เพื่อใช้ทุกการปรับแต่ง</system:String>
+
     <!-- Network Tools -->
     <system:String x:Key="NetworkTools_Title">เครื่องมือเครือข่าย</system:String>
     <system:String x:Key="NetworkTools_Subtitle">เครื่องมือวินิจฉัยและวิเคราะห์สำหรับแก้ไขปัญหาเครือข่าย</system:String>

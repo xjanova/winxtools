@@ -178,6 +178,15 @@
     <system:String x:Key="WinOptimizer_RestorePoints">Recent Restore Points</system:String>
     <system:String x:Key="WinOptimizer_NoRestorePoints">No restore points found</system:String>
 
+    <!-- Gamer Mode -->
+    <system:String x:Key="GameMode_Title">Gamer Mode</system:String>
+    <system:String x:Key="GameMode_Apply">Enable Gamer Mode</system:String>
+    <system:String x:Key="GameMode_Revert">Restore Defaults</system:String>
+    <system:String x:Key="GameMode_On">ON</system:String>
+    <system:String x:Key="GameMode_Off">OFF</system:String>
+    <system:String x:Key="GameMode_ConfirmApply">Apply Gamer Mode?&#10;&#10;GameDVR off · Game Mode on · GPU scheduling · full CPU/network priority for games · Ultimate power plan&#10;&#10;Every setting is saved first, so this is fully reversible.</system:String>
+    <system:String x:Key="GameMode_NeedAdmin">Run as Administrator to apply all tweaks</system:String>
+
     <!-- Network Tools -->
     <system:String x:Key="NetworkTools_Title">Network Tools</system:String>
     <system:String x:Key="NetworkTools_Subtitle">Diagnostic and analysis tools for network troubleshooting</system:String>
