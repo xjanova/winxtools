@@ -198,12 +198,13 @@
 
     <!-- Pro Banner -->
     <system:String x:Key="Pro_UpgradeTitle">Upgrade to Pro</system:String>
-    <system:String x:Key="Pro_UpgradeDesc">Unlock all premium features</system:String>
+    <system:String x:Key="Pro_UpgradeDesc">Unlock all premium features — only ฿199 (one-time)</system:String>
     <system:String x:Key="Pro_TrialTitle">PRO Trial</system:String>
     <system:String x:Key="Pro_TrialDesc">All features unlocked</system:String>
     <system:String x:Key="Pro_OverlayTitle">PRO Feature</system:String>
-    <system:String x:Key="Pro_OverlayDesc">This feature requires WinXTools Pro</system:String>
-    <system:String x:Key="Pro_UpgradeButton">Upgrade to Pro</system:String>
+    <system:String x:Key="Pro_OverlayDesc">This feature requires WinXTools Pro — ฿199</system:String>
+    <system:String x:Key="Pro_UpgradeButton">Upgrade to Pro — ฿199</system:String>
+    <system:String x:Key="Pro_Price">฿199</system:String>
 
     <!-- Common -->
     <system:String x:Key="Common_OK">OK</system:String>

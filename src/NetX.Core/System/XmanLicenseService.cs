@@ -16,7 +16,7 @@ public class XmanLicenseService
     // Real xman studio license API (Laravel). Routes: /activate /validate
     // /deactivate /demo — all POST, product selected by the "product" field.
     private const string ApiBase = "https://xman4289.com/api/v1/license";
-    private const string Product = "winxtools";
+    private const string Product = "winx-tools";
 
     private readonly HttpClient _httpClient;
     private readonly string _machineId;

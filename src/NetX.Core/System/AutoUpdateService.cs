@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace NetX.Core.System;
 
@@ -14,9 +15,11 @@ public class AutoUpdateService
     private static AutoUpdateService? _instance;
     public static AutoUpdateService Instance => _instance ??= new AutoUpdateService();
 
-    private const string XmanApiBase = "https://xman4289.com/api/v1/products/winxtools";
+    // Real xman studio version API: /api/v1/products/{slug}/... — slug is "winx-tools" (hyphen)
+    private const string XmanApiBase = "https://xman4289.com/api/v1/products/winx-tools";
+    private const string ProductPageUrl = "https://xman4289.com/products/winx-tools";
     private const string GitHubApiUrl = "https://api.github.com/repos/xjanova/winxtools/releases/latest";
-    private const string ProductSlug = "winxtools";
+    private const string ProductSlug = "winx-tools";
 
     private readonly HttpClient _httpClient;
     private readonly string _currentVersion;
@@ -30,6 +33,7 @@ public class AutoUpdateService
     {
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "WinXTools-AutoUpdate");
+        _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
         _currentVersion = GetCurrentVersion();
         _machineId = GenerateMachineId();
@@ -55,6 +59,8 @@ public class AutoUpdateService
     {
         try
         {
+            // check-update expects current_version WITHOUT a leading 'v' (server
+            // ltrim's stored versions). license_key is optional (enhances can_download).
             var request = new
             {
                 current_version = _currentVersion,
@@ -62,19 +68,21 @@ public class AutoUpdateService
             };
 
             var response = await _httpClient.PostAsJsonAsync($"{XmanApiBase}/check-update", request);
+            // 404 = product has no published version yet -> fall back to GitHub.
             if (!response.IsSuccessStatusCode) return null;
 
             var result = await response.Content.ReadFromJsonAsync<XmanUpdateResponse>();
-            if (result == null) return null;
+            if (result is not { Success: true }) return null;
 
             return new UpdateInfo
             {
                 CurrentVersion = _currentVersion,
-                LatestVersion = result.Version ?? "",
-                ReleaseNotes = result.Changelog ?? "",
-                DownloadUrl = result.DownloadUrl ?? "",
-                ReleaseUrl = $"https://github.com/xjanova/winxtools/releases/latest",
-                FileSize = result.FileSize,
+                LatestVersion = result.LatestVersion ?? result.Update?.Version ?? "",
+                ReleaseNotes = result.Update?.Changelog ?? "",
+                DownloadUrl = result.Update?.DownloadUrl ?? "",
+                ReleaseUrl = ProductPageUrl,
+                FileSize = result.Update?.FileSize ?? 0,
+                PublishedAt = result.Update?.ReleasedAt,
                 IsUpdateAvailable = result.HasUpdate,
                 Source = "xman"
             };
@@ -293,14 +301,26 @@ public class UpdateInfo
     public string Source { get; set; } = "";
 }
 
-// xman studio API response
+// xman studio version API response (VersionController@check).
+// Fields are snake_case, so JsonPropertyName is required — the old model had none
+// and silently parsed nothing.
 internal class XmanUpdateResponse
 {
-    public bool HasUpdate { get; set; }
-    public string? Version { get; set; }
-    public string? DownloadUrl { get; set; }
-    public string? Changelog { get; set; }
-    public long FileSize { get; set; }
+    [JsonPropertyName("success")] public bool Success { get; set; }
+    [JsonPropertyName("current_version")] public string? CurrentVersion { get; set; }
+    [JsonPropertyName("latest_version")] public string? LatestVersion { get; set; }
+    [JsonPropertyName("has_update")] public bool HasUpdate { get; set; }
+    [JsonPropertyName("update")] public XmanUpdateData? Update { get; set; }
+}
+
+internal class XmanUpdateData
+{
+    [JsonPropertyName("version")] public string? Version { get; set; }
+    [JsonPropertyName("filename")] public string? Filename { get; set; }
+    [JsonPropertyName("file_size")] public long FileSize { get; set; }
+    [JsonPropertyName("changelog")] public string? Changelog { get; set; }
+    [JsonPropertyName("released_at")] public DateTime? ReleasedAt { get; set; }
+    [JsonPropertyName("download_url")] public string? DownloadUrl { get; set; }
 }
 
 // GitHub API response models
