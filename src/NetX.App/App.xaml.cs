@@ -52,6 +52,9 @@ public partial class App : Application
             {
                 await XmanLicenseService.Instance.ValidateAsync(savedKey);
             }
+
+            // Initialize 48-hour trial system (after license check)
+            await TrialService.Instance.InitializeAsync();
         }
         catch (Exception ex)
         {

@@ -13,9 +13,11 @@ public partial class MainWindow : Window
 {
     private Button? _activeNavButton;
     private readonly DispatcherTimer _statusTimer;
+    private readonly DispatcherTimer _trialTimer;
     private readonly NetworkMonitor _networkMonitor;
     private double _maxDownloadSpeed = 1;
     private double _maxUploadSpeed = 1;
+    private string? _currentPageTag = "Dashboard";
 
     public MainWindow()
     {
@@ -39,24 +41,87 @@ public partial class MainWindow : Window
 
         Closed += MainWindow_Closed;
 
-        // Hide Pro banner if user already has Pro license
-        UpdateProBannerVisibility();
-        XmanLicenseService.Instance.OnLicenseValidated += _ => Dispatcher.Invoke(UpdateProBannerVisibility);
+        // Trial countdown timer (1 second interval)
+        _trialTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _trialTimer.Tick += TrialTimer_Tick;
+        _trialTimer.Start();
+
+        // Subscribe to trial and license status changes
+        TrialService.Instance.OnTrialStatusChanged += () => Dispatcher.Invoke(UpdateTrialUI);
+        XmanLicenseService.Instance.OnLicenseValidated += _ => Dispatcher.Invoke(UpdateTrialUI);
+
+        // Initial UI state
+        UpdateTrialUI();
     }
 
-    private void UpdateProBannerVisibility()
+    private void TrialTimer_Tick(object? sender, EventArgs e)
     {
-        if (ProBanner != null)
+        var trial = TrialService.Instance;
+        if (trial.IsTrialActive)
         {
-            ProBanner.Visibility = XmanLicenseService.Instance.CachedStatus.IsPremium
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+            trial.Tick();
+            TrialCountdown.Text = trial.FormatTimeRemaining();
+        }
+    }
+
+    private void UpdateTrialUI()
+    {
+        if (ProBanner == null) return;
+
+        var trial = TrialService.Instance;
+        var license = XmanLicenseService.Instance.CachedStatus;
+
+        if (license.IsPremium)
+        {
+            // Licensed Pro user — hide banner, no overlay
+            ProBanner.Visibility = Visibility.Collapsed;
+            ProOverlay.Visibility = Visibility.Collapsed;
+            _trialTimer.Stop();
+        }
+        else if (trial.IsTrialActive)
+        {
+            // Trial active — show countdown banner, no overlay
+            ProBanner.Visibility = Visibility.Visible;
+            ProBannerTitle.Text = FindResource("Pro_TrialTitle") as string ?? "PRO Trial";
+            TrialCountdown.Text = trial.FormatTimeRemaining();
+            TrialCountdown.Visibility = Visibility.Visible;
+            ProBannerDesc.Text = FindResource("Pro_TrialDesc") as string ?? "All features unlocked";
+            ProOverlay.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            // Trial expired or free — show upgrade banner
+            ProBanner.Visibility = Visibility.Visible;
+            ProBannerTitle.Text = FindResource("Pro_UpgradeTitle") as string ?? "Upgrade to Pro";
+            TrialCountdown.Visibility = Visibility.Collapsed;
+            ProBannerDesc.Text = FindResource("Pro_UpgradeDesc") as string ?? "Unlock all premium features";
+            UpdateProOverlay();
+        }
+    }
+
+    private void UpdateProOverlay()
+    {
+        if (TrialService.Instance.HasProAccess)
+        {
+            ProOverlay.Visibility = Visibility.Collapsed;
+        }
+        else if (TrialService.IsProOnlyPage(_currentPageTag))
+        {
+            ProOverlay.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            ProOverlay.Visibility = Visibility.Collapsed;
         }
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
         _statusTimer.Stop();
+        _trialTimer.Stop();
 
         // Clean up bandwidth limiter (removes all QoS policies and firewall rules)
         try
@@ -287,6 +352,8 @@ public partial class MainWindow : Window
         {
             MainFrame.Navigate(page);
             UpdatePageTitle(tag);
+            _currentPageTag = tag;
+            UpdateProOverlay();
         }
     }
 
@@ -334,6 +401,16 @@ public partial class MainWindow : Window
     #region Pro Banner
 
     private void ProBanner_Click(object sender, MouseButtonEventArgs e)
+    {
+        OpenProUpgradeUrl();
+    }
+
+    private void ProOverlay_UpgradeClick(object sender, MouseButtonEventArgs e)
+    {
+        OpenProUpgradeUrl();
+    }
+
+    private static void OpenProUpgradeUrl()
     {
         try
         {
