@@ -36,18 +36,21 @@
                                        FontSize="11"/>
                         </StackPanel>
 
+                        <!-- No IsSelected here: code selects the applied language
+                             (selecting in XAML fired Language_Changed during load
+                             and saved English every time the page opened). -->
                         <ComboBox Grid.Column="1"
                                   x:Name="LanguageCombo"
                                   Background="{StaticResource BgTertiaryBrush}"
                                   Foreground="{StaticResource TextPrimaryBrush}"
                                   SelectionChanged="Language_Changed">
-                            <ComboBoxItem Content="English" Tag="en-US" IsSelected="True"/>
+                            <ComboBoxItem Content="English" Tag="en-US"/>
                             <ComboBoxItem Content="ไทย (Thai)" Tag="th-TH"/>
                         </ComboBox>
                     </Grid>
 
-                    <!-- Start with Windows -->
-                    <Grid Margin="0,0,0,16">
+                    <!-- Start with Windows (Task Scheduler logon task) -->
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -57,155 +60,18 @@
                             <TextBlock Text="{DynamicResource Settings_StartWithWindows}"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        FontWeight="SemiBold"/>
-                            <TextBlock Text="Launch WinXTools when Windows starts"
+                            <TextBlock Text="{DynamicResource Settings_StartWithWindowsDesc}"
                                        Foreground="{StaticResource TextTertiaryBrush}"
-                                       FontSize="11"/>
+                                       FontSize="11"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
 
+                        <!-- Disabled until Task Scheduler has been asked for the real state -->
                         <CheckBox Grid.Column="1"
                                   x:Name="StartWithWindowsToggle"
-                                  Style="{StaticResource ToggleSwitchStyle}"/>
-                    </Grid>
-
-                    <!-- Minimize to Tray -->
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{DynamicResource Settings_MinimizeToTray}"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="Keep running in system tray when minimized"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                       FontSize="11"/>
-                        </StackPanel>
-
-                        <CheckBox Grid.Column="1"
-                                  x:Name="MinimizeToTrayToggle"
                                   Style="{StaticResource ToggleSwitchStyle}"
-                                  IsChecked="True"/>
-                    </Grid>
-
-                    <!-- Notifications -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{DynamicResource Settings_Notifications}"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="Show desktop notifications"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                       FontSize="11"/>
-                        </StackPanel>
-
-                        <CheckBox Grid.Column="1"
-                                  x:Name="NotificationsToggle"
-                                  Style="{StaticResource ToggleSwitchStyle}"
-                                  IsChecked="True"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Network Settings -->
-            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource Settings_Network}"
-                               Style="{StaticResource SubHeaderTextStyle}"
-                               Margin="0,0,0,16"/>
-
-                    <!-- Refresh Rate -->
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{DynamicResource Settings_RefreshRate}"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="How often to update network stats"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                       FontSize="11"/>
-                        </StackPanel>
-
-                        <ComboBox Grid.Column="1"
-                                  x:Name="RefreshRateCombo"
-                                  Background="{StaticResource BgTertiaryBrush}"
-                                  Foreground="{StaticResource TextPrimaryBrush}">
-                            <ComboBoxItem Content="500ms (Fast)" Tag="500"/>
-                            <ComboBoxItem Content="1 second" Tag="1000" IsSelected="True"/>
-                            <ComboBoxItem Content="2 seconds" Tag="2000"/>
-                            <ComboBoxItem Content="5 seconds" Tag="5000"/>
-                        </ComboBox>
-                    </Grid>
-
-                    <!-- Data Retention -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{DynamicResource Settings_DataRetention}"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="How long to keep network history"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                       FontSize="11"/>
-                        </StackPanel>
-
-                        <ComboBox Grid.Column="1"
-                                  x:Name="DataRetentionCombo"
-                                  Background="{StaticResource BgTertiaryBrush}"
-                                  Foreground="{StaticResource TextPrimaryBrush}">
-                            <ComboBoxItem Content="7 days" Tag="7"/>
-                            <ComboBoxItem Content="14 days" Tag="14"/>
-                            <ComboBoxItem Content="30 days" Tag="30" IsSelected="True"/>
-                            <ComboBoxItem Content="90 days" Tag="90"/>
-                        </ComboBox>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Bandwidth Control Settings -->
-            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource Nav_BandwidthControl}"
-                               Style="{StaticResource SubHeaderTextStyle}"
-                               Margin="0,0,0,16"/>
-
-                    <!-- Default Mode -->
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Default Control Mode"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="Mode to use when adding new rules"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                       FontSize="11"/>
-                        </StackPanel>
-
-                        <ComboBox Grid.Column="1"
-                                  x:Name="ControlModeCombo"
-                                  Background="{StaticResource BgTertiaryBrush}"
-                                  Foreground="{StaticResource TextPrimaryBrush}">
-                            <ComboBoxItem Content="Basic Mode" Tag="basic" IsSelected="True"/>
-                            <ComboBoxItem Content="Advanced Mode (WFP)" Tag="advanced"/>
-                        </ComboBox>
+                                  IsEnabled="False"
+                                  Click="StartWithWindows_Click"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -250,14 +116,21 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0">
+                        <!-- Texts come from code (RenderLicense): they depend on the license state -->
+                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
                             <TextBlock Text="{DynamicResource Settings_LicenseStatus}"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="LicenseStatusText"
-                                       Text="Free"
                                        Foreground="{StaticResource TextTertiaryBrush}"
+                                       TextWrapping="Wrap"
                                        FontSize="11"/>
+                            <TextBlock x:Name="LicenseDetailText"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       TextWrapping="Wrap"
+                                       FontSize="11"
+                                       Margin="0,2,0,0"
+                                       Visibility="Collapsed"/>
                         </StackPanel>
 
                         <Border Grid.Column="1"
@@ -289,6 +162,10 @@
                                  Padding="10,8"
                                  FontFamily="Consolas"
                                  FontSize="13"
+                                 MaxLength="64"
+                                 CharacterCasing="Upper"
+                                 ToolTip="{DynamicResource Settings_LicenseKeyPlaceholder}"
+                                 KeyDown="LicenseKeyInput_KeyDown"
                                  VerticalContentAlignment="Center"/>
 
                         <Button Grid.Column="1"
@@ -300,13 +177,29 @@
                                 Padding="16,8"/>
                     </Grid>
 
-                    <!-- Deactivate -->
-                    <Button x:Name="DeactivateButton"
-                            Content="{DynamicResource Settings_Deactivate}"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Click="DeactivateLicense_Click"
-                            Visibility="Collapsed"
-                            Padding="16,8"/>
+                    <WrapPanel Orientation="Horizontal">
+                        <Button x:Name="BuyProButton"
+                                Content="{DynamicResource Settings_BuyPro}"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Click="BuyPro_Click"
+                                Margin="0,0,8,0"
+                                Padding="16,8"/>
+
+                        <Button x:Name="RefreshLicenseButton"
+                                Content="{DynamicResource Settings_LicenseRefresh}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Click="RefreshLicense_Click"
+                                Visibility="Collapsed"
+                                Margin="0,0,8,0"
+                                Padding="16,8"/>
+
+                        <Button x:Name="DeactivateButton"
+                                Content="{DynamicResource Settings_Deactivate}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Click="DeactivateLicense_Click"
+                                Visibility="Collapsed"
+                                Padding="16,8"/>
+                    </WrapPanel>
                 </StackPanel>
             </Border>
 
@@ -324,9 +217,9 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
+                        <!-- Status text comes from code: it only says "up to date" after a real check -->
                         <StackPanel Grid.Column="0">
                             <TextBlock x:Name="UpdateStatusText"
-                                       Text="{DynamicResource Settings_UpToDate}"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="UpdateVersionText"
@@ -360,7 +253,6 @@
                                      Foreground="{StaticResource AccentPrimaryBrush}"
                                      Margin="0,0,0,4"/>
                         <TextBlock x:Name="DownloadProgressText"
-                                   Text="Downloading..."
                                    Foreground="{StaticResource TextTertiaryBrush}"
                                    FontSize="11"/>
                     </StackPanel>
@@ -407,7 +299,8 @@
                                Margin="0,0,0,16"/>
 
                     <!-- Actions -->
-                    <Button Content="{DynamicResource Settings_ResetSettings}"
+                    <Button x:Name="ResetButton"
+                            Content="{DynamicResource Settings_ResetSettings}"
                             Style="{StaticResource DangerButtonStyle}"
                             Click="ResetSettings_Click"/>
                 </StackPanel>

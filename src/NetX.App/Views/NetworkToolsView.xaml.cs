@@ -10,10 +10,25 @@ public partial class NetworkToolsView : Page
 {
     private CancellationTokenSource? _cts;
     private string _currentTool = "Ping";
+    private bool _isRunning;
 
     public NetworkToolsView()
     {
         InitializeComponent();
+
+        // Stop any in-flight work when the user navigates away from the page.
+        Unloaded += (s, e) => _cts?.Cancel();
+    }
+
+    // Localized string lookup with an English fallback (see Languages/*.xaml).
+    private static string Tr(string key, string fallback) =>
+        Application.Current?.TryFindResource(key) as string ?? fallback;
+
+    private static string Tr(string key, string fallback, params object[] args)
+    {
+        var fmt = Application.Current?.TryFindResource(key) as string ?? fallback;
+        try { return string.Format(fmt, args); }
+        catch (FormatException) { return string.Format(fallback, args); }
     }
 
     private void Tool_Changed(object sender, RoutedEventArgs e)
@@ -48,8 +63,9 @@ public partial class NetworkToolsView : Page
             _ => ""
         };
 
-        // Show/hide input for tools that don't need it
-        InputPanel.Visibility = _currentTool switch
+        // Hide only the text box for tools that need no input; the Execute button
+        // stays visible so those tools can still run.
+        InputHost.Visibility = _currentTool switch
         {
             "My IP" or "ARP Table" or "Route Table" or "Speed Test" or "Network Stats" => Visibility.Collapsed,
             _ => Visibility.Visible
@@ -92,14 +108,27 @@ public partial class NetworkToolsView : Page
         }
     }
 
+    private void CancelBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _cts?.Cancel();
+        CancelBtn.IsEnabled = false;
+    }
+
     private async void ExecuteBtn_Click(object sender, RoutedEventArgs e)
     {
-        // Cancel any running operation
-        _cts?.Cancel();
+        // Prevent re-entry: a second Enter / click while a run is in progress must
+        // not start an overlapping operation.
+        if (_isRunning) return;
+        _isRunning = true;
+
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
+        var token = _cts.Token;
 
         ExecuteBtn.IsEnabled = false;
-        ExecuteBtn.Content = "Running...";
+        ExecuteBtn.Content = Tr("NetTools_Running", "Running...");
+        CancelBtn.IsEnabled = true;
+        CancelBtn.Visibility = Visibility.Visible;
         OutputText.Text = "";
 
         try
@@ -109,25 +138,25 @@ public partial class NetworkToolsView : Page
             switch (_currentTool)
             {
                 case "Ping":
-                    await ExecutePingAsync(input);
+                    await ExecutePingAsync(input, token);
                     break;
                 case "Traceroute":
-                    await ExecuteTracerouteAsync(input);
+                    await ExecuteTracerouteAsync(input, token);
                     break;
                 case "DNS Lookup":
                     await ExecuteDnsLookupAsync(input);
                     break;
                 case "Port Scanner":
-                    await ExecutePortScanAsync(input);
+                    await ExecutePortScanAsync(input, token);
                     break;
                 case "Whois":
-                    await ExecuteWhoisAsync(input);
+                    await ExecuteWhoisAsync(input, token);
                     break;
                 case "SSL Checker":
-                    await ExecuteSslCheckAsync(input);
+                    await ExecuteSslCheckAsync(input, token);
                     break;
                 case "HTTP Headers":
-                    await ExecuteHttpHeadersAsync(input);
+                    await ExecuteHttpHeadersAsync(input, token);
                     break;
                 case "My IP":
                     await ExecuteMyIpAsync();
@@ -151,33 +180,36 @@ public partial class NetworkToolsView : Page
                     await ExecuteWolAsync(input);
                     break;
                 case "Speed Test":
-                    await ExecuteSpeedTestAsync();
+                    await ExecuteSpeedTestAsync(token);
                     break;
                 case "Packet Sender":
-                    await ExecutePacketSenderAsync(input);
+                    await ExecutePacketSenderAsync(input, token);
                     break;
             }
         }
         catch (OperationCanceledException)
         {
-            OutputText.Text += "\n\n[Cancelled]";
+            OutputText.Text += "\n\n" + Tr("NetTools_Cancelled", "[Cancelled]");
         }
         catch (Exception ex)
         {
-            OutputText.Text = $"Error: {ex.Message}";
+            OutputText.Text = Tr("NetTools_Error", "Error: {0}", ex.Message);
         }
         finally
         {
+            _isRunning = false;
             ExecuteBtn.IsEnabled = true;
-            ExecuteBtn.Content = FindResource("Common_Execute");
+            ExecuteBtn.Content = Tr("Common_Execute", "Execute");
+            CancelBtn.Visibility = Visibility.Collapsed;
+            CancelBtn.IsEnabled = true;
         }
     }
 
-    private async Task ExecutePingAsync(string host)
+    private async Task ExecutePingAsync(string host, CancellationToken token)
     {
         if (string.IsNullOrEmpty(host))
         {
-            OutputText.Text = "Please enter a hostname or IP address.";
+            OutputText.Text = Tr("NetTools_EnterHost", "Please enter a hostname or IP address.");
             return;
         }
 
@@ -185,7 +217,7 @@ public partial class NetworkToolsView : Page
         sb.AppendLine($"Pinging {host}...\n");
         OutputText.Text = sb.ToString();
 
-        var results = await NetworkTools.PingMultipleAsync(host, 4, 5000);
+        var results = await NetworkTools.PingMultipleAsync(host, 4, 5000, token);
 
         int successCount = 0;
         long totalTime = 0;
@@ -217,11 +249,11 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecuteTracerouteAsync(string host)
+    private async Task ExecuteTracerouteAsync(string host, CancellationToken token)
     {
         if (string.IsNullOrEmpty(host))
         {
-            OutputText.Text = "Please enter a hostname or IP address.";
+            OutputText.Text = Tr("NetTools_EnterHost", "Please enter a hostname or IP address.");
             return;
         }
 
@@ -236,11 +268,14 @@ public partial class NetworkToolsView : Page
             var hostname = hop.Hostname ?? hop.Address;
             if (hostname.Length > 30) hostname = hostname[..27] + "...";
 
-            sb.AppendLine($"{hop.HopNumber,-6} {hop.Address,-31} {hop.RoundtripTime,5}ms   {hostname}");
+            // Timed-out hops have no round-trip time; show "*" instead of "0ms".
+            var timeStr = hop.Address == "*" ? "*" : $"{hop.RoundtripTime}ms";
+
+            sb.AppendLine($"{hop.HopNumber,-6} {hop.Address,-31} {timeStr,-9} {hostname}");
             OutputText.Text = sb.ToString();
         });
 
-        await NetworkTools.TracerouteAsync(host, 30, 3000, progress);
+        await NetworkTools.TracerouteAsync(host, 30, 3000, progress, token);
 
         sb.AppendLine("\nTrace complete.");
         OutputText.Text = sb.ToString();
@@ -250,7 +285,7 @@ public partial class NetworkToolsView : Page
     {
         if (string.IsNullOrEmpty(hostname))
         {
-            OutputText.Text = "Please enter a hostname.";
+            OutputText.Text = Tr("NetTools_EnterHostname", "Please enter a hostname.");
             return;
         }
 
@@ -288,11 +323,11 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecutePortScanAsync(string host)
+    private async Task ExecutePortScanAsync(string host, CancellationToken token)
     {
         if (string.IsNullOrEmpty(host))
         {
-            OutputText.Text = "Please enter a hostname or IP address.";
+            OutputText.Text = Tr("NetTools_EnterHost", "Please enter a hostname or IP address.");
             return;
         }
 
@@ -310,7 +345,7 @@ public partial class NetworkToolsView : Page
             OutputText.Text = sb.ToString();
         });
 
-        var results = await NetworkTools.ScanCommonPortsAsync(host, 2000, progress);
+        var results = await NetworkTools.ScanCommonPortsAsync(host, 2000, progress, token);
 
         var openPorts = results.Count(r => r.IsOpen);
         sb.AppendLine();
@@ -319,17 +354,17 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecuteWhoisAsync(string domain)
+    private async Task ExecuteWhoisAsync(string domain, CancellationToken token)
     {
         if (string.IsNullOrEmpty(domain))
         {
-            OutputText.Text = "Please enter a domain name.";
+            OutputText.Text = Tr("NetTools_EnterDomain", "Please enter a domain name.");
             return;
         }
 
         OutputText.Text = $"Looking up whois for {domain}...\n";
 
-        var result = await NetworkTools.WhoisAsync(domain);
+        var result = await NetworkTools.WhoisAsync(domain, token);
         OutputText.Text = result;
     }
 
@@ -458,43 +493,43 @@ public partial class NetworkToolsView : Page
         OutputText.Text = await NetworkTools.GetRouteTableAsync();
     }
 
-    private async Task ExecuteSpeedTestAsync()
+    private async Task ExecuteSpeedTestAsync(CancellationToken token)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("Starting speed test...\n");
-        OutputText.Text = sb.ToString();
+        var header = "Speed Test\n" + new string('=', 50) + "\n";
+        OutputText.Text = header + Tr("NetTools_SpeedStarting", "Starting download test...");
 
+        // One live line instead of ~1,200 appended lines; float math avoids the
+        // integer-truncation that made every size read x.00.
         var progress = new Progress<SpeedTestProgress>(p =>
         {
-            var speedMbps = p.Speed * 8 / 1_000_000;
-            sb.AppendLine($"Downloaded: {p.BytesTransferred / 1024 / 1024:F2} MB at {speedMbps:F2} Mbps");
-            OutputText.Text = sb.ToString();
+            var mb = p.BytesTransferred / 1_048_576.0;
+            var mbps = p.Speed * 8 / 1_000_000.0;
+            OutputText.Text = header + Tr("NetTools_SpeedProgress",
+                "Downloaded {0:F1} MB — {1:F1} Mbps", mb, mbps);
         });
 
-        var result = await NetworkTools.SpeedTestAsync(progress, _cts!.Token);
+        var result = await NetworkTools.SpeedTestAsync(progress, token);
 
-        sb.AppendLine();
         if (result.Success)
         {
-            var downloadMbps = result.DownloadSpeed * 8 / 1_000_000;
-            sb.AppendLine("=" + new string('=', 50));
+            var downloadMbps = result.DownloadSpeed * 8 / 1_000_000.0;
+            var sb = new StringBuilder(header);
             sb.AppendLine($"Download Speed: {downloadMbps:F2} Mbps");
-            sb.AppendLine($"Total Downloaded: {result.DownloadBytes / 1024 / 1024:F2} MB");
-            sb.AppendLine($"Time: {result.DownloadTime:F2} seconds");
+            sb.AppendLine($"Downloaded:     {result.DownloadBytes / 1_048_576.0:F2} MB");
+            sb.AppendLine($"Time:           {result.DownloadTime:F2} s");
+            OutputText.Text = sb.ToString();
         }
         else
         {
-            sb.AppendLine($"Speed test failed: {result.ErrorMessage}");
+            OutputText.Text = header + Tr("NetTools_SpeedFailed", "Speed test failed: {0}", result.ErrorMessage ?? "");
         }
-
-        OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecuteSslCheckAsync(string host)
+    private async Task ExecuteSslCheckAsync(string host, CancellationToken token)
     {
         if (string.IsNullOrEmpty(host))
         {
-            OutputText.Text = "Please enter a hostname.";
+            OutputText.Text = Tr("NetTools_EnterHostname", "Please enter a hostname.");
             return;
         }
 
@@ -502,7 +537,7 @@ public partial class NetworkToolsView : Page
         sb.AppendLine($"Checking SSL certificate for {host}...\n");
         OutputText.Text = sb.ToString();
 
-        var result = await NetworkTools.CheckSslCertificateAsync(host);
+        var result = await NetworkTools.CheckSslCertificateAsync(host, 443, token);
 
         sb.AppendLine("=" + new string('=', 60));
         sb.AppendLine($"SSL Certificate Report for: {host}");
@@ -510,9 +545,24 @@ public partial class NetworkToolsView : Page
 
         if (result.Success)
         {
-            // Status indicator
-            var statusIcon = result.IsExpired ? "[EXPIRED]" : (result.DaysUntilExpiry < 30 ? "[WARNING]" : "[VALID]");
+            // Status must reflect trust, not just the expiry date: a self-signed or
+            // name-mismatched cert is NOT valid even when its dates are fine.
+            string statusIcon;
+            if (result.IsExpired)
+                statusIcon = Tr("NetTools_SslExpired", "[EXPIRED]");
+            else if (!result.IsValid)
+                statusIcon = Tr("NetTools_SslInvalid", "[INVALID]");
+            else if (result.DaysUntilExpiry < 30)
+                statusIcon = Tr("NetTools_SslWarning", "[WARNING]");
+            else
+                statusIcon = Tr("NetTools_SslValid", "[VALID]");
+
             sb.AppendLine($"\nStatus: {statusIcon}");
+            if (!result.IsValid && !string.IsNullOrEmpty(result.ValidationError))
+            {
+                sb.AppendLine(Tr("NetTools_SslReasonLabel", "Validation errors:"));
+                sb.AppendLine($"  {result.ValidationError}");
+            }
             sb.AppendLine($"Days until expiry: {result.DaysUntilExpiry}");
 
             sb.AppendLine($"\nSubject: {result.Subject}");
@@ -541,11 +591,11 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecuteHttpHeadersAsync(string url)
+    private async Task ExecuteHttpHeadersAsync(string url, CancellationToken token)
     {
         if (string.IsNullOrEmpty(url))
         {
-            OutputText.Text = "Please enter a URL.";
+            OutputText.Text = Tr("NetTools_EnterUrl", "Please enter a URL.");
             return;
         }
 
@@ -553,7 +603,7 @@ public partial class NetworkToolsView : Page
         sb.AppendLine($"Fetching HTTP headers for {url}...\n");
         OutputText.Text = sb.ToString();
 
-        var result = await NetworkTools.GetHttpHeadersAsync(url);
+        var result = await NetworkTools.GetHttpHeadersAsync(url, token);
 
         sb.AppendLine("=" + new string('=', 60));
         sb.AppendLine($"HTTP Headers for: {result.Url}");
@@ -588,7 +638,7 @@ public partial class NetworkToolsView : Page
     {
         if (string.IsNullOrEmpty(input))
         {
-            OutputText.Text = "Please enter an IP address with CIDR (e.g., 192.168.1.0/24).";
+            OutputText.Text = Tr("NetTools_SubnetPrompt", "Please enter an IP address with CIDR (e.g., 192.168.1.0/24).");
             return;
         }
 
@@ -616,7 +666,15 @@ public partial class NetworkToolsView : Page
         }
         else
         {
-            sb.AppendLine($"\nError: {result.ErrorMessage}");
+            // Turn the Core error code into a localized, human message.
+            var msg = result.ErrorMessage switch
+            {
+                NetworkTools.SubnetErrorIPv4Only => Tr("NetTools_SubnetIpv4Only", "Only IPv4 addresses are supported."),
+                NetworkTools.SubnetErrorCidrRange => Tr("NetTools_SubnetCidrRange", "CIDR prefix must be between 0 and 32."),
+                NetworkTools.SubnetErrorFormat => Tr("NetTools_SubnetFormat", "Invalid format. Use: 192.168.1.0/24"),
+                _ => result.ErrorMessage
+            };
+            sb.AppendLine($"\nError: {msg}");
             sb.AppendLine("\nExpected format: 192.168.1.0/24");
         }
 
@@ -697,7 +755,7 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecutePacketSenderAsync(string input)
+    private async Task ExecutePacketSenderAsync(string input, CancellationToken token)
     {
         if (string.IsNullOrEmpty(input))
         {
@@ -726,7 +784,7 @@ public partial class NetworkToolsView : Page
             // Check for FLOOD mode
             if (protocol == "FLOOD")
             {
-                await ExecutePacketFloodAsync(input, sb);
+                await ExecutePacketFloodAsync(input, sb, token);
                 return;
             }
 
@@ -854,25 +912,49 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecutePacketFloodAsync(string input, StringBuilder sb)
+    private async Task ExecutePacketFloodAsync(string input, StringBuilder sb, CancellationToken token)
     {
         // FLOOD:PROTOCOL:HOST:PORT:COUNT:DELAY:DATA
         var parts = input.Split(':', 7);
 
         if (parts.Length < 5)
         {
-            OutputText.Text = "Invalid FLOOD format. Use: FLOOD:PROTOCOL:HOST:PORT:COUNT:DELAY:DATA";
+            OutputText.Text = Tr("NetTools_FloodFormat",
+                "Invalid FLOOD format. Use: FLOOD:PROTOCOL:HOST:PORT:COUNT:DELAY:DATA");
             return;
         }
 
         var protocol = parts[1].ToUpper();
         var host = parts[2];
-        var port = protocol == "ICMP" ? 0 : int.Parse(parts[3]);
-        var count = protocol == "ICMP" ? int.Parse(parts[3]) : int.Parse(parts[4]);
-        var delayMs = protocol == "ICMP" ? (parts.Length > 4 ? int.Parse(parts[4]) : 100) : (parts.Length > 5 ? int.Parse(parts[5]) : 100);
-        var dataStr = protocol == "ICMP"
-            ? (parts.Length > 5 ? parts[5] : "Flood Test")
-            : (parts.Length > 6 ? parts[6] : "Flood Test");
+
+        // Parse numbers defensively so a typo shows a friendly message, not a crash.
+        int port = 0, requestedCount, requestedDelay;
+        string dataStr;
+        if (protocol == "ICMP")
+        {
+            if (!int.TryParse(parts[3], out requestedCount))
+            {
+                OutputText.Text = Tr("NetTools_FloodBadNumbers", "Count and delay must be whole numbers.");
+                return;
+            }
+            requestedDelay = parts.Length > 4 && int.TryParse(parts[4], out var d) ? d : 100;
+            dataStr = parts.Length > 5 ? parts[5] : "Flood Test";
+        }
+        else
+        {
+            if (!int.TryParse(parts[3], out port) || !int.TryParse(parts[4], out requestedCount))
+            {
+                OutputText.Text = Tr("NetTools_FloodBadNumbers", "Count and delay must be whole numbers.");
+                return;
+            }
+            requestedDelay = parts.Length > 5 && int.TryParse(parts[5], out var d) ? d : 100;
+            dataStr = parts.Length > 6 ? parts[6] : "Flood Test";
+        }
+
+        // Enforce caps: at most 10,000 packets and no faster than ~1,000/second.
+        var count = Math.Clamp(requestedCount, 1, NetworkTools.MaxFloodPackets);
+        var delayMs = Math.Max(NetworkTools.MinFloodDelayMs, requestedDelay);
+        bool capped = count != requestedCount || delayMs != requestedDelay;
 
         byte[] data;
         if (dataStr.StartsWith("hex:", StringComparison.OrdinalIgnoreCase))
@@ -885,13 +967,22 @@ public partial class NetworkToolsView : Page
             data = Encoding.UTF8.GetBytes(dataStr);
         }
 
+        sb.AppendLine(Tr("NetTools_FloodWarning",
+            "WARNING: FLOOD sends many packets quickly. Only target hosts you own or have permission to test."));
+        if (capped)
+        {
+            sb.AppendLine(Tr("NetTools_FloodCapped",
+                "Capped to {0} packets, min {1} ms delay (max ~{2}/s).",
+                count, delayMs, 1000 / delayMs));
+        }
+        sb.AppendLine();
         sb.AppendLine($"Protocol: {protocol}");
         sb.AppendLine($"Target: {host}" + (port > 0 ? $":{port}" : ""));
         sb.AppendLine($"Packet count: {count}");
         sb.AppendLine($"Delay between packets: {delayMs}ms");
         sb.AppendLine($"Data size: {data.Length} bytes");
         sb.AppendLine();
-        sb.AppendLine("Sending packets...");
+        sb.AppendLine("Sending packets... (press Cancel to stop)");
         sb.AppendLine();
         sb.AppendLine("Seq      Status    Time      Bytes Sent/Recv");
         sb.AppendLine("---      ------    ----      ---------------");
@@ -907,7 +998,7 @@ public partial class NetworkToolsView : Page
         });
 
         var floodResult = await NetworkTools.SendPacketFloodAsync(
-            protocol, host, port, data, count, delayMs, 5000, progress, _cts!.Token);
+            protocol, host, port, data, count, delayMs, 5000, progress, token);
 
         sb.AppendLine();
         sb.AppendLine("=" + new string('=', 50));

@@ -29,7 +29,8 @@
         <Geometry x:Key="TricksIcon">M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z</Geometry>
         <Geometry x:Key="RamIcon">M17,17H7V7H17M21,11V9H19V7C19,5.89 18.1,5 17,5H15V3H13V5H11V3H9V5H7C5.89,5 5,5.89 5,7V9H3V11H5V13H3V15H5V17A2,2 0 0,0 7,19H9V21H11V19H13V21H15V19H17A2,2 0 0,0 19,17V15H21V13H19V11M13,13H11V11H13M15,9H9V15H15V9Z</Geometry>
         <Geometry x:Key="ToolsIcon">M21.71,20.29L20.29,21.71A1,1 0 0,1 18.88,21.71L7,9.85A3.81,3.81 0 0,1 6,10A4,4 0 0,1 2,6A4,4 0 0,1 6,2A4,4 0 0,1 10,6A3.81,3.81 0 0,1 9.85,7L21.71,18.88A1,1 0 0,1 21.71,20.29M18,10A1,1 0 0,0 19,9A1,1 0 0,0 18,8A1,1 0 0,0 17,9A1,1 0 0,0 18,10M14.66,6.66L15.5,7.5L18.5,4.5L17.66,3.66L14.66,6.66Z</Geometry>
-        <Geometry x:Key="ProxyVpnIcon">M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z</Geometry>
+        <!-- Globe (the proxy is not a VPN; a shield would suggest protection it doesn't give) -->
+        <Geometry x:Key="ProxyVpnIcon">M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z</Geometry>
         <Geometry x:Key="WinOptimizerIcon">M3,12V6.75L9,5.43V11.91L3,12M20,3V11.75L10,11.9V5.21L20,3M3,13L9,13.09V19.9L3,18.75V13M20,13.25V22L10,20.09V13.1L20,13.25Z</Geometry>
         <Geometry x:Key="MinimizeIcon">M20,14H4V10H20</Geometry>
         <Geometry x:Key="MaximizeIcon">M4,4H20V20H4V4M6,8V18H18V8H6Z</Geometry>
@@ -589,6 +590,21 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
+
+                        <!-- Non-blocking notices (automatic actions such as Smart Kill) -->
+                        <Border x:Name="ToastHost" Grid.Row="0"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="0,0,24,24" MaxWidth="440"
+                                Padding="16,12" CornerRadius="10"
+                                Background="{StaticResource BgSecondaryBrush}"
+                                BorderBrush="{StaticResource WarningBrush}" BorderThickness="1"
+                                Visibility="Collapsed"
+                                Cursor="Hand"
+                                MouseLeftButtonDown="ToastHost_Click">
+                            <TextBlock x:Name="ToastText"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </Border>
 
                         <!-- Status Bar -->
                         <Border Grid.Row="1"

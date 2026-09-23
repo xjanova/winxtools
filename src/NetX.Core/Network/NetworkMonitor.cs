@@ -47,6 +47,12 @@ public class NetworkMonitor
 
     public bool IsPacketEngineActive => _packetEngineStarted && PacketEngine.Instance.IsRunning;
 
+    /// <summary>
+    /// Without the packet driver, per-app speeds are the adapter total split by
+    /// each app's share of open connections — an estimate, not a measurement.
+    /// </summary>
+    public bool PerAppSpeedsAreEstimated => !IsPacketEngineActive;
+
     private NetworkMonitor()
     {
         InitializeInterfaces();
@@ -258,10 +264,10 @@ public class NetworkMonitor
                     UploadSpeed = ps.UploadSpeed,
                     TotalDownloaded = ps.TotalBytesReceived,
                     TotalUploaded = ps.TotalBytesSent,
-                    ConnectionCount = 1 // PacketEngine doesn't track connections
+                    ConnectionCount = ps.ConnectionCount
                 }).ToList();
 
-                stats.TotalConnections = stats.ProcessStats.Count;
+                stats.TotalConnections = engineStats.TotalConnections;
 
                 // Also update interface stats for interface view
                 UpdateInterfaceStats(elapsed);

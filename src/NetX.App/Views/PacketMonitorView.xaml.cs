@@ -17,6 +17,9 @@ public partial class PacketMonitorView : Page
     private readonly ObservableCollection<PacketDisplayItem> _packets = new();
     private readonly List<PacketDisplayItem> _allPackets = new();
     private readonly object _packetLock = new();
+    // The packet the user picked. Held separately so Block/Copy keep working even
+    // though the list is rebuilt every 500 ms during capture.
+    private PacketDisplayItem? _selectedPacket;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, string> _pidNames = new();
     private bool _isCapturing = false;
     private bool _startedEngine = false;
@@ -35,6 +38,17 @@ public partial class PacketMonitorView : Page
     private readonly Brush _icmpBrush;
     private readonly Geometry _inboundIcon;
     private readonly Geometry _outboundIcon;
+
+    // Localized string lookup with an English fallback (see Languages/*.xaml).
+    private static string Tr(string key, string fallback) =>
+        Application.Current?.TryFindResource(key) as string ?? fallback;
+
+    private static string Tr(string key, string fallback, params object[] args)
+    {
+        var fmt = Application.Current?.TryFindResource(key) as string ?? fallback;
+        try { return string.Format(fmt, args); }
+        catch (FormatException) { return string.Format(fallback, args); }
+    }
 
     public PacketMonitorView()
     {
@@ -290,16 +304,23 @@ public partial class PacketMonitorView : Page
             return true;
         }).TakeLast(500).ToList(); // Show last 500 filtered packets
 
-        // Update display
+        // Update display, preserving the user's selection across the rebuild.
+        var keepSelected = _selectedPacket;
         _packets.Clear();
         foreach (var packet in filtered)
         {
             _packets.Add(packet);
         }
 
-        // Auto-scroll to bottom
-        if (_packets.Count > 0)
+        if (keepSelected != null && _packets.Contains(keepSelected))
         {
+            // Re-highlight the same row without losing the details panel.
+            PacketList.SelectedItem = keepSelected;
+        }
+        else if (_packets.Count > 0)
+        {
+            // Only tail-scroll when nothing is selected, so inspecting an older
+            // packet doesn't get yanked to the bottom on every refresh.
             PacketList.ScrollIntoView(_packets[^1]);
         }
     }
@@ -331,6 +352,8 @@ public partial class PacketMonitorView : Page
             _outboundCount = 0;
             _lastPacketCount = 0;
         }
+
+        _selectedPacket = null;
 
         TotalPacketsText.Text = "0";
         InboundPacketsText.Text = "0";
@@ -379,8 +402,11 @@ public partial class PacketMonitorView : Page
 
     private void PacketList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Only react to a real user pick. A null selection here is usually the
+        // 500 ms refresh clearing the list, and must not wipe the held packet.
         if (PacketList.SelectedItem is PacketDisplayItem packet)
         {
+            _selectedPacket = packet;
             ShowPacketDetails(packet);
         }
     }
@@ -443,26 +469,45 @@ public partial class PacketMonitorView : Page
 
     private void BlockIP_Click(object sender, RoutedEventArgs e)
     {
-        if (PacketList.SelectedItem is PacketDisplayItem packet)
+        var packet = _selectedPacket;
+        if (packet == null)
         {
-            var ip = packet.IsInbound ? packet.SourceIP : packet.DestIP;
-            var result = MessageBox.Show(
-                $"Block IP address {ip}?",
-                "Block IP",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            StatusText.Text = Tr("PktMon_NoSelection", "Select a packet first.");
+            return;
+        }
 
-            if (result == MessageBoxResult.Yes)
-            {
-                FirewallManager.Instance.BlockIP(ip);
-                StatusText.Text = $"Blocked IP: {ip}";
-            }
+        var ip = packet.IsInbound ? packet.SourceIP : packet.DestIP;
+        if (string.IsNullOrEmpty(ip) || ip == "-" || ip == "0.0.0.0" || ip == "::")
+        {
+            StatusText.Text = Tr("PktMon_NoBlockableIp", "This packet has no blockable IP address.");
+            return;
+        }
+
+        var result = MessageBox.Show(
+            Tr("PktMon_BlockConfirm", "Block IP address {0}?", ip),
+            Tr("PktMon_BlockTitle", "Block IP"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            // Reflect the real firewall result instead of always claiming success.
+            bool ok = FirewallManager.Instance.BlockIP(ip);
+            StatusText.Text = ok
+                ? Tr("PktMon_Blocked", "Blocked IP: {0}", ip)
+                : Tr("PktMon_BlockFailed", "Failed to block {0} — run WinXTools as Administrator.", ip);
         }
     }
 
     private void CopyPacket_Click(object sender, RoutedEventArgs e)
     {
-        if (PacketList.SelectedItem is PacketDisplayItem packet)
+        var packet = _selectedPacket;
+        if (packet == null)
+        {
+            StatusText.Text = Tr("PktMon_NoSelection", "Select a packet first.");
+            return;
+        }
+
         {
             var details = $"""
                 Packet #{packet.Number}
@@ -477,7 +522,7 @@ public partial class PacketMonitorView : Page
                 """;
 
             Clipboard.SetText(details);
-            StatusText.Text = "Packet details copied to clipboard";
+            StatusText.Text = Tr("PktMon_Copied", "Packet details copied to clipboard");
         }
     }
 }

@@ -52,11 +52,22 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true `
           -o publish
 
+    # WinXTools installs its own updates as Administrator, so it only accepts a package whose
+    # update-manifest.json is signed with the key behind this secret (see
+    # src/NetX.Core/System/UpdatePackageVerifier.cs). The signer checks its own output with the
+    # public key built into the app and fails the release if the two do not match.
+    - name: Sign update manifest
+      env:
+        WINXTOOLS_UPDATE_SIGNING_KEY: ${{ secrets.WINXTOOLS_UPDATE_SIGNING_KEY }}
+      run: dotnet run --project tools/ReleaseSigner -c Release -- publish "${{ steps.version.outputs.version }}"
+
     - name: Create ZIP archive
       shell: pwsh
       run: |
         Compress-Archive -Path publish/* -DestinationPath "WinXTools-v${{ steps.version.outputs.version }}-win-x64.zip"
 
+    # Only the signed zip is published: a bare exe cannot carry the signature, so the updater
+    # would refuse it anyway.
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
@@ -66,32 +77,29 @@ jobs:
 
           ### Installation
           1. Download `WinXTools-v${{ steps.version.outputs.version }}-win-x64.zip`
-          2. Extract to any folder
+          2. Extract to a folder only administrators can change, e.g. `C:\Program Files\WinXTools`
           3. Run `WinXTools.exe` as Administrator
 
           ### Auto-Update
-          Existing users will be notified of this update automatically.
+          Existing users are offered this update inside WinXTools (Settings → Updates).
+          The package is signed; WinXTools checks the signature before installing it.
         files: |
           WinXTools-v${{ steps.version.outputs.version }}-win-x64.zip
-          publish/WinXTools.exe
         draft: false
         prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'rc') }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Notify xman studio
+    # xman4289.com re-reads the GitHub release on its next update check (at most 5 minutes
+    # stale). This asks once right away so the website and the in-app check see it sooner.
+    - name: Ask xman studio to pick up the release
       if: success()
       shell: pwsh
       continue-on-error: true
       run: |
-        $body = @{
-          product_slug = "winxtools"
-          version = "${{ steps.version.outputs.version }}"
-          source = "github_actions"
-        } | ConvertTo-Json
         try {
-          Invoke-RestMethod -Uri "https://xman4289.com/api/v1/webhooks/release" -Method POST -Body $body -ContentType "application/json" -TimeoutSec 10
-          Write-Host "Notified xman studio of new release"
+          $r = Invoke-RestMethod -Uri "https://xman4289.com/api/v1/product/winx-tools/update/check?current_version=0.0.0" -TimeoutSec 20
+          Write-Host "xman studio now reports latest version: $($r.latest_version)"
         } catch {
-          Write-Host "Could not notify xman studio (non-critical): $_"
+          Write-Host "Could not reach xman studio (non-critical): $_"
         }

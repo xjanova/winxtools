@@ -15,7 +15,8 @@ namespace NetX.Core.System;
 ///
 /// The point of this class is to let the optimizer/gamer-mode code adapt to the
 /// exact OS it is running on instead of blindly applying tweaks that only exist
-/// on some builds (Recall/Copilot = Win11 24H2+, HAGS = Win10 2004+, etc.).
+/// on some builds (Recall = Copilot+ PCs on Win11 24H2+, Copilot = Win11 22H2
+/// Moment 4+, HAGS = Win10 2004+, gpedit = Pro and up, never Windows Server).
 /// </summary>
 public sealed class WindowsVersionInfo
 {
@@ -44,9 +45,27 @@ public sealed class WindowsVersionInfo
     public bool Is64Bit { get; private init; } = Environment.Is64BitOperatingSystem;
 
     // ---- High-level classification ----
+
+    /// <summary>
+    /// Windows Server shares build numbers with the client (Server 2025 = 26100),
+    /// so it must never be treated as Windows 10/11.
+    /// </summary>
     public bool IsServer { get; private init; }
-    public bool IsWindows10 => Major == 10 && Build < 22000;
-    public bool IsWindows11 => Major == 10 && Build >= 22000;
+    public bool IsWindows10 => Major == 10 && Build < 22000 && !IsServer;
+    public bool IsWindows11 => Major == 10 && Build >= 22000 && !IsServer;
+
+    /// <summary>"Windows 11" / "Windows 10" (the name Windows Update policies expect), else ProductName.</summary>
+    public string FamilyName => IsWindows11 ? "Windows 11" : IsWindows10 ? "Windows 10" : ProductName;
+
+    /// <summary>Home editions: EditionID "Core", "CoreN", "CoreSingleLanguage", "CoreCountrySpecific".</summary>
+    public bool IsHomeEdition => EditionId.StartsWith("Core", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Pro/Enterprise/Education — editions that honor Windows Update and most local policies.</summary>
+    public bool IsProOrHigher => EditionId.Length > 0 && !IsHomeEdition;
+
+    /// <summary>gpedit.msc ships only with Pro and higher.</summary>
+    public bool HasGroupPolicyEditor =>
+        !IsHomeEdition && File.Exists(Path.Combine(Environment.SystemDirectory, "gpedit.msc"));
 
     /// <summary>Human string like "Windows 11 Pro 24H2 (build 26100.2314)".</summary>
     public string FriendlyName
@@ -62,14 +81,39 @@ public sealed class WindowsVersionInfo
 
     // ---- Capability flags (drive version-aware tweaks) ----
 
-    /// <summary>Windows Recall exists only on Win11 24H2+ (build 26100+).</summary>
-    public bool SupportsRecall => IsWindows11 && Build >= 26100;
+    /// <summary>
+    /// Windows 11 22H2 "Moment 4" (22621.2361, Sept 2023) and 23H2 (22631+):
+    /// Copilot in Windows, clock seconds on the taskbar, etc.
+    /// </summary>
+    public bool IsWindows11Moment4OrLater =>
+        IsWindows11 && (Build > 22621 || (Build == 22621 && Ubr >= 2361));
 
-    /// <summary>Copilot shipped on Win11 23H2 (22631) and later.</summary>
-    public bool SupportsCopilot => IsWindows11 && Build >= 22621;
+    /// <summary>
+    /// Windows Recall: needs Windows 11 24H2+ (26100) AND a Copilot+ PC. Only
+    /// those PCs carry the Recall optional feature with its payload; everyone
+    /// else has it "disabled with payload removed".
+    /// </summary>
+    public bool SupportsRecall => IsWindows11 && Build >= 26100 && IsRecallFeaturePresent;
+
+    /// <summary>Copilot in Windows arrived with 22H2 Moment 4 (22621.2361) and 23H2 (22631).</summary>
+    public bool SupportsCopilot => IsWindows11Moment4OrLater;
 
     /// <summary>Taskbar Widgets/Chat live on Win11 only.</summary>
     public bool SupportsWidgets => IsWindows11;
+
+    /// <summary>"End task" in the taskbar right-click menu: Windows 11 23H2 (22631) and later.</summary>
+    public bool SupportsTaskbarEndTask => IsWindows11 && Build >= 22631;
+
+    /// <summary>Seconds in the taskbar clock: Windows 10, and Windows 11 from Moment 4 on.</summary>
+    public bool SupportsClockSeconds => IsWindows10 || IsWindows11Moment4OrLater;
+
+    private bool? _recallFeature;
+
+    /// <summary>
+    /// Reads the Recall optional-feature record kept by component servicing
+    /// (a registry read — fast, no DISM/PowerShell). Cached.
+    /// </summary>
+    public bool IsRecallFeaturePresent => _recallFeature ??= DetectRecallFeature();
 
     /// <summary>
     /// Hardware-Accelerated GPU Scheduling: Win10 2004 (19041) and up. Still
@@ -99,13 +143,30 @@ public sealed class WindowsVersionInfo
 
     public int ProcessorCount => Environment.ProcessorCount;
 
+    private readonly object _ssdLock = new();
+    private bool _ssdResolved;
     private bool? _systemDriveIsSsd;
     /// <summary>
     /// True if the OS drive is an SSD, false if HDD, null if unknown. Lazily
-    /// resolved via the Storage WMI provider (can be slow, so only on demand).
+    /// resolved via the Storage WMI provider (can be slow, so only on demand
+    /// and never on the UI thread; the query has a hard timeout).
     /// Superfetch/Prefetch advice depends on this.
     /// </summary>
-    public bool? SystemDriveIsSsd => _systemDriveIsSsd ??= DetectSystemDriveIsSsd();
+    public bool? SystemDriveIsSsd
+    {
+        get
+        {
+            lock (_ssdLock)
+            {
+                if (!_ssdResolved)
+                {
+                    _systemDriveIsSsd = DetectSystemDriveIsSsd();
+                    _ssdResolved = true;
+                }
+                return _systemDriveIsSsd;
+            }
+        }
+    }
 
     #region Detection
 
@@ -137,8 +198,8 @@ public sealed class WindowsVersionInfo
 
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+            using var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
             if (key != null)
             {
                 productName = key.GetValue("ProductName") as string ?? productName;
@@ -148,8 +209,12 @@ public sealed class WindowsVersionInfo
                 editionId = key.GetValue("EditionID") as string ?? "";
                 ubr = key.GetValue("UBR") is int u ? u : 0;
 
+                // "Server" / "Server Core" — belt and braces next to wProductType.
+                if ((key.GetValue("InstallationType") as string ?? "").StartsWith("Server", StringComparison.OrdinalIgnoreCase))
+                    isServer = true;
+
                 // Registry ProductName still says "Windows 10" on Win11 — correct it.
-                if (build >= 22000 && productName.Contains("Windows 10"))
+                if (build >= 22000 && !isServer && productName.Contains("Windows 10"))
                     productName = productName.Replace("Windows 10", "Windows 11");
             }
         }
@@ -168,27 +233,57 @@ public sealed class WindowsVersionInfo
         };
     }
 
+    private static bool DetectRecallFeature()
+    {
+        try
+        {
+            // Component servicing records every optional feature here. PCs that
+            // can't run Recall have it "disabled with payload removed" (Removed=1).
+            using var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\Notifications\OptionalFeatures\Recall");
+            if (key == null) return false;
+            int selection = key.GetValue("Selection") is int s ? s : 0;
+            int removed = key.GetValue("Removed") is int r ? r : 0;
+            return selection == 1 || removed == 0;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Recall feature detection failed: {ex.Message}");
+            return false;
+        }
+    }
+
     private static bool? DetectSystemDriveIsSsd()
     {
         try
         {
             var sysDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))
                 ?.TrimEnd('\\'); // e.g. "C:"
-            if (string.IsNullOrEmpty(sysDrive)) return null;
+            if (string.IsNullOrEmpty(sysDrive) || !char.IsAsciiLetter(sysDrive[0])) return null;
 
             // Map the volume -> physical disk(s) via the Storage WMI provider,
-            // then read MediaType (3 = HDD, 4 = SSD, 5 = SCM).
-            var scope = new ManagementScope(@"\\.\root\microsoft\windows\storage");
+            // then read MediaType (3 = HDD, 4 = SSD, 5 = SCM). Every WMI call has
+            // a timeout: a stuck storage provider must not hang the caller.
+            var timeout = TimeSpan.FromSeconds(10);
+            var scope = new ManagementScope(@"\\.\root\microsoft\windows\storage",
+                new ConnectionOptions { Timeout = timeout });
             scope.Connect();
+            var enumOptions = new global::System.Management.EnumerationOptions
+            {
+                Timeout = timeout,
+                ReturnImmediately = true,
+                Rewindable = false
+            };
 
             // Partition on this drive letter
             using var partSearcher = new ManagementObjectSearcher(scope,
-                new ObjectQuery($"SELECT DiskNumber FROM MSFT_Partition WHERE DriveLetter='{sysDrive[0]}'"));
+                new ObjectQuery($"SELECT DiskNumber FROM MSFT_Partition WHERE DriveLetter='{sysDrive[0]}'"), enumOptions);
             foreach (ManagementObject part in partSearcher.Get())
             {
                 var diskNumber = Convert.ToString(part["DiskNumber"]);
+                if (!int.TryParse(diskNumber, out _)) continue;
                 using var diskSearcher = new ManagementObjectSearcher(scope,
-                    new ObjectQuery($"SELECT MediaType FROM MSFT_PhysicalDisk WHERE DeviceId='{diskNumber}'"));
+                    new ObjectQuery($"SELECT MediaType FROM MSFT_PhysicalDisk WHERE DeviceId='{diskNumber}'"), enumOptions);
                 foreach (ManagementObject disk in diskSearcher.Get())
                 {
                     var mediaType = Convert.ToInt32(disk["MediaType"]);

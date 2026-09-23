@@ -45,15 +45,17 @@ public static class NetworkTools
         return result;
     }
 
-    public static async Task<List<PingResult>> PingMultipleAsync(string host, int count = 4, int timeout = 5000)
+    public static async Task<List<PingResult>> PingMultipleAsync(string host, int count = 4, int timeout = 5000,
+        CancellationToken cancellationToken = default)
     {
         var results = new List<PingResult>();
 
         for (int i = 0; i < count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             results.Add(await PingAsync(host, timeout));
             if (i < count - 1)
-                await Task.Delay(1000);
+                await Task.Delay(1000, cancellationToken);
         }
 
         return results;
@@ -64,7 +66,7 @@ public static class NetworkTools
     #region Traceroute
 
     public static async Task<List<TracerouteHop>> TracerouteAsync(string host, int maxHops = 30, int timeout = 3000,
-        IProgress<TracerouteHop>? progress = null)
+        IProgress<TracerouteHop>? progress = null, CancellationToken cancellationToken = default)
     {
         var hops = new List<TracerouteHop>();
 
@@ -82,31 +84,46 @@ public static class NetworkTools
 
             for (int ttl = 1; ttl <= maxHops; ttl++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var hop = new TracerouteHop { HopNumber = ttl };
 
                 try
                 {
                     var options = new PingOptions { Ttl = ttl, DontFragment = true };
+                    // Measure elapsed time ourselves: on Windows reply.RoundtripTime is
+                    // 0 for intermediate hops (status TtlExpired), so the stopwatch is
+                    // the only real timing we have for those hops.
                     var stopwatch = Stopwatch.StartNew();
                     var reply = await ping.SendPingAsync(targetAddress, timeout, buffer, options);
                     stopwatch.Stop();
 
-                    hop.Address = reply.Address?.ToString() ?? "*";
-                    hop.RoundtripTime = reply.RoundtripTime;
-                    hop.Status = reply.Status.ToString();
+                    bool replied = (reply.Status == IPStatus.Success || reply.Status == IPStatus.TtlExpired)
+                                   && reply.Address != null && !reply.Address.Equals(IPAddress.Any);
 
-                    // Try to resolve hostname
-                    if (reply.Address != null)
+                    if (replied)
                     {
+                        hop.Address = reply.Address!.ToString();
+                        hop.RoundtripTime = reply.RoundtripTime > 0 ? reply.RoundtripTime : stopwatch.ElapsedMilliseconds;
+                        hop.Status = reply.Status.ToString();
+
+                        // Try to resolve hostname (best-effort)
                         try
                         {
-                            var hostEntry = await Dns.GetHostEntryAsync(reply.Address);
+                            var hostEntry = await Dns.GetHostEntryAsync(reply.Address!);
                             hop.Hostname = hostEntry.HostName;
                         }
                         catch
                         {
                             hop.Hostname = hop.Address;
                         }
+                    }
+                    else
+                    {
+                        // Timed-out / unreachable hop: no address, show a star.
+                        hop.Address = "*";
+                        hop.RoundtripTime = 0;
+                        hop.Status = reply.Status == IPStatus.TimedOut ? "Timeout" : reply.Status.ToString();
                     }
 
                     hops.Add(hop);
@@ -116,14 +133,23 @@ public static class NetworkTools
                     if (reply.Status == IPStatus.Success)
                         break;
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch
                 {
                     hop.Address = "*";
+                    hop.RoundtripTime = 0;
                     hop.Status = "Timeout";
                     hops.Add(hop);
                     progress?.Report(hop);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -262,7 +288,7 @@ public static class NetworkTools
     }
 
     public static async Task<List<PortScanResult>> ScanCommonPortsAsync(string host, int timeout = 1000,
-        IProgress<PortScanResult>? progress = null)
+        IProgress<PortScanResult>? progress = null, CancellationToken cancellationToken = default)
     {
         int[] commonPorts = { 21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995,
             1433, 1521, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 27017 };
@@ -270,13 +296,14 @@ public static class NetworkTools
         var results = new List<PortScanResult>();
         var tasks = commonPorts.Select(port => Task.Run(async () =>
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var result = await ScanPortAsync(host, port, timeout);
             lock (results)
             {
                 results.Add(result);
             }
             progress?.Report(result);
-        }));
+        }, cancellationToken));
 
         await Task.WhenAll(tasks);
         return results.OrderBy(r => r.Port).ToList();
@@ -318,7 +345,7 @@ public static class NetworkTools
 
     #region Whois
 
-    public static async Task<string> WhoisAsync(string domain)
+    public static async Task<string> WhoisAsync(string domain, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -345,14 +372,14 @@ public static class NetworkTools
             };
 
             using var client = new TcpClient();
-            await client.ConnectAsync(whoisServer, 43);
+            await client.ConnectAsync(whoisServer, 43, cancellationToken);
 
             using var stream = client.GetStream();
             var query = Encoding.ASCII.GetBytes(domain + "\r\n");
-            await stream.WriteAsync(query);
+            await stream.WriteAsync(query, cancellationToken);
 
             using var reader = new StreamReader(stream, Encoding.ASCII);
-            return await reader.ReadToEndAsync();
+            return await reader.ReadToEndAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -642,18 +669,21 @@ public static class NetworkTools
             using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var buffer = new byte[8192];
             int bytesRead;
+            long lastReportMs = 0;
 
             while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
             {
                 totalBytes += bytesRead;
-                var elapsed = stopwatch.Elapsed.TotalSeconds;
-                if (elapsed > 0)
+                var elapsedMs = stopwatch.ElapsedMilliseconds;
+                // Throttle progress to ~5/second so the UI shows a handful of updates,
+                // not ~1,200 lines (one per 8 KB chunk).
+                if (elapsedMs > 0 && elapsedMs - lastReportMs >= 200)
                 {
-                    var currentSpeed = totalBytes / elapsed;
+                    lastReportMs = elapsedMs;
                     progress?.Report(new SpeedTestProgress
                     {
                         BytesTransferred = totalBytes,
-                        Speed = currentSpeed,
+                        Speed = totalBytes / (elapsedMs / 1000.0),
                         IsDownload = true
                     });
                 }
@@ -678,18 +708,38 @@ public static class NetworkTools
 
     #region Subnet Calculator
 
+    /// <summary>Error codes so the UI can show a localized message. English text is a fallback.</summary>
+    public const string SubnetErrorIPv4Only = "IPV4_ONLY";
+    public const string SubnetErrorCidrRange = "CIDR_RANGE";
+    public const string SubnetErrorFormat = "FORMAT";
+
     public static SubnetInfo CalculateSubnet(string ipAddress, int cidr)
     {
         var result = new SubnetInfo { InputIP = ipAddress, CIDR = cidr };
 
+        // IPv4 only — reject IPv6 and anything that isn't a dotted-quad.
+        if (!IPAddress.TryParse(ipAddress, out var ip) || ip.AddressFamily != AddressFamily.InterNetwork)
+        {
+            result.Success = false;
+            result.ErrorMessage = SubnetErrorIPv4Only;
+            return result;
+        }
+
+        // Valid IPv4 prefixes are 0..32; anything else overflows the shift.
+        if (cidr < 0 || cidr > 32)
+        {
+            result.Success = false;
+            result.ErrorMessage = SubnetErrorCidrRange;
+            return result;
+        }
+
         try
         {
-            var ip = IPAddress.Parse(ipAddress);
             var ipBytes = ip.GetAddressBytes();
             var ipValue = BitConverter.ToUInt32(ipBytes.Reverse().ToArray(), 0);
 
-            // Create subnet mask
-            uint mask = cidr == 0 ? 0 : ~((1u << (32 - cidr)) - 1);
+            // Create subnet mask (guard the 0 and 32 edge cases so the shift stays in range)
+            uint mask = cidr == 0 ? 0u : cidr == 32 ? 0xFFFFFFFFu : ~((1u << (32 - cidr)) - 1);
             result.SubnetMask = new IPAddress(BitConverter.GetBytes(mask).Reverse().ToArray()).ToString();
 
             // Calculate network address
@@ -700,13 +750,21 @@ public static class NetworkTools
             uint broadcastValue = networkValue | ~mask;
             result.BroadcastAddress = new IPAddress(BitConverter.GetBytes(broadcastValue).Reverse().ToArray()).ToString();
 
-            // Calculate first and last usable
-            result.FirstUsable = new IPAddress(BitConverter.GetBytes(networkValue + 1).Reverse().ToArray()).ToString();
-            result.LastUsable = new IPAddress(BitConverter.GetBytes(broadcastValue - 1).Reverse().ToArray()).ToString();
-
-            // Calculate total hosts
-            result.TotalHosts = (int)Math.Pow(2, 32 - cidr);
+            // Total addresses in the block (long so /0 = 2^32 does not overflow).
+            result.TotalHosts = 1L << (32 - cidr);
             result.UsableHosts = result.TotalHosts > 2 ? result.TotalHosts - 2 : 0;
+
+            // First/last usable only exist when the block has host addresses (/31 and /32 do not).
+            if (result.UsableHosts > 0)
+            {
+                result.FirstUsable = new IPAddress(BitConverter.GetBytes(networkValue + 1).Reverse().ToArray()).ToString();
+                result.LastUsable = new IPAddress(BitConverter.GetBytes(broadcastValue - 1).Reverse().ToArray()).ToString();
+            }
+            else
+            {
+                result.FirstUsable = "N/A";
+                result.LastUsable = "N/A";
+            }
 
             // Wildcard mask
             uint wildcardValue = ~mask;
@@ -728,23 +786,24 @@ public static class NetworkTools
         var parts = ipWithCidr.Split('/');
         if (parts.Length != 2 || !int.TryParse(parts[1], out int cidr))
         {
-            return new SubnetInfo { Success = false, ErrorMessage = "Invalid format. Use: 192.168.1.0/24" };
+            return new SubnetInfo { Success = false, ErrorMessage = SubnetErrorFormat };
         }
-        return CalculateSubnet(parts[0], cidr);
+        return CalculateSubnet(parts[0].Trim(), cidr);
     }
 
     #endregion
 
     #region SSL Certificate Checker
 
-    public static async Task<SslCertificateInfo> CheckSslCertificateAsync(string hostname, int port = 443)
+    public static async Task<SslCertificateInfo> CheckSslCertificateAsync(string hostname, int port = 443,
+        CancellationToken cancellationToken = default)
     {
         var result = new SslCertificateInfo { Hostname = hostname, Port = port };
 
         try
         {
             using var client = new TcpClient();
-            await client.ConnectAsync(hostname, port);
+            await client.ConnectAsync(hostname, port, cancellationToken);
 
             using var sslStream = new global::System.Net.Security.SslStream(
                 client.GetStream(),
@@ -776,6 +835,30 @@ public static class NetworkTools
                         result.IsExpired = now > x509.NotAfter;
                         result.DaysUntilExpiry = (int)(x509.NotAfter - now).TotalDays;
                         result.IsValid = errors == global::System.Net.Security.SslPolicyErrors.None;
+
+                        // Record *why* the certificate is not trusted so the UI can be
+                        // honest instead of printing [VALID] for self-signed / mismatched certs.
+                        if (!result.IsValid)
+                        {
+                            var reasons = new List<string>();
+                            if (errors.HasFlag(global::System.Net.Security.SslPolicyErrors.RemoteCertificateNotAvailable))
+                                reasons.Add("No certificate was provided by the server");
+                            if (errors.HasFlag(global::System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch))
+                                reasons.Add("Certificate name does not match the hostname");
+                            if (errors.HasFlag(global::System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors))
+                            {
+                                var chainReasons = chain?.ChainStatus
+                                    .Where(s => s.Status != global::System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.NoError)
+                                    .Select(s => s.Status.ToString())
+                                    .Distinct()
+                                    .ToArray();
+                                if (chainReasons is { Length: > 0 })
+                                    reasons.Add("Chain: " + string.Join(", ", chainReasons));
+                                else
+                                    reasons.Add("Certificate chain is not trusted");
+                            }
+                            result.ValidationError = string.Join("; ", reasons);
+                        }
                     }
                     return true;
                 });
@@ -798,7 +881,7 @@ public static class NetworkTools
 
     #region HTTP Headers
 
-    public static async Task<HttpHeadersResult> GetHttpHeadersAsync(string url)
+    public static async Task<HttpHeadersResult> GetHttpHeadersAsync(string url, CancellationToken cancellationToken = default)
     {
         var result = new HttpHeadersResult { Url = url };
 
@@ -812,7 +895,7 @@ public static class NetworkTools
 
             var stopwatch = Stopwatch.StartNew();
             var request = new HttpRequestMessage(HttpMethod.Head, url);
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, cancellationToken);
             stopwatch.Stop();
 
             result.StatusCode = (int)response.StatusCode;
@@ -906,7 +989,7 @@ public static class NetworkTools
             stats.TcpConnectionsEstablished = (int)tcpStats.CurrentConnections;
             stats.TcpSegmentsSent = tcpStats.SegmentsSent;
             stats.TcpSegmentsReceived = tcpStats.SegmentsReceived;
-            stats.TcpSegmentsRetransmitted = tcpStats.FailedConnectionAttempts; // Using FailedConnectionAttempts as proxy
+            stats.TcpSegmentsRetransmitted = tcpStats.SegmentsResent; // real retransmission counter
             stats.TcpErrorsReceived = tcpStats.ErrorsReceived;
 
             // UDP Statistics
@@ -1280,12 +1363,22 @@ public static class NetworkTools
     /// <summary>
     /// Send multiple packets and get statistics
     /// </summary>
+    /// <summary>Hard ceiling on flood packet count (also enforced/surfaced by the UI).</summary>
+    public const int MaxFloodPackets = 10_000;
+    /// <summary>Minimum delay between flood packets, i.e. at most ~1,000 packets/second.</summary>
+    public const int MinFloodDelayMs = 1;
+
     public static async Task<PacketFloodResult> SendPacketFloodAsync(
         string protocol, string host, int port, byte[] data,
         int count, int delayMs = 100, int timeout = 5000,
         IProgress<PacketSendResult>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        // Defensive caps: never send more than the ceiling and never faster than the
+        // rate limit, regardless of what the caller passed.
+        count = Math.Clamp(count, 0, MaxFloodPackets);
+        if (delayMs < MinFloodDelayMs) delayMs = MinFloodDelayMs;
+
         var result = new PacketFloodResult
         {
             Protocol = protocol.ToUpper(),
@@ -1526,8 +1619,8 @@ public class SubnetInfo
     public string BroadcastAddress { get; set; } = "";
     public string FirstUsable { get; set; } = "";
     public string LastUsable { get; set; } = "";
-    public int TotalHosts { get; set; }
-    public int UsableHosts { get; set; }
+    public long TotalHosts { get; set; }
+    public long UsableHosts { get; set; }
 }
 
 public class SslCertificateInfo
@@ -1547,6 +1640,7 @@ public class SslCertificateInfo
     public string? Protocol { get; set; }
     public string? CipherAlgorithm { get; set; }
     public bool IsValid { get; set; }
+    public string? ValidationError { get; set; }
     public bool IsExpired { get; set; }
     public int DaysUntilExpiry { get; set; }
 }

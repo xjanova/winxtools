@@ -1,168 +1,408 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using NetX.App.Helpers;
+using NetX.Core.Data;
 using NetX.Core.System;
 
 namespace NetX.App.Views;
 
 public partial class CleanerView : Page
 {
-    private bool _isBusy = false;
-    private readonly Dictionary<CleanTarget, CleanScanResult> _scanResults = new();
+    private const string SelectionSettingKey = "Cleaner.Selection";
+
+    private readonly ObservableCollection<CleanCategoryItem> _items = new();
+    private CancellationTokenSource? _cts;
+    private bool _isBusy;
+    private bool _hasScan;
 
     public CleanerView()
     {
         InitializeComponent();
+
+        var saved = LoadSelection();
+        foreach (var category in SystemCleaner.Categories)
+        {
+            var item = new CleanCategoryItem(category, saved?.Contains(category.Key) ?? category.DefaultOn);
+            item.PropertyChanged += Item_PropertyChanged;
+            _items.Add(item);
+        }
+        CategoryList.ItemsSource = _items;
+
+        // Leaving the page stops a running scan/clean instead of letting it
+        // keep deleting in the background.
+        Unloaded += (s, e) => _cts?.Cancel();
     }
 
-    /// <summary>Maps each cleanup category to its checkbox + size label.</summary>
-    private (CleanTarget Target, CheckBox Check, TextBlock SizeText)[] Categories() =>
-    [
-        (CleanTarget.TempFiles,     TempFilesCheck,     TempFilesSize),
-        (CleanTarget.BrowserCache,  BrowserCacheCheck,  BrowserCacheSize),
-        (CleanTarget.WindowsUpdate, WindowsUpdateCheck, WindowsUpdateSize),
-        (CleanTarget.RecycleBin,    RecycleBinCheck,    RecycleBinSize),
-        (CleanTarget.Thumbnails,    ThumbnailCheck,     ThumbnailSize),
-        (CleanTarget.LogFiles,      LogFilesCheck,      LogFilesSize),
-        (CleanTarget.WindowsOld,    OldWindowsCheck,    OldWindowsSize),
-    ];
+    private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CleanCategoryItem.IsSelected)) return;
+        SaveSelection();
+        UpdateSummary();
+    }
+
+    #region Scan
 
     private async void Scan_Click(object sender, RoutedEventArgs e)
     {
         if (_isBusy) return;
+        SetBusy(true);
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
 
-        _isBusy = true;
-        ScanButton.IsEnabled = false;
-        CleanButton.IsEnabled = false;
-        StatusText.Text = "Scanning...";
-        CleanProgress.Visibility = Visibility.Visible;
-        CleanProgress.IsIndeterminate = true;
-
-        _scanResults.Clear();
-        long totalSize = 0;
-        int totalFiles = 0;
-
-        var categories = Categories();
-        foreach (var (target, _, sizeText) in categories)
-        {
-            StatusText.Text = $"Scanning {DisplayName(target)}...";
-
-            // Real disk walk per category — sizes come from actual files.
-            var scan = await Task.Run(() => SystemCleaner.Scan(target));
-            _scanResults[target] = scan;
-
-            sizeText.Text = !scan.Found ? "Not found"
-                          : scan.Bytes > 0 ? FormatSize(scan.Bytes)
-                          : "0 B";
-            totalSize += scan.Bytes;
-            totalFiles += scan.FileCount;
-
-            TotalSizeText.Text = FormatSize(totalSize);
-            FilesCountText.Text = $"{totalFiles:N0} files";
-        }
-
-        StatusText.Text = "Scan complete! Select items and click 'Clean' to free up space.";
-        CleanProgress.IsIndeterminate = false;
-        CleanProgress.Visibility = Visibility.Collapsed;
-        ScanButton.IsEnabled = true;
-        CleanButton.IsEnabled = true;
-        _isBusy = false;
-    }
-
-    private async void Clean_Click(object sender, RoutedEventArgs e)
-    {
-        if (_isBusy) return;
-
-        var selected = Categories().Where(c => c.Check.IsChecked == true).ToList();
-        if (selected.Count == 0)
-        {
-            MessageBox.Show("Select at least one item to clean.", "Nothing Selected",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var result = MessageBox.Show(
-            $"Clean {selected.Count} selected item(s)?\n\nFiles currently in use are skipped automatically.\nThis action cannot be undone.",
-            "Confirm Cleanup",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (result != MessageBoxResult.Yes) return;
-
-        _isBusy = true;
-        CleanButton.IsEnabled = false;
-        ScanButton.IsEnabled = false;
-        CleanProgress.Visibility = Visibility.Visible;
         CleanProgress.IsIndeterminate = false;
         CleanProgress.Value = 0;
 
-        long totalFreed = 0;
-        int totalDeleted = 0;
-        var notes = new List<string>();
+        foreach (var item in _items) item.ResetForScan();
 
-        for (int i = 0; i < selected.Count; i++)
+        try
         {
-            var (target, _, sizeText) = selected[i];
-            StatusText.Text = $"Cleaning {DisplayName(target)}...";
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var item = _items[i];
+                StatusText.Text = Loc.F("Cleaner_Scanning", "Scanning {0}…", item.Title);
+                item.SizeText = "…";
 
-            // Real deletion — freed bytes are summed from files actually removed.
-            var clean = await Task.Run(() => SystemCleaner.Clean(target));
+                var scan = await Task.Run(() => SystemCleaner.Scan(item.Target, token), token);
+                item.ApplyScan(scan);
 
-            totalFreed += clean.BytesFreed;
-            totalDeleted += clean.FilesDeleted;
-            if (!string.IsNullOrEmpty(clean.Note)) notes.Add(clean.Note!);
+                CleanProgress.Value = (i + 1) * 100.0 / _items.Count;
+                UpdateSummary();
+            }
 
-            sizeText.Text = "--";
-            CleanProgress.Value = ((i + 1) / (double)selected.Count) * 100;
+            _hasScan = true;
+            StatusText.Text = Loc.F("Cleaner_ScanDone", "Scan complete — {0} can be freed.", FormatSize(SelectedBytes()));
         }
-
-        StatusText.Text = $"Cleanup complete! Freed {FormatSize(totalFreed)}";
-
-        var summary = $"Cleanup Complete!\n\nFreed: {FormatSize(totalFreed)}\nFiles deleted: {totalDeleted:N0}";
-        if (notes.Count > 0)
-            summary += "\n\n" + string.Join("\n", notes.Distinct());
-
-        MessageBox.Show(summary, "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-        // Reset totals; user can rescan to see the new state
-        TotalSizeText.Text = "0 B";
-        FilesCountText.Text = "0 files";
-        _scanResults.Clear();
-
-        CleanProgress.Visibility = Visibility.Collapsed;
-        ScanButton.IsEnabled = true;
-        CleanButton.IsEnabled = false;
-        _isBusy = false;
+        catch (OperationCanceledException)
+        {
+            StatusText.Text = Loc.T("Cleaner_Cancelled", "Cancelled");
+            foreach (var item in _items.Where(i => i.Scan == null)) item.SizeText = "--";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"{Loc.T("BW_ActionFailed", "Failed")}: {ex.Message}";
+        }
+        finally
+        {
+            SetBusy(false);
+            UpdateSummary();
+        }
     }
 
-    private static string DisplayName(CleanTarget target) => target switch
-    {
-        CleanTarget.TempFiles => "temporary files",
-        CleanTarget.BrowserCache => "browser cache",
-        CleanTarget.WindowsUpdate => "Windows Update cache",
-        CleanTarget.RecycleBin => "Recycle Bin",
-        CleanTarget.Thumbnails => "thumbnail cache",
-        CleanTarget.LogFiles => "log files",
-        CleanTarget.WindowsOld => "old Windows installation",
-        _ => target.ToString()
-    };
+    #endregion
 
-    private static string FormatSize(long bytes)
+    #region Clean
+
+    private async void Clean_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy || !_hasScan) return;
+
+        var selected = _items.Where(i => i.IsSelected && i.Scan != null && (i.Scan.Bytes > 0 || i.Scan.FileCount > 0)).ToList();
+        if (selected.Count == 0)
+        {
+            MessageBox.Show(Loc.T("Cleaner_NothingSelected", "Select at least one item that has something to clean."),
+                "WinXTools", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var lines = new StringBuilder();
+        foreach (var item in selected)
+        {
+            lines.AppendLine($"• {item.Title} — {FormatSize(item.Scan!.Bytes)}");
+            var warning = Loc.T($"CleanCat_{item.Key}_Warn", "");
+            if (warning.Length > 0) lines.AppendLine($"   ⚠ {warning}");
+        }
+
+        var confirm = Loc.F("Cleaner_Confirm",
+            "Clean these items?\n\n{0}\nTotal: {1}\n\nFiles in use are skipped automatically. This cannot be undone.",
+            lines.ToString(), FormatSize(selected.Sum(i => i.Scan!.Bytes)));
+        bool risky = selected.Any(i => i.Risk != CleanRisk.Safe);
+        if (MessageBox.Show(confirm, Loc.T("Cleaner_ConfirmTitle", "Confirm cleanup"), MessageBoxButton.YesNo,
+                risky ? MessageBoxImage.Warning : MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        SetBusy(true);
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+        CleanProgress.Value = 0;
+
+        long freeBefore = TotalFreeSpace();
+        long totalFreed = 0;
+        int totalDeleted = 0, totalSkipped = 0;
+        bool cancelled = false;
+
+        try
+        {
+            for (int i = 0; i < selected.Count; i++)
+            {
+                var item = selected[i];
+                StatusText.Text = Loc.F("Cleaner_CleaningItem", "Cleaning {0}…", item.Title);
+                item.SizeText = "…";
+
+                var result = await Task.Run(() => SystemCleaner.Clean(item.Target, token), token);
+                item.ApplyClean(result);
+
+                totalFreed += result.BytesFreed;
+                totalDeleted += result.FilesDeleted;
+                totalSkipped += result.FilesSkipped;
+                CleanProgress.Value = (i + 1) * 100.0 / selected.Count;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            cancelled = true;
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"{Loc.T("BW_ActionFailed", "Failed")}: {ex.Message}";
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+
+        // The drive's own free-space change is the ground truth (it can differ a
+        // little because other programs write while we clean).
+        long freeDelta = TotalFreeSpace() - freeBefore;
+        var summary = Loc.F("Cleaner_Done",
+            "Freed {0} ({1:N0} files). Drive free space changed by {2}.",
+            FormatSize(totalFreed), totalDeleted, (freeDelta >= 0 ? "+" : "−") + FormatSize(Math.Abs(freeDelta)));
+        if (totalSkipped > 0)
+            summary += "\n" + Loc.F("Cleaner_SkippedTotal", "{0:N0} files were in use or protected and were left alone.", totalSkipped);
+        if (cancelled)
+            summary = Loc.T("Cleaner_Cancelled", "Cancelled") + " — " + summary;
+
+        StatusText.Text = summary;
+        TotalSizeText.Text = FormatSize(totalFreed);
+        FilesCountText.Text = Loc.F("Cleaner_Files", "{0:N0} files", totalDeleted);
+        SkippedText.Text = "";
+
+        // Old numbers no longer describe the disk; a new scan is needed.
+        _hasScan = false;
+        CleanButton.IsEnabled = false;
+
+        MessageBox.Show(summary, Loc.T("Cleaner_Complete", "Cleanup complete"), MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        _cts?.Cancel();
+        CancelButton.IsEnabled = false;
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private void SetBusy(bool busy)
+    {
+        _isBusy = busy;
+        ScanButton.IsEnabled = !busy;
+        CleanButton.IsEnabled = !busy && _hasScan;
+        CancelButton.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        CancelButton.IsEnabled = busy;
+        CleanProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var item in _items) item.CanToggle = !busy;
+    }
+
+    private long SelectedBytes() => _items.Where(i => i.IsSelected && i.Scan != null).Sum(i => i.Scan!.Bytes);
+
+    private void UpdateSummary()
+    {
+        var scanned = _items.Where(i => i.IsSelected && i.Scan != null).ToList();
+        if (scanned.Count == 0)
+        {
+            TotalSizeText.Text = "--";
+            FilesCountText.Text = "";
+            SkippedText.Text = "";
+            return;
+        }
+
+        TotalSizeText.Text = FormatSize(scanned.Sum(i => i.Scan!.Bytes));
+        FilesCountText.Text = Loc.F("Cleaner_Files", "{0:N0} files", scanned.Sum(i => i.Scan!.FileCount));
+
+        int inUse = scanned.Sum(i => i.Scan!.InUseCount);
+        int recent = scanned.Sum(i => i.Scan!.RecentCount);
+        var parts = new List<string>();
+        if (inUse > 0) parts.Add(Loc.F("Cleaner_InUse", "{0:N0} in use (skipped)", inUse));
+        if (recent > 0) parts.Add(Loc.F("Cleaner_Recent", "{0:N0} recent (kept)", recent));
+        SkippedText.Text = string.Join(" · ", parts);
+    }
+
+    private static long TotalFreeSpace()
+    {
+        long total = 0;
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (drive.DriveType == DriveType.Fixed && drive.IsReady) total += drive.AvailableFreeSpace;
+            }
+            catch { }
+        }
+        return total;
+    }
+
+    private static HashSet<string>? LoadSelection()
+    {
+        try
+        {
+            var value = DatabaseService.Instance.GetSetting(SelectionSettingKey);
+            return value == null ? null : value.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void SaveSelection()
+    {
+        try
+        {
+            DatabaseService.Instance.SetSetting(SelectionSettingKey,
+                string.Join(",", _items.Where(i => i.IsSelected).Select(i => i.Key)));
+        }
+        catch { }
+    }
+
+    internal static string FormatSize(long bytes)
     {
         string[] sizes = { "B", "KB", "MB", "GB", "TB" };
         int order = 0;
         double size = bytes;
-
         while (size >= 1024 && order < sizes.Length - 1)
         {
             order++;
             size /= 1024;
         }
-
         return $"{size:0.##} {sizes[order]}";
     }
 
-    private void Mode_Changed(object sender, RoutedEventArgs e)
+    #endregion
+}
+
+/// <summary>One cleanup category row: selection, scan numbers and result.</summary>
+public class CleanCategoryItem : INotifyPropertyChanged
+{
+    private readonly CleanCategory _category;
+
+    public CleanCategoryItem(CleanCategory category, bool selected)
     {
-        // Mode changed handler - not used in cleaner but kept for consistency
+        _category = category;
+        _isSelected = selected;
+        Title = Loc.T($"CleanCat_{category.Key}_Title", category.Target.ToString());
+        Description = Loc.T($"CleanCat_{category.Key}_Desc", "");
+
+        (RiskText, RiskBrush, RiskForeground) = category.Risk switch
+        {
+            CleanRisk.Safe => (Loc.T("Risk_Safe", "Safe"), ResourceBrush("SuccessBrush"), (Brush)Brushes.Black),
+            CleanRisk.Medium => (Loc.T("Risk_Medium", "Check first"), ResourceBrush("WarningBrush"), (Brush)Brushes.Black),
+            _ => (Loc.T("Risk_Caution", "Caution"), ResourceBrush("DangerBrush"), (Brush)Brushes.White)
+        };
     }
+
+    private static Brush ResourceBrush(string key) =>
+        Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
+
+    public CleanTarget Target => _category.Target;
+    public string Key => _category.Key;
+    public CleanRisk Risk => _category.Risk;
+    public string Title { get; }
+    public string Description { get; }
+    public string RiskText { get; }
+    public Brush RiskBrush { get; }
+    public Brush RiskForeground { get; }
+
+    public CleanScanResult? Scan { get; private set; }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set { if (_isSelected != value) { _isSelected = value; OnPropertyChanged(nameof(IsSelected)); } }
+    }
+
+    private bool _canToggle = true;
+    public bool CanToggle
+    {
+        get => _canToggle;
+        set { _canToggle = value; OnPropertyChanged(nameof(CanToggle)); }
+    }
+
+    private string _sizeText = "--";
+    public string SizeText
+    {
+        get => _sizeText;
+        set { _sizeText = value; OnPropertyChanged(nameof(SizeText)); }
+    }
+
+    private string _detail = "";
+    public string Detail
+    {
+        get => _detail;
+        private set { _detail = value; OnPropertyChanged(nameof(Detail)); OnPropertyChanged(nameof(DetailVisibility)); }
+    }
+    public Visibility DetailVisibility => string.IsNullOrEmpty(_detail) ? Visibility.Collapsed : Visibility.Visible;
+
+    private string _note = "";
+    public string Note
+    {
+        get => _note;
+        private set { _note = value; OnPropertyChanged(nameof(Note)); OnPropertyChanged(nameof(NoteVisibility)); }
+    }
+    public Visibility NoteVisibility => string.IsNullOrEmpty(_note) ? Visibility.Collapsed : Visibility.Visible;
+
+    public void ResetForScan()
+    {
+        Scan = null;
+        SizeText = "--";
+        Detail = "";
+        Note = "";
+    }
+
+    public void ApplyScan(CleanScanResult scan)
+    {
+        Scan = scan;
+        if (!scan.Found)
+        {
+            SizeText = Loc.T("Cleaner_NotFound", "Not found");
+            Detail = "";
+            Note = "";
+            return;
+        }
+
+        SizeText = CleanerView.FormatSize(scan.Bytes);
+
+        var parts = new List<string> { Loc.F("Cleaner_Files", "{0:N0} files", scan.FileCount) };
+        if (scan.InUseCount > 0)
+            parts.Add(Loc.F("Cleaner_InUseSize", "{0:N0} in use ({1}) skipped", scan.InUseCount, CleanerView.FormatSize(scan.InUseBytes)));
+        if (scan.RecentCount > 0)
+            parts.Add(Loc.F("Cleaner_Recent", "{0:N0} recent (kept)", scan.RecentCount));
+        if (scan.DeniedCount > 0)
+            parts.Add(Loc.F("Cleaner_Denied", "{0:N0} protected (skipped)", scan.DeniedCount));
+        Detail = string.Join(" · ", parts);
+        Note = NoteText(scan.NoteCode, scan.NoteArg);
+    }
+
+    public void ApplyClean(CleanExecResult result)
+    {
+        SizeText = Loc.F("Cleaner_Freed", "freed {0}", CleanerView.FormatSize(result.BytesFreed));
+        var detail = Loc.F("Cleaner_Deleted", "{0:N0} deleted", result.FilesDeleted);
+        if (result.FilesSkipped > 0)
+            detail += " · " + Loc.F("Cleaner_Skipped", "{0:N0} skipped", result.FilesSkipped);
+        Detail = detail;
+        Note = NoteText(result.NoteCode, result.NoteArg);
+    }
+
+    private static string NoteText(string? code, string? arg) =>
+        code == null ? "" : Loc.F($"Cleaner_Note_{code}", code, arg ?? "");
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

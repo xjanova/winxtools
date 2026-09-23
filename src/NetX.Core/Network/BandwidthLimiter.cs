@@ -1,952 +1,527 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
-using System.Security.Principal;
-using System.Net.NetworkInformation;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using NetX.Core.Helpers;
 
 namespace NetX.Core.Network;
 
 /// <summary>
-/// Real bandwidth limiter using multiple Windows techniques:
-/// 1. Process Throttling: Suspend/Resume cycles for speed limiting
-/// 2. Firewall Blocking: Windows Firewall for complete block
-/// 3. BITS/NetSh: Built-in Windows bandwidth control where available
+/// Per-app speed limit / block. Speeds are bytes per second,
+/// <see cref="RateLimit.Unlimited"/> or <see cref="RateLimit.Blocked"/>.
 /// </summary>
-public class BandwidthLimiter : IDisposable
+public sealed class AppBandwidthRule
 {
-    private static BandwidthLimiter? _instance;
-    public static BandwidthLimiter Instance => _instance ??= new BandwidthLimiter();
+    /// <summary>Process name as shown to the user, without ".exe".</summary>
+    public string ProcessName { get; set; } = "";
 
-    private readonly ConcurrentDictionary<string, BandwidthRule> _rules = new();
-    private readonly ConcurrentDictionary<int, ProcessThrottleState> _throttleStates = new();
-    private readonly string _settingsPath;
-    private Timer? _enforcementTimer;
-    private bool _isEnabled = false;
-    private readonly bool _isAdmin;
+    /// <summary>
+    /// Executable path, learned while the app was running. Lets the firewall
+    /// block keep working while the app (or WinXTools) is closed.
+    /// </summary>
+    public string? ExePath { get; set; }
 
-    public event Action<string, BandwidthRule>? OnRuleApplied;
-    public event Action<string>? OnRuleRemoved;
-    public event Action<string, string>? OnLimitExceeded;
-    public event Action<string>? OnError;
-    public event Action<string, bool>? OnRuleStatusChanged;
+    public long DownloadBps { get; set; } = RateLimit.Unlimited;
+    public long UploadBps { get; set; } = RateLimit.Unlimited;
 
-    #region Native Process Control
+    /// <summary>No internet at all: Windows Firewall rule + live traffic dropped.</summary>
+    public bool Blocked { get; set; }
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CloseHandle(IntPtr hObject);
+    [JsonIgnore] public string Key => PacketEngine.NormalizeAppKey(ProcessName);
+    [JsonIgnore] public bool HasSpeedLimit => DownloadBps >= 0 || UploadBps >= 0;
 
-    [DllImport("ntdll.dll", SetLastError = true)]
-    private static extern int NtSuspendProcess(IntPtr processHandle);
+    public AppBandwidthRule Clone() => (AppBandwidthRule)MemberwiseClone();
+}
 
-    [DllImport("ntdll.dll", SetLastError = true)]
-    private static extern int NtResumeProcess(IntPtr processHandle);
+/// <summary>Limit for all traffic of this PC together.</summary>
+public sealed class GlobalBandwidthRule
+{
+    public long DownloadBps { get; set; } = RateLimit.Unlimited;
+    public long UploadBps { get; set; } = RateLimit.Unlimited;
 
-    private const uint PROCESS_SUSPEND_RESUME = 0x0800;
-    private const uint PROCESS_QUERY_INFORMATION = 0x0400;
+    [JsonIgnore] public bool IsActive => DownloadBps >= 0 || UploadBps >= 0;
+
+    public GlobalBandwidthRule Clone() => (GlobalBandwidthRule)MemberwiseClone();
+}
+
+public enum LimiterStatus
+{
+    /// <summary>No limits set — nothing to enforce.</summary>
+    Idle,
+    /// <summary>Limits are being enforced by the kernel packet engine.</summary>
+    Active,
+    /// <summary>Limits are saved but the WinDivert driver could not be loaded.</summary>
+    DriverUnavailable,
+    /// <summary>The driver loaded but diverting failed (see <see cref="BandwidthLimiter.EngineError"/>).</summary>
+    Error
+}
+
+public sealed class LimitResult
+{
+    public bool Success { get; init; }
+    public string? Message { get; init; }
+
+    public static LimitResult Ok(string? message = null) => new() { Success = true, Message = message };
+    public static LimitResult Fail(string message) => new() { Success = false, Message = message };
+}
+
+/// <summary>
+/// Owns every bandwidth rule: persists them, pushes speed limits into the
+/// kernel <see cref="PacketEngine"/>, and keeps Windows Firewall rules for
+/// blocked apps.
+///
+/// Speed limits work while WinXTools is running. App blocks also create a
+/// Windows Firewall rule, so they keep working after WinXTools is closed until
+/// the user unblocks the app.
+/// </summary>
+public sealed class BandwidthLimiter
+{
+    private static readonly Lazy<BandwidthLimiter> _instance = new(() => new BandwidthLimiter());
+    public static BandwidthLimiter Instance => _instance.Value;
+
+    private const string FirewallPrefix = "WinXTools_Block_";
+
+    private readonly object _lock = new();
+    private readonly Dictionary<string, AppBandwidthRule> _apps = new(StringComparer.Ordinal);
+    private GlobalBandwidthRule? _global;
+    private readonly HashSet<string> _engineKeys = new(StringComparer.Ordinal);
+    private const string RulesFileName = "bandwidth_rules_v2.json";
+    private readonly string _legacyPath;
+
+    // Cutting these off breaks Windows itself (DNS, updates, antivirus); a
+    // tampered or mistaken rule must never do that.
+    private static readonly HashSet<string> NeverBlock = new(StringComparer.Ordinal)
+    {
+        "system", "svchost", "lsass", "services", "wininit", "winlogon", "csrss", "smss",
+        "msmpeng", "nissrv", "mpdefendercoreservice", "securityhealthservice", "winxtools"
+    };
+
+    public static bool CanBlock(string processName) => !NeverBlock.Contains(PacketEngine.NormalizeAppKey(processName));
+    private readonly List<string> _legacyFirewallNames = new();
+    private readonly SemaphoreSlim _firewallGate = new(1, 1);
+    private Task? _initTask;
+
+    /// <summary>Raised (on a background thread) whenever rules change.</summary>
+    public event Action? RulesChanged;
+
+    private BandwidthLimiter()
+    {
+        // Rules make the elevated app create firewall rules, so they live in the
+        // admin-only store (AdminOnlyStore), not in the user-writable profile.
+        _legacyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NetX", "bandwidth_rules.json");
+        Load();
+    }
+
+    #region Queries
+
+    public IReadOnlyList<AppBandwidthRule> GetAppRules()
+    {
+        lock (_lock) return _apps.Values.Select(r => r.Clone()).OrderBy(r => r.ProcessName, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public AppBandwidthRule? GetAppRule(string processName)
+    {
+        lock (_lock) return _apps.TryGetValue(PacketEngine.NormalizeAppKey(processName), out var rule) ? rule.Clone() : null;
+    }
+
+    public GlobalBandwidthRule? GlobalRule
+    {
+        get { lock (_lock) return _global?.Clone(); }
+    }
+
+    /// <summary>True if any speed limit or block needs the packet engine.</summary>
+    public bool HasEngineWork
+    {
+        get
+        {
+            lock (_lock) return _global?.IsActive == true || _apps.Values.Any(r => r.Blocked || r.HasSpeedLimit);
+        }
+    }
+
+    public LimiterStatus Status
+    {
+        get
+        {
+            if (!HasEngineWork) return LimiterStatus.Idle;
+            var engine = PacketEngine.Instance;
+            if (!engine.IsDriverLoaded) return LimiterStatus.DriverUnavailable;
+            return engine.IsShaping ? LimiterStatus.Active : LimiterStatus.Error;
+        }
+    }
+
+    public string? EngineError => PacketEngine.Instance.LastError;
 
     #endregion
 
-    public BandwidthLimiter()
+    #region Startup / shutdown
+
+    /// <summary>
+    /// Re-applies saved rules. Safe to call more than once; the work runs once.
+    /// </summary>
+    public Task InitializeAsync() => _initTask ??= Task.Run(async () =>
     {
-        _settingsPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "NetX", "bandwidth_rules.json");
+        await CleanupLegacyAsync();
+        SyncEngine();
 
-        _isAdmin = CheckAdminPrivileges();
-
-        // Clean up leftover rules on startup
-        Task.Run(() => CleanupAllRules());
-
-        LoadRules();
-    }
-
-    private static bool CheckAdminPrivileges()
-    {
-        try
+        List<AppBandwidthRule> blocked;
+        lock (_lock) blocked = _apps.Values.Where(r => r.Blocked).Select(r => r.Clone()).ToList();
+        foreach (var rule in blocked)
         {
-            using var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            var path = rule.ExePath ?? PacketEngine.Instance.FindExecutablePath(rule.ProcessName);
+            if (path != null) await AddFirewallBlockAsync(rule.Key, path);
         }
-        catch
-        {
-            return false;
-        }
-    }
 
-    #region Properties
-
-    public bool IsAdmin => _isAdmin;
-
-    public bool IsEnabled
-    {
-        get => _isEnabled;
-        set
-        {
-            _isEnabled = value;
-            if (value)
-                StartEnforcement();
-            else
-                StopEnforcement();
-        }
-    }
-
-    public IReadOnlyDictionary<string, BandwidthRule> Rules => _rules;
-
-    #endregion
-
-    #region Rule Management
+        RulesChanged?.Invoke();
+    });
 
     /// <summary>
-    /// Sets bandwidth limit for a specific process using process throttling
+    /// Called on exit: sends packets still waiting in the pacer and releases the
+    /// driver. Firewall blocks stay in place on purpose.
     /// </summary>
-    public async Task<bool> SetProcessLimitAsync(string processName, long downloadKBps, long uploadKBps)
+    public void Shutdown()
     {
-        var rule = new BandwidthRule
-        {
-            ProcessName = processName,
-            DownloadLimitKBps = downloadKBps,
-            UploadLimitKBps = uploadKBps,
-            IsEnabled = true,
-            CreatedAt = DateTime.Now,
-            Method = LimitMethod.ProcessThrottle
-        };
-
-        _rules[processName.ToLowerInvariant()] = rule;
-        SaveRules();
-
-        bool success = await ApplyRuleAsync(processName, rule);
-
-        OnRuleApplied?.Invoke(processName, rule);
-        OnRuleStatusChanged?.Invoke(processName, success);
-
-        return success;
-    }
-
-    /// <summary>
-    /// Synchronous version for compatibility
-    /// </summary>
-    public void SetProcessLimit(string processName, long downloadKBps, long uploadKBps)
-    {
-        _ = SetProcessLimitAsync(processName, downloadKBps, uploadKBps);
-    }
-
-    /// <summary>
-    /// Sets bandwidth limit for a network interface
-    /// </summary>
-    public async Task<bool> SetInterfaceLimitAsync(string interfaceId, long downloadKBps, long uploadKBps)
-    {
-        var ruleName = $"interface:{interfaceId}";
-
-        var rule = new BandwidthRule
-        {
-            ProcessName = ruleName,
-            DownloadLimitKBps = downloadKBps,
-            UploadLimitKBps = uploadKBps,
-            IsEnabled = true,
-            CreatedAt = DateTime.Now,
-            Method = LimitMethod.InterfaceLimit
-        };
-
-        _rules[ruleName.ToLowerInvariant()] = rule;
-        SaveRules();
-
-        bool success = await ApplyInterfaceRuleAsync(interfaceId, rule);
-
-        OnRuleApplied?.Invoke(ruleName, rule);
-        OnRuleStatusChanged?.Invoke(ruleName, success);
-
-        return success;
-    }
-
-    /// <summary>
-    /// Removes bandwidth limit
-    /// </summary>
-    public async Task RemoveLimitAsync(string processName)
-    {
-        var key = processName.ToLowerInvariant();
-        if (_rules.TryRemove(key, out var rule))
-        {
-            SaveRules();
-            await RemoveRuleAsync(processName, rule);
-            OnRuleRemoved?.Invoke(processName);
-        }
-    }
-
-    public void RemoveLimit(string processName)
-    {
-        _ = RemoveLimitAsync(processName);
-    }
-
-    /// <summary>
-    /// Gets the current limit for a process/interface
-    /// </summary>
-    public BandwidthRule? GetLimit(string processName)
-    {
-        _rules.TryGetValue(processName.ToLowerInvariant(), out var rule);
-        return rule;
-    }
-
-    /// <summary>
-    /// Blocks all network traffic for a process (uses Windows Firewall)
-    /// </summary>
-    public async Task<bool> BlockProcessAsync(string processName)
-    {
-        return await SetProcessLimitAsync(processName, 0, 0);
-    }
-
-    public void BlockProcess(string processName)
-    {
-        _ = BlockProcessAsync(processName);
-    }
-
-    /// <summary>
-    /// Unblocks a process
-    /// </summary>
-    public void UnblockProcess(string processName)
-    {
-        RemoveLimit(processName);
+        try { PacketEngine.Instance.Stop(); } catch { }
     }
 
     #endregion
 
-    #region Rule Application
-
-    private async Task<bool> ApplyRuleAsync(string processName, BandwidthRule rule)
-    {
-        try
-        {
-            // For complete block (0 KB/s), use Windows Firewall
-            if (rule.DownloadLimitKBps == 0 && rule.UploadLimitKBps == 0)
-            {
-                return await BlockWithFirewallAsync(processName);
-            }
-
-            // For speed limiting, use process throttling
-            if (rule.DownloadLimitKBps > 0 || rule.UploadLimitKBps > 0)
-            {
-                return await ApplyProcessThrottleAsync(processName, rule);
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to apply rule for {processName}: {ex.Message}");
-            OnError?.Invoke($"Failed to apply rule: {ex.Message}");
-            return false;
-        }
-    }
-
-    private async Task<bool> ApplyInterfaceRuleAsync(string interfaceId, BandwidthRule rule)
-    {
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var ni = NetworkInterface.GetAllNetworkInterfaces()
-                    .FirstOrDefault(n => n.Id == interfaceId);
-
-                if (ni == null)
-                {
-                    OnError?.Invoke($"Network interface not found: {interfaceId}");
-                    return false;
-                }
-
-                // For complete block, use firewall
-                if (rule.DownloadLimitKBps == 0 && rule.UploadLimitKBps == 0)
-                {
-                    return BlockInterfaceWithFirewall(ni.Name,
-                        rule.DownloadLimitKBps == 0,
-                        rule.UploadLimitKBps == 0);
-                }
-
-                // For speed limiting on interface, try NetSh QoS (requires admin)
-                if (_isAdmin)
-                {
-                    return ApplyNetshQos(ni.Name, rule);
-                }
-                else
-                {
-                    OnError?.Invoke("Administrator privileges required for interface bandwidth limiting");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to apply interface rule: {ex.Message}");
-                OnError?.Invoke($"Failed to apply interface rule: {ex.Message}");
-                return false;
-            }
-        });
-    }
+    #region Per-app rules
 
     /// <summary>
-    /// Apply process throttling using PacketEngine (WinDivert) when available,
-    /// falls back to suspend/resume cycles otherwise.
+    /// Sets download/upload speed limits for an app (all of its processes
+    /// share the limit). Pass <see cref="RateLimit.Unlimited"/> for no limit.
     /// </summary>
-    private async Task<bool> ApplyProcessThrottleAsync(string processName, BandwidthRule rule)
+    public Task<LimitResult> SetAppLimitAsync(string processName, long downloadBps, long uploadBps) => Task.Run(() =>
     {
-        return await Task.Run(() =>
+        var key = PacketEngine.NormalizeAppKey(processName);
+        if (key.Length == 0) return LimitResult.Fail("No app selected.");
+        if ((downloadBps == RateLimit.Blocked || uploadBps == RateLimit.Blocked) && !CanBlock(key))
+            return LimitResult.Fail($"{DisplayName(processName)} is part of Windows and can't be blocked (it would break DNS, updates or antivirus).");
+
+        lock (_lock)
         {
-            try
-            {
-                var cleanName = processName.Replace(".exe", "");
-                var processes = Process.GetProcessesByName(cleanName);
+            if (!_apps.TryGetValue(key, out var rule))
+                rule = new AppBandwidthRule { ProcessName = DisplayName(processName) };
 
-                // Prefer the real kernel-level throttle (WinDivert token bucket).
-                // Start the engine on demand — it only needs to run while a limit
-                // is active, and this is what makes speed limiting actually work
-                // instead of freezing the whole app via suspend/resume.
-                var packetEngine = PacketEngine.Instance;
-                if (!packetEngine.IsRunning && packetEngine.IsDriverLoaded)
-                {
-                    packetEngine.Start();
-                }
+            rule.DownloadBps = NormalizeRate(downloadBps);
+            rule.UploadBps = NormalizeRate(uploadBps);
+            rule.ExePath ??= PacketEngine.Instance.FindExecutablePath(processName);
 
-                if (packetEngine.IsRunning)
-                {
-                    // Set throttle in PacketEngine (real packet pacing/dropping)
-                    packetEngine.SetThrottle(cleanName,
-                        rule.DownloadLimitKBps * 125,
-                        rule.UploadLimitKBps * 125);
+            if (rule.HasSpeedLimit || rule.Blocked) _apps[key] = rule;
+            else _apps.Remove(key);
+            Save();
+        }
 
-                    // Keep the enforcement timer running so newly-started PIDs of
-                    // this app get the same throttle (see CheckForNewProcesses).
-                    if (!_isEnabled) IsEnabled = true;
-
-                    Debug.WriteLine($"PacketEngine throttle applied for {processName}: {rule.DownloadLimitKBps} KB/s down, {rule.UploadLimitKBps} KB/s up");
-                    return true;
-                }
-
-                // Fallback (driver unavailable): process suspend/resume cycles
-                if (processes.Length == 0)
-                {
-                    Debug.WriteLine($"Process not found: {processName} - rule will apply when process starts");
-                    return true;
-                }
-
-                foreach (var process in processes)
-                {
-                    _throttleStates[process.Id] = new ProcessThrottleState
-                    {
-                        ProcessId = process.Id,
-                        ProcessName = processName,
-                        DownloadLimitBps = rule.DownloadLimitKBps * 125,
-                        UploadLimitBps = rule.UploadLimitKBps * 125,
-                        IsActive = true
-                    };
-                }
-
-                if (!_isEnabled)
-                {
-                    IsEnabled = true;
-                }
-
-                Debug.WriteLine($"Suspend/Resume throttle applied for {processName}: {rule.DownloadLimitKBps} KB/s down, {rule.UploadLimitKBps} KB/s up");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to apply process throttle: {ex.Message}");
-                return false;
-            }
-        });
-    }
+        var result = SyncEngine();
+        RulesChanged?.Invoke();
+        return result;
+    });
 
     /// <summary>
-    /// Block process using Windows Firewall (most reliable blocking method)
+    /// Cuts an app off the internet: live connections are dropped by the packet
+    /// engine and a Windows Firewall rule stops new ones (even after restart).
     /// </summary>
-    private async Task<bool> BlockWithFirewallAsync(string processName)
+    public async Task<LimitResult> BlockAppAsync(string processName, string? exePath = null)
     {
-        return await Task.Run(() =>
+        var key = PacketEngine.NormalizeAppKey(processName);
+        if (key.Length == 0) return LimitResult.Fail("No app selected.");
+        if (!CanBlock(key))
+            return LimitResult.Fail($"{DisplayName(processName)} is part of Windows and can't be blocked (it would break DNS, updates or antivirus).");
+
+        string? path;
+        lock (_lock)
         {
-            try
-            {
-                var cleanName = processName.Replace(".exe", "");
-                var processes = Process.GetProcessesByName(cleanName);
-                string? exePath = null;
+            if (!_apps.TryGetValue(key, out var rule))
+                rule = new AppBandwidthRule { ProcessName = DisplayName(processName) };
 
-                // Try to get exe path from running process
-                foreach (var proc in processes)
-                {
-                    try
-                    {
-                        exePath = proc.MainModule?.FileName;
-                        if (!string.IsNullOrEmpty(exePath)) break;
-                    }
-                    catch { }
-                }
+            rule.Blocked = true;
+            rule.ExePath = exePath ?? rule.ExePath ?? PacketEngine.Instance.FindExecutablePath(processName);
+            path = rule.ExePath;
+            _apps[key] = rule;
+            Save();
+        }
 
-                // If process not running, try common paths
-                if (string.IsNullOrEmpty(exePath))
-                {
-                    var commonPaths = new[]
-                    {
-                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), cleanName, $"{cleanName}.exe"),
-                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), cleanName, $"{cleanName}.exe"),
-                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), cleanName, $"{cleanName}.exe"),
-                    };
+        var engineResult = await Task.Run(SyncEngine);
+        bool firewall = path != null && await AddFirewallBlockAsync(key, path);
+        RulesChanged?.Invoke();
 
-                    exePath = commonPaths.FirstOrDefault(File.Exists);
-                }
-
-                if (string.IsNullOrEmpty(exePath))
-                {
-                    OnError?.Invoke($"Cannot find executable path for {processName}. Start the application first.");
-                    return false;
-                }
-
-                // Remove existing rules first
-                RemoveFirewallRulesSync(processName);
-
-                // Create outbound block rule
-                var success = RunNetshCommand(
-                    $"advfirewall firewall add rule name=\"NetX_Block_{cleanName}\" dir=out action=block program=\"{exePath}\" enable=yes");
-
-                // Create inbound block rule
-                success &= RunNetshCommand(
-                    $"advfirewall firewall add rule name=\"NetX_Block_{cleanName}_In\" dir=in action=block program=\"{exePath}\" enable=yes");
-
-                if (success)
-                {
-                    Debug.WriteLine($"Firewall block applied for {processName}");
-                }
-                else
-                {
-                    OnError?.Invoke("Failed to create firewall rules. Run as Administrator.");
-                }
-
-                return success;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to block with firewall: {ex.Message}");
-                OnError?.Invoke($"Firewall block failed: {ex.Message}");
-                return false;
-            }
-        });
+        if (firewall) return LimitResult.Ok();
+        if (engineResult.Success)
+            return LimitResult.Ok(path == null
+                ? "Live traffic is blocked. Start the app once while WinXTools is open so it can also add a permanent firewall rule."
+                : "Live traffic is blocked, but the Windows Firewall rule could not be created.");
+        return LimitResult.Fail(engineResult.Message ?? "Could not block this app.");
     }
 
-    private bool BlockInterfaceWithFirewall(string interfaceName, bool blockIn, bool blockOut)
+    public async Task<LimitResult> UnblockAppAsync(string processName)
     {
-        try
+        var key = PacketEngine.NormalizeAppKey(processName);
+        lock (_lock)
         {
-            var safeName = interfaceName.Replace(" ", "_").Replace("(", "").Replace(")", "");
-            bool success = true;
-
-            // Remove existing rules
-            RunNetshCommand($"advfirewall firewall delete rule name=\"NetX_IBlock_{safeName}_In\"");
-            RunNetshCommand($"advfirewall firewall delete rule name=\"NetX_IBlock_{safeName}_Out\"");
-
-            if (blockIn)
+            if (_apps.TryGetValue(key, out var rule))
             {
-                success &= RunNetshCommand(
-                    $"advfirewall firewall add rule name=\"NetX_IBlock_{safeName}_In\" dir=in action=block interfacetype=any localip=any remoteip=any enable=yes");
+                rule.Blocked = false;
+                if (!rule.HasSpeedLimit) _apps.Remove(key);
+                Save();
             }
-
-            if (blockOut)
-            {
-                success &= RunNetshCommand(
-                    $"advfirewall firewall add rule name=\"NetX_IBlock_{safeName}_Out\" dir=out action=block interfacetype=any localip=any remoteip=any enable=yes");
-            }
-
-            return success;
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to block interface: {ex.Message}");
-            return false;
-        }
+
+        var engineResult = await Task.Run(SyncEngine);
+        await RemoveFirewallBlockAsync(key);
+        RulesChanged?.Invoke();
+        return engineResult.Success || !HasEngineWork ? LimitResult.Ok() : engineResult;
     }
 
-    private bool ApplyNetshQos(string interfaceName, BandwidthRule rule)
+    /// <summary>Removes every limit and block for an app.</summary>
+    public async Task RemoveAppRuleAsync(string processName)
     {
-        try
+        var key = PacketEngine.NormalizeAppKey(processName);
+        bool wasBlocked;
+        lock (_lock)
         {
-            // Use netsh to apply bandwidth limit via Policy-based QoS
-            // Note: This requires Windows Pro/Enterprise and proper QoS setup
-
-            // Sanitize interface name to prevent injection
-            var safeName = global::System.Text.RegularExpressions.Regex.Replace(
-                interfaceName.Replace(" ", "_"), @"[^a-zA-Z0-9._\-]", "");
-            var policyName = $"NetX_QoS_{safeName}";
-            long throttleBitsPerSecond = rule.DownloadLimitKBps * 1024 * 8;
-
-            // Remove existing policy
-            RunCommandHidden("powershell",
-                $"-NoProfile -Command \"Remove-NetQosPolicy -Name '{policyName}' -Confirm:$false -ErrorAction SilentlyContinue\"");
-
-            // Apply QoS throttle using PowerShell cmdlet directly
-            var result = RunCommandWithOutput("powershell",
-                $"-NoProfile -Command \"try {{ New-NetQosPolicy -Name '{policyName}' -NetworkProfile All -ThrottleRateActionBitsPerSecond {throttleBitsPerSecond} -ErrorAction Stop; Write-Host 'SUCCESS' }} catch {{ Write-Host 'FAILED:' $_.Exception.Message }}\"");
-
-            if (result.Contains("SUCCESS"))
-            {
-                Debug.WriteLine($"NetSh QoS applied for {interfaceName}");
-                return true;
-            }
-            else
-            {
-                // QoS not available, fall back to monitoring-only mode
-                Debug.WriteLine($"QoS not available: {result}");
-                OnError?.Invoke("Hardware QoS not supported. Using monitoring mode only.");
-                return false;
-            }
+            wasBlocked = _apps.TryGetValue(key, out var rule) && rule.Blocked;
+            _apps.Remove(key);
+            Save();
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to apply NetSh QoS: {ex.Message}");
-            return false;
-        }
-    }
 
-    private async Task RemoveRuleAsync(string processName, BandwidthRule rule)
-    {
-        await Task.Run(() =>
-        {
-            try
-            {
-                if (processName.StartsWith("interface:"))
-                {
-                    var interfaceId = processName.Replace("interface:", "");
-                    var ni = NetworkInterface.GetAllNetworkInterfaces()
-                        .FirstOrDefault(n => n.Id == interfaceId);
-
-                    if (ni != null)
-                    {
-                        var safeName = ni.Name.Replace(" ", "_").Replace("(", "").Replace(")", "");
-                        RunNetshCommand($"advfirewall firewall delete rule name=\"NetX_IBlock_{safeName}_In\"");
-                        RunNetshCommand($"advfirewall firewall delete rule name=\"NetX_IBlock_{safeName}_Out\"");
-
-                        // Remove QoS policy
-                        var policyName = $"NetX_QoS_{ni.Name.Replace(" ", "_")}";
-                        RunCommandHidden("powershell", $"-NoProfile -Command \"Remove-NetQosPolicy -Name '{policyName}' -Confirm:$false -ErrorAction SilentlyContinue\"");
-                    }
-                }
-                else
-                {
-                    // Remove firewall rules
-                    RemoveFirewallRulesSync(processName);
-
-                    // Remove throttle states (and the matching kernel throttle rules)
-                    var cleanName = processName.Replace(".exe", "").ToLowerInvariant();
-                    var toRemove = _throttleStates.Where(kv =>
-                        kv.Value.ProcessName.Replace(".exe", "").ToLowerInvariant() == cleanName).ToList();
-
-                    var packetEngine = PacketEngine.Instance;
-                    foreach (var kv in toRemove)
-                    {
-                        if (packetEngine.IsRunning)
-                            packetEngine.RemoveThrottle(kv.Key);
-
-                        // Make sure a suspended process isn't left frozen.
-                        if (kv.Value.IsSuspended)
-                            ResumeProcess(kv.Key);
-
-                        _throttleStates.TryRemove(kv.Key, out _);
-                    }
-                }
-
-                Debug.WriteLine($"Removed rule for {processName}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to remove rule: {ex.Message}");
-            }
-        });
-    }
-
-    private void RemoveFirewallRulesSync(string processName)
-    {
-        var cleanName = processName.Replace(".exe", "");
-        RunNetshCommand($"advfirewall firewall delete rule name=\"NetX_Block_{cleanName}\"");
-        RunNetshCommand($"advfirewall firewall delete rule name=\"NetX_Block_{cleanName}_In\"");
+        await Task.Run(SyncEngine);
+        if (wasBlocked) await RemoveFirewallBlockAsync(key);
+        RulesChanged?.Invoke();
     }
 
     #endregion
 
-    #region Enforcement (Process Throttling)
+    #region Whole-PC limit
 
-    private void StartEnforcement()
+    public Task<LimitResult> SetGlobalLimitAsync(long downloadBps, long uploadBps) => Task.Run(() =>
     {
-        _enforcementTimer?.Dispose();
-        _enforcementTimer = new Timer(EnforceLimits, null,
-            TimeSpan.FromMilliseconds(200),
-            TimeSpan.FromMilliseconds(200));
+        lock (_lock)
+        {
+            var rule = new GlobalBandwidthRule
+            {
+                DownloadBps = NormalizeRate(downloadBps),
+                UploadBps = NormalizeRate(uploadBps)
+            };
+            _global = rule.IsActive ? rule : null;
+            Save();
+        }
+
+        var result = SyncEngine();
+        RulesChanged?.Invoke();
+        return result;
+    });
+
+    public Task<LimitResult> RemoveGlobalLimitAsync() => SetGlobalLimitAsync(RateLimit.Unlimited, RateLimit.Unlimited);
+
+    /// <summary>Removes every app rule, block and the whole-PC limit.</summary>
+    public async Task ResetAllAsync()
+    {
+        List<string> blockedKeys;
+        lock (_lock)
+        {
+            blockedKeys = _apps.Values.Where(r => r.Blocked).Select(r => r.Key).ToList();
+            _apps.Clear();
+            _global = null;
+            Save();
+        }
+
+        await Task.Run(SyncEngine);
+        foreach (var key in blockedKeys) await RemoveFirewallBlockAsync(key);
+        RulesChanged?.Invoke();
     }
 
-    private void StopEnforcement()
-    {
-        _enforcementTimer?.Dispose();
-        _enforcementTimer = null;
+    #endregion
 
-        // Resume all throttled processes
-        foreach (var state in _throttleStates.Values)
+    #region Engine sync
+
+    /// <summary>
+    /// Makes the packet engine's shapers match the saved rules and starts the
+    /// engine if anything needs enforcing.
+    /// </summary>
+    private LimitResult SyncEngine()
+    {
+        var engine = PacketEngine.Instance;
+        List<AppBandwidthRule> apps;
+        GlobalBandwidthRule? global;
+        lock (_lock)
         {
-            if (state.IsSuspended)
+            apps = _apps.Values.Select(r => r.Clone()).ToList();
+            global = _global?.Clone();
+        }
+
+        var wanted = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var rule in apps)
+        {
+            if (rule.Blocked)
             {
-                ResumeProcess(state.ProcessId);
-                state.IsSuspended = false;
+                engine.SetAppLimit(rule.Key, RateLimit.Blocked, RateLimit.Blocked);
+                wanted.Add(rule.Key);
+            }
+            else if (rule.HasSpeedLimit)
+            {
+                engine.SetAppLimit(rule.Key, rule.DownloadBps, rule.UploadBps);
+                wanted.Add(rule.Key);
             }
         }
+
+        lock (_engineKeys)
+        {
+            foreach (var stale in _engineKeys.Where(k => !wanted.Contains(k)).ToList())
+                engine.RemoveAppLimit(stale);
+            _engineKeys.Clear();
+            _engineKeys.UnionWith(wanted);
+        }
+
+        if (global?.IsActive == true) engine.SetGlobalLimit(global.DownloadBps, global.UploadBps);
+        else engine.RemoveGlobalLimit();
+
+        if (!engine.HasLimits) return LimitResult.Ok();
+
+        if (!engine.IsRunning && !engine.Start())
+            return LimitResult.Fail(engine.IsDriverLoaded
+                ? $"The packet engine could not start: {engine.LastError}"
+                : "The WinDivert driver could not be loaded, so speed limits are saved but not active. Run WinXTools as Administrator and allow the driver in your antivirus.");
+
+        return engine.IsShaping
+            ? LimitResult.Ok()
+            : LimitResult.Fail($"Limits are saved but not active: {engine.LastError ?? "packet diverting failed"}");
     }
 
-    private void EnforceLimits(object? state)
+    #endregion
+
+    #region Windows Firewall (app blocks)
+
+    private static string FirewallBaseName(string key)
     {
+        var safe = Regex.Replace(key, @"[^a-z0-9._\-]", "_");
+        if (safe == key) return FirewallPrefix + safe;
+
+        // Keep names unique when non-ASCII characters were replaced.
+        uint hash = 2166136261;
+        foreach (var c in key) hash = (hash ^ c) * 16777619;
+        return $"{FirewallPrefix}{safe}_{hash:x8}";
+    }
+
+    private async Task<bool> AddFirewallBlockAsync(string key, string exePath)
+    {
+        if (!File.Exists(exePath)) return false;
+
+        var name = FirewallBaseName(key);
+        await _firewallGate.WaitAsync();
         try
         {
-            // First, check for new processes that match our rules
-            CheckForNewProcesses();
-
-            // Then enforce limits on tracked processes
-            foreach (var throttleState in _throttleStates.Values.ToList())
+            return await Task.Run(() =>
             {
-                if (!throttleState.IsActive) continue;
+                // Replace instead of duplicating rules on every start.
+                RunNetsh($"advfirewall firewall delete rule name=\"{name}_Out\"");
+                RunNetsh($"advfirewall firewall delete rule name=\"{name}_In\"");
 
-                try
-                {
-                    EnforceProcessThrottle(throttleState);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error enforcing limit for PID {throttleState.ProcessId}: {ex.Message}");
-                    // Process might have exited
-                    _throttleStates.TryRemove(throttleState.ProcessId, out _);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error in enforcement cycle: {ex.Message}");
-        }
-    }
-
-    private void CheckForNewProcesses()
-    {
-        // Drop tracking for PIDs that have exited so the dictionary stays bounded
-        // across long sessions with many app restarts.
-        foreach (var kv in _throttleStates.ToList())
-        {
-            if (!IsProcessAlive(kv.Key))
-            {
-                if (PacketEngine.Instance.IsRunning)
-                    PacketEngine.Instance.RemoveThrottle(kv.Key);
-                _throttleStates.TryRemove(kv.Key, out _);
-            }
-        }
-
-        var packetEngine = PacketEngine.Instance;
-        bool usePacketEngine = packetEngine.IsRunning;
-
-        foreach (var rule in _rules.Values.Where(r => r.IsEnabled && !r.ProcessName.StartsWith("interface:")))
-        {
-            var cleanName = rule.ProcessName.Replace(".exe", "");
-            var processes = Process.GetProcessesByName(cleanName);
-
-            foreach (var proc in processes)
-            {
-                if (_throttleStates.ContainsKey(proc.Id)) continue;
-
-                if (usePacketEngine)
-                {
-                    // Real kernel throttle for this (possibly newly-started) PID.
-                    // IsActive=false so the suspend/resume enforcer skips it.
-                    packetEngine.SetThrottle(proc.Id,
-                        rule.DownloadLimitKBps * 125,
-                        rule.UploadLimitKBps * 125);
-                    _throttleStates[proc.Id] = new ProcessThrottleState
-                    {
-                        ProcessId = proc.Id,
-                        ProcessName = rule.ProcessName,
-                        DownloadLimitBps = rule.DownloadLimitKBps * 125,
-                        UploadLimitBps = rule.UploadLimitKBps * 125,
-                        IsActive = false
-                    };
-                }
-                else
-                {
-                    _throttleStates[proc.Id] = new ProcessThrottleState
-                    {
-                        ProcessId = proc.Id,
-                        ProcessName = rule.ProcessName,
-                        DownloadLimitBps = rule.DownloadLimitKBps * 125,
-                        UploadLimitBps = rule.UploadLimitKBps * 125,
-                        IsActive = true
-                    };
-                }
-                Debug.WriteLine($"Started tracking process {cleanName} (PID: {proc.Id}) via {(usePacketEngine ? "PacketEngine" : "suspend/resume")}");
-            }
-        }
-    }
-
-    private static bool IsProcessAlive(int processId)
-    {
-        try
-        {
-            using var proc = Process.GetProcessById(processId);
-            return !proc.HasExited;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private void EnforceProcessThrottle(ProcessThrottleState state)
-    {
-        // Get current bandwidth usage from NetworkMonitor
-        var stats = NetworkMonitor.Instance.GetProcessStats(state.ProcessId);
-        if (stats == null)
-        {
-            // Process might have exited
-            try
-            {
-                var proc = Process.GetProcessById(state.ProcessId);
-                if (proc.HasExited)
-                {
-                    _throttleStates.TryRemove(state.ProcessId, out _);
-                }
-            }
-            catch
-            {
-                _throttleStates.TryRemove(state.ProcessId, out _);
-            }
-            return;
-        }
-
-        double currentSpeed = stats.DownloadSpeed + stats.UploadSpeed;
-        double limitSpeed = state.DownloadLimitBps + state.UploadLimitBps;
-
-        if (limitSpeed <= 0) return; // No limit
-
-        // Calculate if we're over the limit
-        double ratio = currentSpeed / limitSpeed;
-
-        if (ratio > 1.2) // 20% over limit
-        {
-            // Need to throttle - suspend briefly
-            if (!state.IsSuspended)
-            {
-                SuspendProcess(state.ProcessId);
-                state.IsSuspended = true;
-                state.LastSuspendTime = DateTime.Now;
-
-                // Calculate suspend duration based on how much over the limit
-                // More over = longer suspend
-                int suspendMs = Math.Min(100, (int)((ratio - 1) * 50));
-                state.SuspendDurationMs = suspendMs;
-
-                OnLimitExceeded?.Invoke(state.ProcessName,
-                    $"Speed: {currentSpeed / 1024:F0} KB/s > Limit: {limitSpeed / 1024:F0} KB/s");
-            }
-        }
-        else if (state.IsSuspended)
-        {
-            // Check if we should resume
-            var elapsed = (DateTime.Now - state.LastSuspendTime).TotalMilliseconds;
-            if (elapsed >= state.SuspendDurationMs)
-            {
-                ResumeProcess(state.ProcessId);
-                state.IsSuspended = false;
-            }
-        }
-    }
-
-    private void SuspendProcess(int processId)
-    {
-        IntPtr handle = IntPtr.Zero;
-        try
-        {
-            handle = OpenProcess(PROCESS_SUSPEND_RESUME, false, processId);
-            if (handle != IntPtr.Zero)
-            {
-                NtSuspendProcess(handle);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"SuspendProcess({processId}) failed: {ex.Message}");
+                const string description = "Created by WinXTools. Unblock the app in WinXTools to remove this rule.";
+                bool outOk = RunNetsh($"advfirewall firewall add rule name=\"{name}_Out\" dir=out action=block program=\"{exePath}\" enable=yes profile=any description=\"{description}\"");
+                bool inOk = RunNetsh($"advfirewall firewall add rule name=\"{name}_In\" dir=in action=block program=\"{exePath}\" enable=yes profile=any description=\"{description}\"");
+                return outOk && inOk;
+            });
         }
         finally
         {
-            if (handle != IntPtr.Zero) CloseHandle(handle);
+            _firewallGate.Release();
         }
     }
 
-    private void ResumeProcess(int processId)
+    private async Task RemoveFirewallBlockAsync(string key)
     {
-        IntPtr handle = IntPtr.Zero;
+        var name = FirewallBaseName(key);
+        await _firewallGate.WaitAsync();
         try
         {
-            handle = OpenProcess(PROCESS_SUSPEND_RESUME, false, processId);
-            if (handle != IntPtr.Zero)
+            await Task.Run(() =>
             {
-                NtResumeProcess(handle);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"ResumeProcess({processId}) failed: {ex.Message}");
+                RunNetsh($"advfirewall firewall delete rule name=\"{name}_Out\"");
+                RunNetsh($"advfirewall firewall delete rule name=\"{name}_In\"");
+            });
         }
         finally
         {
-            if (handle != IntPtr.Zero) CloseHandle(handle);
+            _firewallGate.Release();
         }
     }
 
-    #endregion
-
-    #region Helper Methods
-
-    private bool RunNetshCommand(string arguments)
+    private static bool RunNetsh(string arguments)
     {
         try
         {
-            var psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo("netsh", arguments)
             {
-                FileName = "netsh",
-                Arguments = arguments,
-                UseShellExecute = true,
-                CreateNoWindow = true,
-                Verb = _isAdmin ? "" : "runas",
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-
-            var proc = Process.Start(psi);
-            return proc?.WaitForExit(5000) == true && proc.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private void RunCommandHidden(string fileName, string arguments)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-
-            Process.Start(psi)?.WaitForExit(5000);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"RunCommandHidden failed ({fileName}): {ex.Message}");
-        }
-    }
-
-    private string RunCommandWithOutput(string fileName, string arguments)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-
-            using var proc = Process.Start(psi);
-            if (proc == null) return "";
-
-            var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(5000);
-            return output;
-        }
-        catch
-        {
-            return "";
-        }
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    public void CleanupAllRules()
-    {
-        try
-        {
-            // Remove all NetX firewall rules using PowerShell (faster than multiple netsh calls)
-            var psCommand = @"
-                Get-NetFirewallRule -ErrorAction SilentlyContinue |
-                Where-Object { $_.DisplayName -like 'NetX_*' } |
-                Remove-NetFirewallRule -ErrorAction SilentlyContinue;
-                Get-NetQosPolicy -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -like 'NetX_*' } |
-                Remove-NetQosPolicy -Confirm:$false -ErrorAction SilentlyContinue
-            ";
-
-            var psi = new ProcessStartInfo
+            using var process = Process.Start(psi);
+            if (process == null) return false;
+            process.StandardOutput.ReadToEnd();
+            if (!process.WaitForExit(10000))
             {
-                FileName = "powershell",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psCommand}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-
-            Process.Start(psi)?.WaitForExit(10000);
-            Debug.WriteLine("Cleaned up all NetX rules");
+                try { process.Kill(); } catch { }
+                return false;
+            }
+            return process.ExitCode == 0;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to cleanup rules: {ex.Message}");
+            Debug.WriteLine($"netsh failed: {ex.Message}");
+            return false;
         }
-    }
-
-    public void ResetAllLimits()
-    {
-        // Stop enforcement
-        StopEnforcement();
-
-        // Clear all rules
-        _rules.Clear();
-        _throttleStates.Clear();
-        SaveRules();
-
-        // Cleanup system rules
-        CleanupAllRules();
-
-        Debug.WriteLine("All bandwidth limits have been reset");
     }
 
     #endregion
 
     #region Persistence
 
-    private void LoadRules()
+    private sealed class RulesFile
+    {
+        public int Version { get; set; } = 2;
+        public List<AppBandwidthRule> Apps { get; set; } = new();
+        public GlobalBandwidthRule? Global { get; set; }
+    }
+
+    /// <summary>Rule format written by versions before 2026-09.</summary>
+    private sealed class LegacyRule
+    {
+        public string ProcessName { get; set; } = "";
+        public long DownloadLimitKBps { get; set; }
+        public long UploadLimitKBps { get; set; }
+    }
+
+    private void Load()
     {
         try
         {
-            if (File.Exists(_settingsPath))
+            if (AdminOnlyStore.Exists(RulesFileName))
             {
-                var json = File.ReadAllText(_settingsPath);
-                var rules = JsonSerializer.Deserialize<List<BandwidthRule>>(json);
-                if (rules != null)
+                var file = AdminOnlyStore.Load<RulesFile>(RulesFileName);
+                if (file != null)
                 {
-                    foreach (var rule in rules)
+                    foreach (var rule in file.Apps.Where(r => !string.IsNullOrWhiteSpace(r.ProcessName)))
                     {
-                        _rules[rule.ProcessName.ToLowerInvariant()] = rule;
+                        // Defense in depth: even a trusted file can't block Windows itself.
+                        if (!CanBlock(rule.Key))
+                        {
+                            rule.Blocked = false;
+                            if (rule.DownloadBps == RateLimit.Blocked) rule.DownloadBps = RateLimit.Unlimited;
+                            if (rule.UploadBps == RateLimit.Blocked) rule.UploadBps = RateLimit.Unlimited;
+                        }
+                        if (rule.Blocked || rule.HasSpeedLimit) _apps[rule.Key] = rule;
                     }
+                    _global = file.Global?.IsActive == true ? file.Global : null;
                 }
+                return;
             }
+
+            if (File.Exists(_legacyPath)) MigrateLegacy();
         }
         catch (Exception ex)
         {
@@ -954,68 +529,119 @@ public class BandwidthLimiter : IDisposable
         }
     }
 
-    private void SaveRules()
+    /// <summary>
+    /// Old files mixed units: per-app values were what the UI showed as KB/s,
+    /// the whole-PC value was Kbps (−1 unlimited, 0 blocked). The old file sits
+    /// in the user-writable profile, so only speed limits are imported — never
+    /// app blocks (the old UI could not create them anyway).
+    /// </summary>
+    private void MigrateLegacy()
     {
+        var legacy = JsonSerializer.Deserialize<List<LegacyRule>>(File.ReadAllText(_legacyPath)) ?? new();
+
+        foreach (var old in legacy)
+        {
+            if (old.ProcessName.StartsWith("interface:", StringComparison.OrdinalIgnoreCase))
+            {
+                static long FromKbps(long v) => v < 0 ? RateLimit.Unlimited : v == 0 ? RateLimit.Blocked : v * 125;
+                var global = new GlobalBandwidthRule
+                {
+                    DownloadBps = FromKbps(old.DownloadLimitKBps),
+                    UploadBps = FromKbps(old.UploadLimitKBps)
+                };
+                if (global.IsActive) _global = global;
+                continue;
+            }
+
+            var name = DisplayName(old.ProcessName);
+            if (name.Length == 0) continue;
+            _legacyFirewallNames.Add($"NetX_Block_{name}");
+            _legacyFirewallNames.Add($"NetX_Block_{name}_In");
+
+            static long FromKBps(long v) => v <= 0 ? RateLimit.Unlimited : v * 1024;
+            var rule = new AppBandwidthRule
+            {
+                ProcessName = name,
+                DownloadBps = FromKBps(old.DownloadLimitKBps),
+                UploadBps = FromKBps(old.UploadLimitKBps)
+            };
+            if (rule.HasSpeedLimit) _apps[rule.Key] = rule;
+        }
+
+        Save();
+    }
+
+    /// <summary>
+    /// Removes firewall/QoS objects the old limiter created. Old versions also
+    /// wiped every "NetX_*" rule (including the user's IP blocks) on each start
+    /// and exit; that no longer happens.
+    /// </summary>
+    private async Task CleanupLegacyAsync()
+    {
+        if (!File.Exists(_legacyPath)) return;
+
+        await _firewallGate.WaitAsync();
         try
         {
-            var dir = Path.GetDirectoryName(_settingsPath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
+            foreach (var name in _legacyFirewallNames)
+                RunNetsh($"advfirewall firewall delete rule name=\"{name}\"");
 
-            var json = JsonSerializer.Serialize(_rules.Values.ToList(),
-                new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_settingsPath, json);
+            RunPowerShell(
+                "Get-NetFirewallRule -DisplayName 'NetX_IBlock_*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue; " +
+                "Get-NetQosPolicy -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'NetX_QoS_*' } | Remove-NetQosPolicy -Confirm:$false -ErrorAction SilentlyContinue");
+
+            File.Move(_legacyPath, _legacyPath + ".migrated", overwrite: true);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error saving bandwidth rules: {ex.Message}");
+            Debug.WriteLine($"Legacy bandwidth cleanup failed: {ex.Message}");
+        }
+        finally
+        {
+            _firewallGate.Release();
         }
     }
 
-    #endregion
-
-    #region Dispose
-
-    public void QuickDispose()
+    private static void RunPowerShell(string command)
     {
-        StopEnforcement();
+        try
+        {
+            var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(command));
+            var psi = new ProcessStartInfo("powershell", $"-NoProfile -NonInteractive -EncodedCommand {encoded}")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            using var process = Process.Start(psi);
+            if (process == null) return;
+            process.StandardOutput.ReadToEnd();
+            if (!process.WaitForExit(20000))
+            {
+                try { process.Kill(); } catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"PowerShell failed: {ex.Message}");
+        }
     }
 
-    public void Dispose()
+    private void Save()
     {
-        StopEnforcement();
-        CleanupAllRules();
+        var file = new RulesFile { Apps = _apps.Values.ToList(), Global = _global };
+        if (!AdminOnlyStore.Save(RulesFileName, file))
+            Debug.WriteLine("Admin-only store unavailable — bandwidth rules are kept for this session only");
     }
 
     #endregion
-}
 
-public class BandwidthRule
-{
-    public string ProcessName { get; set; } = "";
-    public long DownloadLimitKBps { get; set; }
-    public long UploadLimitKBps { get; set; }
-    public bool IsEnabled { get; set; } = true;
-    public DateTime CreatedAt { get; set; }
-    public LimitMethod Method { get; set; } = LimitMethod.ProcessThrottle;
-}
+    private static long NormalizeRate(long bps) => bps < 0 ? RateLimit.Unlimited : bps;
 
-public enum LimitMethod
-{
-    ProcessThrottle,  // Suspend/Resume cycles
-    Firewall,         // Complete block via firewall
-    InterfaceLimit,   // Interface-level QoS
-    QosPolicy         // Windows QoS Policy
-}
-
-public class ProcessThrottleState
-{
-    public int ProcessId { get; set; }
-    public string ProcessName { get; set; } = "";
-    public long DownloadLimitBps { get; set; }
-    public long UploadLimitBps { get; set; }
-    public bool IsActive { get; set; }
-    public bool IsSuspended { get; set; }
-    public DateTime LastSuspendTime { get; set; }
-    public int SuspendDurationMs { get; set; }
+    private static string DisplayName(string processName)
+    {
+        var name = processName.Trim();
+        return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
+    }
 }

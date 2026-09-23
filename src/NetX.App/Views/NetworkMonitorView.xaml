@@ -356,7 +356,7 @@
                                                 Padding="5,4"
                                                 Click="BlockProcess_Click"
                                                 Tag="{Binding ProcessId}"
-                                                ToolTip="Block Network">
+                                                ToolTip="Block / unblock this app's internet (firewall)">
                                             <Path Data="{StaticResource BlockIcon}"
                                                   Fill="{StaticResource TextTertiaryBrush}"
                                                   Width="10" Height="10" Stretch="Uniform"/>
@@ -408,7 +408,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Text="Bandwidth Control"
+                            <TextBlock Grid.Row="0" Text="{DynamicResource BW_Control}"
                                        FontWeight="SemiBold" FontSize="14"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        Margin="0,0,0,12"/>
@@ -453,7 +453,7 @@
                                     <Path Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"
                                           Fill="{StaticResource AccentPrimaryBrush}"
                                           Width="12" Height="12" Stretch="Uniform" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Down:"
+                                    <TextBlock Text="{DynamicResource BW_Down}"
                                                Foreground="{StaticResource AccentPrimaryBrush}"
                                                VerticalAlignment="Center" FontWeight="SemiBold"/>
                                 </StackPanel>
@@ -483,7 +483,7 @@
                                     <Path Data="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"
                                           Fill="{StaticResource SuccessBrush}"
                                           Width="12" Height="12" Stretch="Uniform" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Up:"
+                                    <TextBlock Text="{DynamicResource BW_Up}"
                                                Foreground="{StaticResource SuccessBrush}"
                                                VerticalAlignment="Center" FontWeight="SemiBold"/>
                                 </StackPanel>
@@ -502,11 +502,11 @@
                             </Grid>
 
                             <!-- Speed Preset Buttons -->
-                            <TextBlock Grid.Row="4" Text="Quick Presets" FontSize="10"
+                            <TextBlock Grid.Row="4" Text="{DynamicResource BW_QuickPresets}" FontSize="10"
                                        Foreground="{StaticResource TextTertiaryBrush}"
                                        Margin="0,0,0,6"/>
                             <WrapPanel Grid.Row="5" HorizontalAlignment="Center">
-                                <Button Content="Unlimited" Style="{StaticResource SecondaryButtonStyle}"
+                                <Button Content="{DynamicResource BW_Unlimited}" Style="{StaticResource SecondaryButtonStyle}"
                                         Padding="8,4" Margin="2"
                                         Click="SpeedPreset_Click" Tag="unlimited"/>
                                 <Button Content="10 MB/s" Style="{StaticResource SecondaryButtonStyle}"
@@ -521,7 +521,7 @@
                                 <Button Content="512 KB/s" Style="{StaticResource SecondaryButtonStyle}"
                                         Padding="8,4" Margin="2"
                                         Click="SpeedPreset_Click" Tag="512"/>
-                                <Button Content="Block" Style="{StaticResource SecondaryButtonStyle}"
+                                <Button Content="{DynamicResource BW_Blocked}" Style="{StaticResource SecondaryButtonStyle}"
                                         Padding="8,4" Margin="2" Foreground="{StaticResource DangerBrush}"
                                         Click="SpeedPreset_Click" Tag="0"/>
                             </WrapPanel>

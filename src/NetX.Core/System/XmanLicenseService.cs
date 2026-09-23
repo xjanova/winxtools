@@ -1,395 +1,627 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http;
-using System.Net.Http.Json;
-using System.Net.Security;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.Json.Serialization;
+using System.Text;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using NetX.Core.Data;
+using NetX.Core.Helpers;
 
 namespace NetX.Core.System;
 
-public class XmanLicenseService
+/// <summary>
+/// WinXTools Pro licenses through the xman studio license server — the same
+/// /api/v1/product/{slug} API the studio's other apps use (register-device, activate,
+/// validate, check-machine, deactivate, demo). Licenses and trials are tied to the
+/// "winx-tools" product, so a key bought for another xman product does not unlock Pro.
+///
+/// The last good answer is kept in %ProgramData%\WinXTools (admin-only, HMAC-sealed to this
+/// PC), so Pro works right away at startup and for a while without internet. Only a clear
+/// answer from the server changes the license; offline, a 5xx or a rate limit never does.
+/// </summary>
+public sealed class XmanLicenseService
 {
-    private static XmanLicenseService? _instance;
-    public static XmanLicenseService Instance => _instance ??= new XmanLicenseService();
+    private static readonly Lazy<XmanLicenseService> _instance = new(() => new XmanLicenseService());
+    public static XmanLicenseService Instance => _instance.Value;
 
-    // Real xman studio license API (Laravel). Routes: /activate /validate
-    // /deactivate /demo — all POST, product selected by the "product" field.
-    private const string ApiBase = "https://xman4289.com/api/v1/license";
-    private const string Product = "winx-tools";
+    private const string StoreFile = "license.json";
+    private const string LegacyDbKey = "LicenseKey"; // where versions before 2026-09 kept the key
+    /// <summary>How long Pro keeps working without reaching the server after the last good check.</summary>
+    public static readonly TimeSpan OfflineGrace = TimeSpan.FromDays(30);
+    private static readonly TimeSpan ClockTolerance = TimeSpan.FromMinutes(5);
 
-    private readonly HttpClient _httpClient;
-    private readonly string _machineId;
-
-    private LicenseStatus _cachedStatus = new();
-
-    public event Action<LicenseStatus>? OnLicenseValidated;
-
-    // SPKI (SubjectPublicKeyInfo) SHA256 pins for xman4289.com.
-    // Prevents hosts-file redirect attacks even with a custom root CA installed.
-    // The chain is validated if EITHER the leaf OR the intermediate matches, so
-    // the leaf can rotate (~every 3 months) without breaking the app as long as
-    // Google Trust Services WE1 remains the issuer.
-    // Regenerate leaf: openssl s_client -connect xman4289.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256
-    private static readonly HashSet<string> PinnedPublicKeyHashes = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> PaidTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Leaf certificate (xman4289.com — rotates ~every 3 months; verified 2026-07-16)
-        "C6DB13A55445F01F84B99A0E07BE76AE0DB6D6F37536CDDC86D4FD415DEC6F68",
-        // Intermediate CA (Google Trust Services WE1 — stable, valid until 2029)
-        "908769E8D34477CC2CBA0632C88605B22D7294C0840F78596D247C645B1AFC0E"
+        "lifetime", "yearly", "monthly", "weekly", "daily", "product"
     };
+
+    private readonly HttpClient _http;
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly object _loadLock = new();
+    private LicenseStatus _status = LicenseStatus.None;
+    private volatile bool _savedLoaded;
+
+    /// <summary>Raised (on a worker thread) whenever <see cref="CachedStatus"/> changes.</summary>
+    public event Action<LicenseStatus>? StatusChanged;
 
     private XmanLicenseService()
     {
-        var handler = new HttpClientHandler();
-
-        // Certificate pinning: reject connections with unexpected certificates
-        if (PinnedPublicKeyHashes.Count > 0)
-        {
-            handler.ServerCertificateCustomValidationCallback = ValidateServerCertificate;
-        }
-
-        _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "WinXTools-License");
-        // Laravel returns JSON validation errors only when the client asks for JSON.
-        _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-        _machineId = AutoUpdateService.GenerateMachineId();
+        _http = XmanApi.CreateClient("WinXTools-License/" + AutoUpdateService.GetCurrentVersion(), TimeSpan.FromSeconds(15));
     }
 
-    /// <summary>
-    /// Validate server certificate against pinned SPKI hashes.
-    /// Blocks hosts-file spoofing even with custom root CA installed.
-    /// Checks leaf cert AND all intermediate certs in the chain against pins.
-    /// </summary>
-    private static bool ValidateServerCertificate(
-        HttpRequestMessage request,
-        X509Certificate2? cert,
-        X509Chain? chain,
-        SslPolicyErrors sslErrors)
+    public LicenseStatus CachedStatus
     {
-        // Standard SSL validation must pass first
-        if (sslErrors != SslPolicyErrors.None) return false;
-        if (cert == null) return false;
-
-        // Check leaf certificate SPKI hash
-        var leafSpki = cert.PublicKey.ExportSubjectPublicKeyInfo();
-        var leafHash = Convert.ToHexString(SHA256.HashData(leafSpki));
-        if (PinnedPublicKeyHashes.Contains(leafHash)) return true;
-
-        // Check intermediate certificates in the chain (for rotation resilience)
-        if (chain?.ChainElements != null)
+        get
         {
-            foreach (var element in chain.ChainElements)
-            {
-                var spki = element.Certificate.PublicKey.ExportSubjectPublicKeyInfo();
-                var hash = Convert.ToHexString(SHA256.HashData(spki));
-                if (PinnedPublicKeyHashes.Contains(hash)) return true;
-            }
+            EnsureSavedLoaded();
+            return _status;
         }
-
-        return false;
     }
 
-    public LicenseStatus CachedStatus => _cachedStatus;
+    private static string MachineId => MachineIdentity.MachineId;
+
+    #region Startup
 
     /// <summary>
-    /// The stable machine fingerprint this device presents to the license server.
+    /// Registers this PC with the server, then re-checks the saved key — or, when there is
+    /// none, asks whether this PC already owns a license (e.g. after reinstalling WinXTools).
     /// </summary>
-    public string MachineId => _machineId;
-
-    /// <summary>
-    /// Activate a license key on this machine.
-    /// </summary>
-    public async Task<LicenseResult> ActivateAsync(string licenseKey)
+    public async Task InitializeAsync()
     {
+        EnsureSavedLoaded();
+        await _gate.WaitAsync();
         try
         {
-            var request = new
-            {
-                product = Product,
-                license_key = licenseKey.Trim(),
-                machine_id = _machineId,
-                machine_fingerprint = _machineId,
-                device_name = Environment.MachineName,
-                app_version = AutoUpdateService.GetCurrentVersion()
-            };
+            // Runs alongside the license check; its answer is not needed for anything.
+            _ = RegisterDeviceCoreAsync();
 
-            var response = await _httpClient.PostAsJsonAsync($"{ApiBase}/activate", request);
-            var result = await ReadResponseAsync(response);
-
-            if (result?.Success == true)
-            {
-                ApplyStatus(licenseKey.Trim(), result);
-                return new LicenseResult { Success = true, Message = FallbackMessage(result, "License activated") };
-            }
-
-            return new LicenseResult { Success = false, Message = FallbackMessage(result, "Activation failed") };
+            var saved = _status.LicenseKey;
+            if (!string.IsNullOrEmpty(saved))
+                await ValidateCoreAsync(saved);
+            else
+                await RestoreFromServerCoreAsync();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"License activation failed: {ex.Message}");
-            return new LicenseResult { Success = false, Message = "Could not connect to license server" };
+            Debug.WriteLine($"License init failed: {ex.Message}");
+        }
+        finally
+        {
+            _gate.Release();
         }
     }
 
-    /// <summary>
-    /// Validate an existing license key.
-    /// </summary>
-    public async Task<LicenseResult> ValidateAsync(string licenseKey)
+    /// <summary>Checks the saved key with the server again (Settings, periodic refresh).</summary>
+    public async Task<LicenseResult> RefreshAsync()
     {
+        EnsureSavedLoaded();
+        await _gate.WaitAsync();
         try
         {
-            var request = new
-            {
-                product = Product,
-                license_key = licenseKey.Trim(),
-                machine_id = _machineId,
-                machine_fingerprint = _machineId,
-                app_version = AutoUpdateService.GetCurrentVersion()
-            };
-
-            var response = await _httpClient.PostAsJsonAsync($"{ApiBase}/validate", request);
-            var result = await ReadResponseAsync(response);
-
-            if (result?.Success == true)
-            {
-                ApplyStatus(licenseKey.Trim(), result);
-                return new LicenseResult { Success = true, Message = FallbackMessage(result, "License valid") };
-            }
-
-            // Only clear the cached status when the server actively says it's invalid
-            // (not on a transient error), so a paid user isn't downgraded on a blip.
-            _cachedStatus = new LicenseStatus();
-            return new LicenseResult { Success = false, Message = FallbackMessage(result, "License invalid") };
+            var saved = _status.LicenseKey;
+            return string.IsNullOrEmpty(saved)
+                ? await RestoreFromServerCoreAsync()
+                : await ValidateCoreAsync(saved);
         }
-        catch (Exception ex)
+        finally
         {
-            Debug.WriteLine($"License validation failed: {ex.Message}");
-            // Keep cached status on network failure (offline grace period)
-            return new LicenseResult { Success = _cachedStatus.IsActive, Message = "Offline - using cached license" };
+            _gate.Release();
         }
     }
 
-    /// <summary>
-    /// Deactivate license from this machine.
-    /// </summary>
-    public async Task<LicenseResult> DeactivateAsync(string licenseKey)
+    private async Task RegisterDeviceCoreAsync()
     {
+        // Other xman apps register at every start; the server uses it for device lists and
+        // trial-abuse checks. Nothing depends on the answer.
+        var reply = await XmanApi.PostAsync(_http, "/register-device", new Dictionary<string, object?>
+        {
+            ["machine_id"] = MachineId,
+            ["machine_name"] = Truncate(MachineIdentity.MachineName, 255),
+            ["os_version"] = Truncate(MachineIdentity.OsVersion, 255),
+            ["app_version"] = Truncate(AutoUpdateService.GetCurrentVersion(), 50),
+            ["hardware_hash"] = MachineIdentity.HardwareHash
+        });
+        if (!reply.Success) Debug.WriteLine($"register-device: {(int?)reply.Status} {reply.ErrorCode}");
+    }
+
+    #endregion
+
+    #region Activate / deactivate
+
+    /// <summary>
+    /// Activates <paramref name="licenseKey"/> on this PC. With <paramref name="moveFromOtherPc"/>
+    /// the server unbinds it from the PC it was on first (only after the user agreed to that).
+    /// A failure never touches the license that is already active here.
+    /// </summary>
+    public async Task<LicenseResult> ActivateAsync(string licenseKey, bool moveFromOtherPc = false)
+    {
+        var key = NormalizeKey(licenseKey);
+        if (!LooksLikeKey(key)) return LicenseResult.Fail(LicenseCode.InvalidInput);
+
+        EnsureSavedLoaded();
+        await _gate.WaitAsync();
         try
         {
-            var request = new
-            {
-                product = Product,
-                license_key = licenseKey.Trim(),
-                machine_id = _machineId,
-                machine_fingerprint = _machineId
-            };
+            var result = await ActivateCoreAsync(key, moveFromOtherPc);
 
-            var response = await _httpClient.PostAsJsonAsync($"{ApiBase}/deactivate", request);
-            var result = await ReadResponseAsync(response);
+            // A key that was activated by an older WinXTools on this same PC is bound to the
+            // old machine id; move it over without bothering the user.
+            if (result.Code == LicenseCode.OtherDevice && !moveFromOtherPc && await ReleaseLegacyBindingAsync(key))
+                result = await ActivateCoreAsync(key, false);
 
-            _cachedStatus = new LicenseStatus();
-            return new LicenseResult
-            {
-                Success = result?.Success ?? false,
-                Message = FallbackMessage(result, "Deactivated")
-            };
+            return result;
         }
-        catch (Exception ex)
+        finally
         {
-            Debug.WriteLine($"License deactivation failed: {ex.Message}");
-            _cachedStatus = new LicenseStatus();
-            return new LicenseResult { Success = false, Message = "Could not connect to license server" };
+            _gate.Release();
         }
     }
 
-    /// <summary>
-    /// Start a demo/trial license for this machine (server tracks per fingerprint).
-    /// </summary>
-    public async Task<LicenseResult> StartDemoAsync()
+    private async Task<LicenseResult> ActivateCoreAsync(string key, bool force)
     {
-        try
+        var body = new Dictionary<string, object?>
         {
-            var request = new
-            {
-                product = Product,
-                machine_id = _machineId,
-                machine_fingerprint = _machineId,
-                device_name = Environment.MachineName,
-                app_version = AutoUpdateService.GetCurrentVersion()
-            };
-
-            var response = await _httpClient.PostAsJsonAsync($"{ApiBase}/demo", request);
-            var result = await ReadResponseAsync(response);
-
-            if (result?.Success == true)
-            {
-                _cachedStatus = new LicenseStatus
-                {
-                    IsActive = true,
-                    LicenseKey = "DEMO",
-                    LicenseType = result.Data?.EffectiveType ?? "demo",
-                    ExpiresAt = result.Data?.ExpiresAt,
-                    DaysRemaining = result.Data?.DaysRemaining ?? 0
-                };
-                OnLicenseValidated?.Invoke(_cachedStatus);
-                return new LicenseResult { Success = true, Message = FallbackMessage(result, "Demo started") };
-            }
-
-            return new LicenseResult { Success = false, Message = FallbackMessage(result, "Demo unavailable") };
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Demo start failed: {ex.Message}");
-            return new LicenseResult { Success = false, Message = "Could not connect to license server" };
-        }
-    }
-
-    /// <summary>
-    /// Device registration. The current server has no dedicated register-device
-    /// endpoint — device details are recorded during activate/demo — so this is
-    /// a no-op kept for API compatibility with callers.
-    /// </summary>
-    public Task RegisterDeviceAsync() => Task.CompletedTask;
-
-    /// <summary>
-    /// Check if a license key format is valid (local check only)
-    /// </summary>
-    public static bool IsValidKeyFormat(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key)) return false;
-        key = key.Trim().ToUpperInvariant();
-        // Accept: WXT-XXXX-XXXX-XXXX or WINX-XXXX-XXXX-XXXX
-        return key.StartsWith("WXT-") || key.StartsWith("WINX-");
-    }
-
-    #region Response handling
-
-    private void ApplyStatus(string licenseKey, LicenseApiResponse result)
-    {
-        _cachedStatus = new LicenseStatus
-        {
-            IsActive = true,
-            LicenseKey = licenseKey,
-            LicenseType = result.Data?.EffectiveType ?? "free",
-            ExpiresAt = result.Data?.ExpiresAt,
-            DaysRemaining = result.Data?.DaysRemaining ?? 0
+            ["license_key"] = key,
+            ["machine_id"] = MachineId,
+            ["machine_fingerprint"] = MachineIdentity.HardwareHash ?? MachineId,
+            ["app_version"] = Truncate(AutoUpdateService.GetCurrentVersion(), 50)
         };
-        OnLicenseValidated?.Invoke(_cachedStatus);
+        if (force) body["force_rebind"] = "true";
+
+        var reply = await XmanApi.PostAsync(_http, "/activate", body);
+        if (!reply.IsDefinitive) return Unanswered(reply);
+
+        if (reply.Success)
+        {
+            var data = reply.Data;
+            var type = data.Str("license_type") ?? "";
+            if (!PaidTypes.Contains(type))
+            {
+                // A DEMO-/FREE- key: the trial is handled on its own; it is not a Pro license.
+                return LicenseResult.Fail(LicenseCode.NotProKey, reply.ServerMessage);
+            }
+
+            SetStatus(LicenseState.Active, key, type, data.Date("expires_at"), verified: true);
+            return LicenseResult.Ok(reply.ServerMessage);
+        }
+
+        return reply.ErrorCode switch
+        {
+            "INVALID_LICENSE" => LicenseResult.Fail(LicenseCode.InvalidKey, reply.ServerMessage),
+            "LICENSE_EXPIRED" => LicenseResult.Fail(LicenseCode.Expired, reply.ServerMessage),
+            "LICENSE_REVOKED" => LicenseResult.Fail(LicenseCode.Revoked, reply.ServerMessage),
+            "ALREADY_ACTIVATED_OTHER_DEVICE" => LicenseResult.Fail(LicenseCode.OtherDevice, reply.ServerMessage),
+            "PRODUCT_NOT_FOUND" => LicenseResult.Fail(LicenseCode.ServerBusy, reply.ServerMessage),
+            _ when reply.Status == HttpStatusCode.UnprocessableEntity => LicenseResult.Fail(LicenseCode.InvalidInput, reply.ServerMessage),
+            _ => LicenseResult.Fail(LicenseCode.Failed, reply.ServerMessage)
+        };
     }
 
-    private static async Task<LicenseApiResponse?> ReadResponseAsync(HttpResponseMessage response)
+    /// <summary>
+    /// Frees the license from this PC so it can be activated on another one. Offline, nothing
+    /// changes here (the server would still count it as used on this PC).
+    /// </summary>
+    public async Task<LicenseResult> DeactivateAsync()
+    {
+        EnsureSavedLoaded();
+        await _gate.WaitAsync();
+        try
+        {
+            var key = _status.LicenseKey;
+            if (string.IsNullOrEmpty(key))
+            {
+                SetStatus(LicenseState.None, "", "", null, verified: false);
+                return LicenseResult.Ok();
+            }
+
+            var reply = await XmanApi.PostAsync(_http, "/deactivate", new Dictionary<string, object?>
+            {
+                ["license_key"] = key,
+                ["machine_id"] = MachineId
+            });
+            if (!reply.IsDefinitive) return Unanswered(reply);
+
+            // INVALID_LICENSE: it is not bound to this PC any more, so there is nothing to free.
+            if (reply.Success || reply.ErrorCode == "INVALID_LICENSE")
+            {
+                SetStatus(LicenseState.None, "", "", null, verified: false);
+                return LicenseResult.Ok(reply.ServerMessage);
+            }
+            return LicenseResult.Fail(LicenseCode.Failed, reply.ServerMessage);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    #endregion
+
+    #region Validate / restore
+
+    private async Task<LicenseResult> ValidateCoreAsync(string key)
+    {
+        var reply = await XmanApi.PostAsync(_http, "/validate", new Dictionary<string, object?>
+        {
+            ["license_key"] = key,
+            ["machine_id"] = MachineId
+        });
+        if (!reply.IsDefinitive || reply.ErrorCode == "PRODUCT_NOT_FOUND") return Unanswered(reply);
+
+        if (reply.Success)
+        {
+            var data = reply.Data;
+            var type = data.Str("license_type") ?? _status.LicenseType;
+            var expires = data.Date("expires_at");
+
+            if (reply.Json.Bool("is_valid") == true)
+            {
+                SetStatus(LicenseState.Active, key, type, expires, verified: true);
+                return LicenseResult.Ok();
+            }
+
+            // The server knows the key on this PC but it no longer counts (expired or revoked).
+            // The key stays so the user can see what happened and renew it.
+            var revoked = string.Equals(data.Str("status"), "revoked", StringComparison.OrdinalIgnoreCase);
+            SetStatus(revoked ? LicenseState.Revoked : LicenseState.Expired, key, type, expires, verified: true);
+            return LicenseResult.Fail(revoked ? LicenseCode.Revoked : LicenseCode.Expired);
+        }
+
+        if (reply.ErrorCode == "INVALID_LICENSE")
+        {
+            // Not bound to this PC's id. Either an older WinXTools activated it under the old
+            // id (move it), or this PC owns a license under another key, or it was moved away.
+            if (await ReleaseLegacyBindingAsync(key))
+            {
+                var moved = await ActivateCoreAsync(key, false);
+                if (moved.Success || moved.Code is LicenseCode.Offline or LicenseCode.ServerBusy) return moved;
+            }
+
+            var restored = await RestoreFromServerCoreAsync();
+            if (restored.Success) return restored;
+
+            SetStatus(LicenseState.OtherMachine, key, _status.LicenseType, _status.ExpiresAt, verified: true);
+            return LicenseResult.Fail(LicenseCode.NotOnThisMachine);
+        }
+
+        return LicenseResult.Fail(LicenseCode.Failed, reply.ServerMessage);
+    }
+
+    /// <summary>Asks the server whether this PC already owns an active WinXTools license.</summary>
+    private async Task<LicenseResult> RestoreFromServerCoreAsync()
+    {
+        var reply = await XmanApi.PostAsync(_http, "/check-machine", new Dictionary<string, object?>
+        {
+            ["machine_id"] = MachineId
+        });
+        if (!reply.IsDefinitive) return Unanswered(reply);
+
+        if (reply.Success && reply.Json.Bool("has_license") == true)
+        {
+            var data = reply.Data;
+            var key = NormalizeKey(data.Str("license_key") ?? "");
+            var type = data.Str("license_type") ?? "";
+            if (key.Length > 0 && PaidTypes.Contains(type))
+            {
+                SetStatus(LicenseState.Active, key, type, data.Date("expires_at"), verified: true);
+                return LicenseResult.Ok();
+            }
+        }
+        return LicenseResult.Fail(LicenseCode.NoLicense);
+    }
+
+    /// <summary>
+    /// True when <paramref name="key"/> was bound to the id older WinXTools versions sent from
+    /// this PC and the server has now released it. Only this PC can compute that old id.
+    /// </summary>
+    private async Task<bool> ReleaseLegacyBindingAsync(string key)
+    {
+        var legacy = MachineIdentity.LegacyMachineId;
+        if (legacy == MachineId || legacy.Length < 32) return false;
+
+        var reply = await XmanApi.PostAsync(_http, "/deactivate", new Dictionary<string, object?>
+        {
+            ["license_key"] = key,
+            ["machine_id"] = legacy
+        });
+        return reply.Success;
+    }
+
+    #endregion
+
+    #region Trial (server side)
+
+    /// <summary>What the server knows about this PC's trial. Reached=false when it could not be asked.</summary>
+    internal async Task<TrialReply> CheckDemoAsync()
+    {
+        // hardware_hash too: register-device runs alongside and may not have landed yet, and the
+        // server refuses a second trial on the same motherboard (e.g. after reinstalling Windows).
+        var reply = await XmanApi.PostAsync(_http, "/demo/check", new Dictionary<string, object?>
+        {
+            ["machine_id"] = MachineId,
+            ["hardware_hash"] = MachineIdentity.HardwareHash
+        });
+        if (!reply.IsDefinitive || !reply.Success) return TrialReply.NotReached;
+
+        var data = reply.Data;
+        var info = data.Obj("trial_info");
+        bool active = data.Bool("is_trial_active") == true;
+        return new TrialReply(
+            Reached: true,
+            HasUsed: data.Bool("has_used_demo") == true,
+            CanStart: data.Bool("can_start_demo") == true,
+            Remaining: active ? Seconds(info.Long("seconds_remaining")) : null,
+            ErrorCode: null);
+    }
+
+    /// <summary>Starts this PC's one server-tracked trial.</summary>
+    internal async Task<TrialReply> StartDemoAsync()
+    {
+        var reply = await XmanApi.PostAsync(_http, "/demo", new Dictionary<string, object?>
+        {
+            ["machine_id"] = MachineId,
+            ["hardware_hash"] = MachineIdentity.HardwareHash
+        });
+        if (!reply.IsDefinitive) return TrialReply.NotReached;
+
+        if (reply.Success)
+            return new TrialReply(true, true, false, Seconds(reply.Data.Long("seconds_remaining")), null);
+
+        // Asked twice (e.g. two starts racing): the running trial comes back with the refusal.
+        var code = reply.ErrorCode;
+        if (code == "TRIAL_ACTIVE")
+            return new TrialReply(true, true, false, Seconds(reply.Json.Obj("trial_info").Long("seconds_remaining")), code);
+
+        return new TrialReply(true, true, false, null, code ?? "TRIAL_NOT_AVAILABLE");
+    }
+
+    private static TimeSpan? Seconds(long? seconds) =>
+        seconds is > 0 ? TimeSpan.FromSeconds(Math.Min(seconds.Value, (long)TimeSpan.FromDays(366).TotalSeconds)) : null;
+
+    #endregion
+
+    #region Saved state
+
+    private void EnsureSavedLoaded()
+    {
+        if (_savedLoaded) return;
+        lock (_loadLock)
+        {
+            if (_savedLoaded) return;
+            _status = LoadSaved();
+            _savedLoaded = true;
+        }
+    }
+
+    private static LicenseStatus LoadSaved()
     {
         try
         {
-            return await response.Content.ReadFromJsonAsync<LicenseApiResponse>();
+            var saved = AdminOnlyStore.Load<SavedLicense>(StoreFile);
+            if (saved != null && !string.IsNullOrEmpty(saved.Key))
+            {
+                if (saved.MachineId == MachineId && saved.Mac == Seal(saved))
+                    return FromSaved(saved);
+
+                // Written for another machine id (new motherboard, restored backup) or edited:
+                // trust nothing but the key itself, so the user does not have to dig it out of
+                // an old email — the server decides what it is worth.
+                return new LicenseStatus { State = LicenseState.Unverified, LicenseKey = NormalizeKey(saved.Key) };
+            }
+
+            // A key typed into an older WinXTools: unverified until the server confirms it.
+            var legacyKey = DatabaseService.Instance.GetSetting(LegacyDbKey);
+            if (!string.IsNullOrWhiteSpace(legacyKey))
+                return new LicenseStatus { State = LicenseState.Unverified, LicenseKey = NormalizeKey(legacyKey) };
         }
-        catch
+        catch (Exception ex)
         {
-            // Non-JSON body (e.g. an HTML 503 page) — treat as a failed call.
-            return null;
+            Debug.WriteLine($"Saved license unreadable: {ex.Message}");
+        }
+        return LicenseStatus.None;
+    }
+
+    private static LicenseStatus FromSaved(SavedLicense saved)
+    {
+        var state = Enum.TryParse<LicenseState>(saved.State, out var parsed) ? parsed : LicenseState.Unverified;
+        var now = DateTime.UtcNow;
+
+        // Active offline only inside the grace window, and not with a clock set back before the
+        // last check (that would stretch the window forever).
+        if (state == LicenseState.Active
+            && (now < saved.VerifiedAtUtc - ClockTolerance || now > saved.VerifiedAtUtc + OfflineGrace))
+        {
+            state = LicenseState.Unverified;
+        }
+
+        return new LicenseStatus
+        {
+            State = state,
+            LicenseKey = saved.Key,
+            LicenseType = saved.Type,
+            ExpiresAt = saved.ExpiresAtUtc,
+            VerifiedAtUtc = saved.VerifiedAtUtc,
+            IsFromSavedCopy = true
+        };
+    }
+
+    private void SetStatus(LicenseState state, string key, string type, DateTimeOffset? expires, bool verified) =>
+        SetStatus(state, key, type, expires?.UtcDateTime, verified);
+
+    private void SetStatus(LicenseState state, string key, string type, DateTime? expiresUtc, bool verified)
+    {
+        var status = new LicenseStatus
+        {
+            State = state,
+            LicenseKey = key,
+            LicenseType = string.IsNullOrEmpty(type) ? "free" : type.ToLowerInvariant(),
+            ExpiresAt = expiresUtc,
+            VerifiedAtUtc = verified ? DateTime.UtcNow : _status.VerifiedAtUtc
+        };
+        _status = status;
+        Persist(status);
+        StatusChanged?.Invoke(status);
+    }
+
+    private static void Persist(LicenseStatus status)
+    {
+        var saved = new SavedLicense
+        {
+            Key = status.LicenseKey,
+            Type = status.LicenseType,
+            ExpiresAtUtc = status.ExpiresAt,
+            VerifiedAtUtc = status.VerifiedAtUtc ?? DateTime.UtcNow,
+            State = status.State.ToString(),
+            MachineId = MachineId
+        };
+        saved.Mac = Seal(saved);
+
+        try
+        {
+            if (AdminOnlyStore.Save(StoreFile, saved))
+            {
+                // One home for the key from now on.
+                if (!string.IsNullOrEmpty(DatabaseService.Instance.GetSetting(LegacyDbKey)))
+                    DatabaseService.Instance.SetSetting(LegacyDbKey, "");
+            }
+            else
+            {
+                // Not elevated (e.g. a debug run): keep at least the key where it always was.
+                DatabaseService.Instance.SetSetting(LegacyDbKey, status.LicenseKey);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Saving license failed: {ex.Message}");
         }
     }
 
-    private static string FallbackMessage(LicenseApiResponse? result, string fallback)
+    // Binds the saved copy to this PC and makes a hand edit (e.g. "Type": "lifetime") void.
+    // The user is an administrator of their own PC, so this deters tampering; it is not a wall.
+    private static string Seal(SavedLicense s)
     {
-        var msg = result?.BestMessage();
-        return string.IsNullOrWhiteSpace(msg) ? fallback : msg!;
+        var secret = SHA256.HashData(Encoding.UTF8.GetBytes("winxtools-license-cache-v1|" + MachineId + "|" + MachineIdentity.LegacyMachineId));
+        var text = $"{s.Key}|{s.Type}|{s.ExpiresAtUtc?.ToString("O")}|{s.VerifiedAtUtc:O}|{s.State}|{s.MachineId}";
+        return Convert.ToHexString(HMACSHA256.HashData(secret, Encoding.UTF8.GetBytes(text)));
     }
+
+    private sealed class SavedLicense
+    {
+        public string Key { get; set; } = "";
+        public string Type { get; set; } = "";
+        public DateTime? ExpiresAtUtc { get; set; }
+        public DateTime VerifiedAtUtc { get; set; }
+        public string State { get; set; } = "";
+        public string MachineId { get; set; } = "";
+        public string Mac { get; set; } = "";
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private static LicenseResult Unanswered(ApiReply reply) =>
+        LicenseResult.Fail(reply.Reached ? LicenseCode.ServerBusy : LicenseCode.Offline, reply.ServerMessage);
+
+    public static string NormalizeKey(string key) =>
+        Regex.Replace(key ?? "", @"\s+", "").ToUpperInvariant();
+
+    /// <summary>Local sanity check before asking the server (keys look like XXXX-XXXX-XXXX-XXXX).</summary>
+    public static bool LooksLikeKey(string key) =>
+        key.Length is >= 8 and <= 64 && Regex.IsMatch(key, "^[A-Z0-9]+(-[A-Z0-9]+)+$");
+
+    private static string Truncate(string value, int max) => value.Length <= max ? value : value[..max];
 
     #endregion
 }
 
-public class LicenseStatus
+public enum LicenseState
 {
-    public bool IsActive { get; set; }
-    public string LicenseKey { get; set; } = "";
-    public string LicenseType { get; set; } = "free";
-    public DateTime? ExpiresAt { get; set; }
-    public int DaysRemaining { get; set; }
+    /// <summary>No key on this PC.</summary>
+    None,
+    Active,
+    Expired,
+    Revoked,
+    /// <summary>The key is now activated on another PC.</summary>
+    OtherMachine,
+    /// <summary>A key is saved but the server has not confirmed it recently (offline too long, or never).</summary>
+    Unverified
+}
+
+public sealed class LicenseStatus
+{
+    public static readonly LicenseStatus None = new();
+
+    public LicenseState State { get; init; } = LicenseState.None;
+    public string LicenseKey { get; init; } = "";
+    public string LicenseType { get; init; } = "free";
+    /// <summary>UTC; null = never expires.</summary>
+    public DateTime? ExpiresAt { get; init; }
+    /// <summary>When the server last confirmed this state (UTC).</summary>
+    public DateTime? VerifiedAtUtc { get; init; }
+    /// <summary>Loaded from the saved copy; the server has not answered yet this session.</summary>
+    public bool IsFromSavedCopy { get; init; }
+
+    /// <summary>Active, and — for a license with an end date — not past it (checked locally too).</summary>
+    public bool IsActive => State == LicenseState.Active && (ExpiresAt == null || ExpiresAt > DateTime.UtcNow);
+
+    public bool IsLifetime => string.Equals(LicenseType, "lifetime", StringComparison.OrdinalIgnoreCase);
+
+    public int DaysRemaining => ExpiresAt is { } end ? Math.Max(0, (int)Math.Ceiling((end - DateTime.UtcNow).TotalDays)) : int.MaxValue;
 
     public string DisplayType => LicenseType switch
     {
-        "lifetime" => "Lifetime",
+        "lifetime" => "Pro (Lifetime)",
         "yearly" => "Pro (Yearly)",
         "monthly" => "Pro (Monthly)",
         "weekly" => "Pro (Weekly)",
         "daily" => "Pro (Daily)",
-        "demo" => "Demo",
-        "free" => "Free",
+        "product" => "Pro",
         _ => "Free"
     };
 
-    /// <summary>
-    /// True for an active PAID license of any tier. Demo/free are not premium
-    /// here — demo Pro access is granted through the trial system instead.
-    /// </summary>
+    /// <summary>An active paid license. The trial is not premium; it is granted through <see cref="TrialService"/>.</summary>
     public bool IsPremium =>
-        IsActive && LicenseType is "lifetime" or "yearly" or "monthly" or "weekly" or "daily";
+        IsActive && LicenseType is "lifetime" or "yearly" or "monthly" or "weekly" or "daily" or "product";
 }
 
-public class LicenseResult
+public enum LicenseCode
 {
-    public bool Success { get; set; }
-    public string Message { get; set; } = "";
+    Ok,
+    /// <summary>Not a WinXTools key (or mistyped).</summary>
+    InvalidKey,
+    Expired,
+    Revoked,
+    /// <summary>Activated on another PC; can be moved here if the user agrees.</summary>
+    OtherDevice,
+    /// <summary>The saved key was moved to another PC.</summary>
+    NotOnThisMachine,
+    /// <summary>A trial/demo key, not a Pro license.</summary>
+    NotProKey,
+    NoLicense,
+    InvalidInput,
+    /// <summary>No answer at all (offline, blocked, certificate pin mismatch).</summary>
+    Offline,
+    /// <summary>Answered with an error page, 5xx or rate limit.</summary>
+    ServerBusy,
+    Failed
 }
 
-/// <summary>
-/// Envelope returned by the xman studio license API. Success responses nest the
-/// license details under "data"; errors use "error"+"code", and Laravel field
-/// validation uses "message"+"errors".
-/// </summary>
-internal class LicenseApiResponse
+public sealed class LicenseResult
 {
-    [JsonPropertyName("success")]
-    public bool Success { get; set; }
+    public bool Success { get; init; }
+    public LicenseCode Code { get; init; }
+    /// <summary>The server's own message (Thai); the UI shows its own text per <see cref="Code"/>.</summary>
+    public string? ServerMessage { get; init; }
 
-    [JsonPropertyName("is_valid")]
-    public bool? IsValid { get; set; }
-
-    [JsonPropertyName("message")]
-    public string? Message { get; set; }
-
-    [JsonPropertyName("error")]
-    public string? Error { get; set; }
-
-    [JsonPropertyName("code")]
-    public string? Code { get; set; }
-
-    [JsonPropertyName("data")]
-    public LicenseData? Data { get; set; }
-
-    [JsonPropertyName("errors")]
-    public Dictionary<string, List<string>>? Errors { get; set; }
-
-    /// <summary>Best human-readable message across the possible envelopes.</summary>
-    public string BestMessage()
-    {
-        if (!string.IsNullOrWhiteSpace(Message)) return Message!;
-        if (!string.IsNullOrWhiteSpace(Error)) return Error!;
-        if (Errors is { Count: > 0 })
-            return string.Join("\n", Errors.SelectMany(kv => kv.Value));
-        return "";
-    }
+    public static LicenseResult Ok(string? message = null) => new() { Success = true, Code = LicenseCode.Ok, ServerMessage = message };
+    public static LicenseResult Fail(LicenseCode code, string? message = null) => new() { Success = false, Code = code, ServerMessage = message };
 }
 
-internal class LicenseData
+/// <summary>The server's view of this PC's trial.</summary>
+internal sealed record TrialReply(bool Reached, bool HasUsed, bool CanStart, TimeSpan? Remaining, string? ErrorCode)
 {
-    // Server returns "type"; keep "license_type" as a fallback for older shapes.
-    [JsonPropertyName("type")]
-    public string? Type { get; set; }
-
-    [JsonPropertyName("license_type")]
-    public string? LicenseType { get; set; }
-
-    [JsonPropertyName("expires_at")]
-    public DateTime? ExpiresAt { get; set; }
-
-    [JsonPropertyName("days_remaining")]
-    public int DaysRemaining { get; set; }
-
-    [JsonPropertyName("already_started")]
-    public bool AlreadyStarted { get; set; }
-
-    public string EffectiveType => Type ?? LicenseType ?? "free";
+    public static readonly TrialReply NotReached = new(false, false, false, null, null);
+    public bool IsActive => Remaining is { } left && left > TimeSpan.Zero;
 }

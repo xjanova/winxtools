@@ -1,34 +1,64 @@
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
+
+using NetX.Core.Helpers;
 
 namespace NetX.Core.Optimization;
 
 /// <summary>
 /// Auto-kill system that prevents specified processes from running
-/// and automatically kills frozen/problematic processes
+/// and (opt-in) closes apps that stay frozen for a long time.
+///
+/// Safety rules for everything killed automatically:
+///  * only the process itself is terminated — never its whole process tree;
+///  * Windows/shell processes, WebView2, WinXTools itself and the app in the
+///    foreground (the one the user is looking at) are never touched;
+///  * a window must be "Not Responding" continuously for <see cref="FrozenKillThreshold"/>;
+///  * every automatic kill raises <see cref="ProcessAutoKilled"/> so the UI can
+///    tell the user what was closed and why.
+/// Settings live in the admin-only store (<see cref="AdminOnlyStore"/>)
+/// because the elevated app acts on them.
 /// </summary>
 public class ProcessKiller : IDisposable
 {
-    private static ProcessKiller? _instance;
-    public static ProcessKiller Instance => _instance ??= new ProcessKiller();
+    private static readonly Lazy<ProcessKiller> _instance = new(() => new ProcessKiller());
+    public static ProcessKiller Instance => _instance.Value;
+
+    /// <summary>A window must stay "Not Responding" this long before Smart Kill closes it.</summary>
+    public static readonly TimeSpan FrozenKillThreshold = TimeSpan.FromSeconds(60);
+
+    private const int WatchdogIntervalMs = 2000;
+    private const int HealthCheckIntervalMs = 5000;
+    private const long BloatwareMemoryLimitMB = 2048;
+    private const int MaxRules = 200;
+    private const string SettingsFileName = "process_killer.json";
+    private static readonly TimeSpan RuleKillNoticeInterval = TimeSpan.FromMinutes(1);
 
     private readonly ConcurrentDictionary<string, KillRule> _killRules = new();
     private readonly ConcurrentDictionary<int, ProcessHealthInfo> _processHealth = new();
+    private readonly ConcurrentDictionary<string, DateTime> _lastRuleKillNotice = new();
     private readonly Timer _watchdogTimer;
     private readonly Timer _healthCheckTimer;
-    private bool _isAutoKillEnabled = false;
-    private bool _isSmartKillEnabled = false;
-    private readonly string _settingsPath;
+    private readonly object _settingsLock = new();
+    private readonly int _ownProcessId = Environment.ProcessId;
+    private readonly int _ownSessionId;
+    private volatile bool _isAutoKillEnabled;
+    private volatile bool _isSmartKillEnabled;
+    private int _watchdogRunning;
+    private int _healthCheckRunning;
 
-    // Known problematic/unnecessary processes that are safe to kill
+    // Known background bloat that Smart Kill may close when it runs away with
+    // memory (exact process names). Shell components (Start, Search, touch
+    // keyboard, lock screen) and msedgewebview2 (Outlook/Teams/Widgets) were
+    // removed — killing them breaks visible parts of Windows and Office.
     private static readonly HashSet<string> KnownBloatware = new(StringComparer.OrdinalIgnoreCase)
     {
-        "yourphone", "gamebar", "gamebarpresencewriter", "gameoverlay",
-        "cortana", "searchapp", "searchhost", "startmenuexperiencehost",
-        "textinputhost", "lockapp", "shellexperiencehost",
-        "msedgewebview2", "microsoftedgeupdate", "onedrivesetup",
-        "skypeapp", "skypebridge", "peopleexperiencehost"
+        "yourphone", "gamebar", "gamebarpresencewriter", "cortana",
+        "microsoftedgeupdate", "onedrivesetup", "skypeapp", "skypebridge",
+        "peopleexperiencehost"
     };
 
     // Processes that should NEVER be killed
@@ -41,19 +71,63 @@ public class ProcessKiller : IDisposable
         "spoolsv", "lsm", "audiodg", "systemsettings", "registry"
     };
 
+    // On top of ProtectedProcesses: never closed AUTOMATICALLY (a user may still
+    // end them by hand). Mostly shell hosts that own many windows at once.
+    private static readonly HashSet<string> NeverAutoKill = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "msedgewebview2", "applicationframehost", "shellexperiencehost",
+        "startmenuexperiencehost", "searchhost", "searchapp", "searchui",
+        "textinputhost", "lockapp", "logonui", "consent", "mmc", "winxtools"
+    };
+
+    private const uint GW_OWNER = 4;
+
+    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr hwnd, uint cmd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr hwnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowTextW")]
+    private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int maxCount);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr HungWindowFromGhostWindow(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsHungAppWindow(IntPtr hwnd);
+
     private ProcessKiller()
     {
-        _settingsPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "NetX", "kill_rules.json");
+        using (var self = Process.GetCurrentProcess())
+            _ownSessionId = self.SessionId;
+
+        // Watchdog kills processes matching a rule; health check looks for frozen apps.
+        _watchdogTimer = new Timer(WatchdogCallback, null, Timeout.Infinite, Timeout.Infinite);
+        _healthCheckTimer = new Timer(HealthCheckCallback, null, Timeout.Infinite, Timeout.Infinite);
 
         LoadSettings();
 
-        // Watchdog timer - checks for processes to auto-kill every 2 seconds
-        _watchdogTimer = new Timer(WatchdogCallback, null, Timeout.Infinite, 2000);
-
-        // Health check timer - monitors process health every 5 seconds
-        _healthCheckTimer = new Timer(HealthCheckCallback, null, Timeout.Infinite, 5000);
+        // Resume saved modes. Before, the toggles showed ON after a restart but
+        // the timers were only started by the property setters.
+        if (_isAutoKillEnabled)
+            _watchdogTimer.Change(0, WatchdogIntervalMs);
+        if (_isSmartKillEnabled)
+            _healthCheckTimer.Change(HealthCheckIntervalMs, HealthCheckIntervalMs);
     }
 
     #region Auto-Kill Mode
@@ -64,10 +138,7 @@ public class ProcessKiller : IDisposable
         set
         {
             _isAutoKillEnabled = value;
-            if (value)
-                _watchdogTimer.Change(0, 2000);
-            else
-                _watchdogTimer.Change(Timeout.Infinite, 2000);
+            _watchdogTimer.Change(value ? 0 : Timeout.Infinite, value ? WatchdogIntervalMs : Timeout.Infinite);
             SaveSettings();
         }
     }
@@ -78,37 +149,45 @@ public class ProcessKiller : IDisposable
         set
         {
             _isSmartKillEnabled = value;
-            if (value)
-                _healthCheckTimer.Change(0, 5000);
-            else
-                _healthCheckTimer.Change(Timeout.Infinite, 5000);
+            if (!value)
+                _processHealth.Clear(); // a later re-enable starts every 60 s window fresh
+            _healthCheckTimer.Change(value ? HealthCheckIntervalMs : Timeout.Infinite,
+                                     value ? HealthCheckIntervalMs : Timeout.Infinite);
             SaveSettings();
         }
     }
 
-    public void AddKillRule(string processName, string reason = "User requested")
+    /// <summary>
+    /// Adds a rule and immediately ends running instances of that process (only
+    /// the process itself, not its children). Returns false for names that are
+    /// invalid or protected.
+    /// </summary>
+    public bool AddKillRule(string processName, string reason = "User requested")
     {
-        if (IsProtectedProcess(processName))
-            return;
+        var name = NormalizeRuleName(processName);
+        if (name == null)
+            return false;
 
         var rule = new KillRule
         {
-            ProcessName = processName.ToLowerInvariant(),
-            Reason = reason,
+            ProcessName = name,
+            Reason = reason.Length > 200 ? reason[..200] : reason,
             CreatedAt = DateTime.Now,
             KillCount = 0
         };
 
-        _killRules[processName.ToLowerInvariant()] = rule;
+        _killRules[name] = rule;
         SaveSettings();
 
         // Immediately kill if running
-        KillProcess(processName);
+        KillProcess(name);
+        return true;
     }
 
     public void RemoveKillRule(string processName)
     {
         _killRules.TryRemove(processName.ToLowerInvariant(), out _);
+        _lastRuleKillNotice.TryRemove(processName.ToLowerInvariant(), out _);
         SaveSettings();
     }
 
@@ -121,27 +200,48 @@ public class ProcessKiller : IDisposable
 
     private void WatchdogCallback(object? state)
     {
-        if (!_isAutoKillEnabled) return;
+        if (!_isAutoKillEnabled || _killRules.IsEmpty) return;
+        if (Interlocked.Exchange(ref _watchdogRunning, 1) == 1) return; // previous tick still running
 
         try
         {
             foreach (var process in Process.GetProcesses())
             {
-                try
+                using (process)
                 {
-                    var name = process.ProcessName.ToLowerInvariant();
-
-                    if (_killRules.TryGetValue(name, out var rule))
+                    try
                     {
-                        process.Kill(true);
+                        var pid = process.Id;
+                        var processName = process.ProcessName;
+                        var name = processName.ToLowerInvariant();
+
+                        if (pid == _ownProcessId || !_killRules.TryGetValue(name, out var rule))
+                            continue;
+                        if (IsAutoKillExcluded(name))
+                            continue; // defence in depth — such rules are rejected on add/load
+
+                        process.Kill(entireProcessTree: false);
                         rule.KillCount++;
                         rule.LastKilled = DateTime.Now;
+
+                        // A rule can fire every 2 s for an app that keeps respawning;
+                        // tell the UI at most once a minute per process name.
+                        var now = DateTime.UtcNow;
+                        if (!_lastRuleKillNotice.TryGetValue(name, out var last) || now - last >= RuleKillNoticeInterval)
+                        {
+                            _lastRuleKillNotice[name] = now;
+                            RaiseAutoKilled(pid, processName, "", AutoKillReason.MatchedKillRule, 0);
+                        }
                     }
+                    catch { /* exited meanwhile or access denied */ }
                 }
-                catch { }
             }
         }
         catch { }
+        finally
+        {
+            Volatile.Write(ref _watchdogRunning, 0);
+        }
     }
 
     #endregion
@@ -151,76 +251,195 @@ public class ProcessKiller : IDisposable
     private void HealthCheckCallback(object? state)
     {
         if (!_isSmartKillEnabled) return;
+        if (Interlocked.Exchange(ref _healthCheckRunning, 1) == 1) return; // previous tick still running
 
         try
         {
+            var now = DateTime.UtcNow;
+            var foregroundPid = GetForegroundProcessId();
+            var windows = GetTopLevelWindowStates();
+            var tracked = new HashSet<int>();
+
             foreach (var process in Process.GetProcesses())
             {
-                try
+                using (process)
                 {
-                    if (IsProtectedProcess(process.ProcessName))
-                        continue;
-
-                    var pid = process.Id;
-
-                    if (!_processHealth.TryGetValue(pid, out var health))
+                    try
                     {
-                        health = new ProcessHealthInfo
-                        {
-                            ProcessId = pid,
-                            ProcessName = process.ProcessName,
-                            StartTime = DateTime.Now
-                        };
-                        _processHealth[pid] = health;
-                    }
+                        var pid = process.Id;
+                        var name = process.ProcessName;
 
-                    // Check for frozen process (not responding)
-                    if (!process.HasExited && process.MainWindowHandle != IntPtr.Zero)
-                    {
-                        if (!process.Responding)
-                        {
-                            health.NotRespondingCount++;
+                        // Never touch: WinXTools, the app the user is looking at,
+                        // other users' sessions / services, system and shell processes.
+                        if (pid == _ownProcessId || pid == foregroundPid)
+                            continue;
+                        if (process.SessionId != _ownSessionId)
+                            continue;
+                        if (IsAutoKillExcluded(name))
+                            continue;
 
-                            // Kill if not responding for 3 consecutive checks (15 seconds)
-                            if (health.NotRespondingCount >= 3)
+                        // 1. Frozen window: must be hung continuously for FrozenKillThreshold.
+                        if (windows.TryGetValue(pid, out var window))
+                        {
+                            tracked.Add(pid);
+                            var health = _processHealth.GetOrAdd(pid, _ => new ProcessHealthInfo
                             {
-                                process.Kill(true);
-                                _processHealth.TryRemove(pid, out _);
-                                OnProcessAutoKilled?.Invoke(process.ProcessName, "Not responding (frozen)");
+                                ProcessId = pid,
+                                ProcessName = name,
+                                StartTime = DateTime.Now
+                            });
+
+                            if (!string.Equals(health.ProcessName, name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                // PID was reused by a different program — start over.
+                                health.ProcessName = name;
+                                health.StartTime = DateTime.Now;
+                                health.NotRespondingSince = null;
+                                health.NotRespondingCount = 0;
+                            }
+
+                            if (window.IsFrozen)
+                            {
+                                health.NotRespondingSince ??= now;
+                                health.NotRespondingCount++;
+
+                                var hungFor = now - health.NotRespondingSince.Value;
+                                if (hungFor >= FrozenKillThreshold)
+                                {
+                                    process.Kill(entireProcessTree: false);
+                                    _processHealth.TryRemove(pid, out _);
+                                    RaiseAutoKilled(pid, name, window.Title, AutoKillReason.NotResponding,
+                                        (long)hungFor.TotalSeconds);
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                health.NotRespondingSince = null;
+                                health.NotRespondingCount = 0;
                             }
                         }
-                        else
-                        {
-                            health.NotRespondingCount = 0;
-                        }
-                    }
 
-                    // Check for excessive memory usage (> 2GB for non-system process)
-                    if (!process.HasExited)
-                    {
-                        var memoryMB = process.WorkingSet64 / (1024 * 1024);
-                        if (memoryMB > 2048 && IsBloatware(process.ProcessName))
+                        // 2. Known background bloat that runs away with memory.
+                        if (IsBloatware(name))
                         {
-                            process.Kill(true);
-                            _processHealth.TryRemove(pid, out _);
-                            OnProcessAutoKilled?.Invoke(process.ProcessName, $"Excessive memory ({memoryMB} MB)");
+                            var memoryMB = process.WorkingSet64 / (1024 * 1024);
+                            if (memoryMB > BloatwareMemoryLimitMB)
+                            {
+                                process.Kill(entireProcessTree: false);
+                                _processHealth.TryRemove(pid, out _);
+                                RaiseAutoKilled(pid, name, "", AutoKillReason.ExcessiveMemory, memoryMB);
+                            }
                         }
                     }
+                    catch { /* exited meanwhile or access denied */ }
                 }
-                catch { }
             }
 
-            // Cleanup dead process entries
-            var deadPids = _processHealth.Keys.Where(pid =>
+            // Forget processes that exited, lost their window, moved to the
+            // foreground or are otherwise no longer watched: the 60 s window
+            // must be continuous, so it starts over next time.
+            foreach (var pid in _processHealth.Keys)
             {
-                try { Process.GetProcessById(pid); return false; }
-                catch { return true; }
-            }).ToList();
-
-            foreach (var pid in deadPids)
-                _processHealth.TryRemove(pid, out _);
+                if (!tracked.Contains(pid))
+                    _processHealth.TryRemove(pid, out _);
+            }
         }
         catch { }
+        finally
+        {
+            Volatile.Write(ref _healthCheckRunning, 0);
+        }
+    }
+
+    /// <summary>
+    /// PID owning the foreground window. A frozen window in front is swapped for
+    /// a system "ghost" window, so map it back to the hung app it stands for.
+    /// </summary>
+    private static int GetForegroundProcessId()
+    {
+        try
+        {
+            var hwnd = GetForegroundWindow();
+            if (hwnd == IntPtr.Zero) return 0;
+
+            var hung = HungWindowFromGhostWindow(hwnd);
+            if (hung != IntPtr.Zero) hwnd = hung;
+
+            GetWindowThreadProcessId(hwnd, out var pid);
+            return (int)pid;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private sealed class TopLevelWindowState
+    {
+        public bool AnyHung;
+        public bool AnyResponsive;
+        public string Title = "";
+
+        /// <summary>Every visible top-level window of the process is hung.</summary>
+        public bool IsFrozen => AnyHung && !AnyResponsive;
+    }
+
+    /// <summary>
+    /// One EnumWindows pass: PID → state of its visible, unowned top-level
+    /// windows. Process.MainWindowHandle can't be used for this: Windows hides a
+    /// frozen window behind a system "ghost" copy, so the hung app would look
+    /// window-less. Ghosts are mapped back to the hung window they stand for.
+    /// IsHungAppWindow is what Windows itself uses for "(Not Responding)" and,
+    /// unlike Process.Responding, never blocks.
+    /// </summary>
+    private static Dictionary<int, TopLevelWindowState> GetTopLevelWindowStates()
+    {
+        var states = new Dictionary<int, TopLevelWindowState>();
+
+        EnumWindows((hwnd, _) =>
+        {
+            try
+            {
+                var target = HungWindowFromGhostWindow(hwnd);
+                bool isGhost = target != IntPtr.Zero;
+                if (!isGhost)
+                {
+                    if (!IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER) != IntPtr.Zero)
+                        return true; // hidden, or a dialog/tool window that follows its owner
+                    target = hwnd;
+                }
+
+                GetWindowThreadProcessId(target, out var pid);
+                if (pid == 0)
+                    return true;
+
+                if (!states.TryGetValue((int)pid, out var state))
+                    states[(int)pid] = state = new TopLevelWindowState();
+
+                if (isGhost || IsHungAppWindow(target))
+                {
+                    state.AnyHung = true;
+                    if (state.Title.Length == 0)
+                    {
+                        // For another process's window GetWindowText reads the stored
+                        // caption without messaging it, so a hung app can't block us.
+                        var title = new StringBuilder(256);
+                        GetWindowText(target, title, title.Capacity);
+                        state.Title = title.ToString();
+                    }
+                }
+                else
+                {
+                    state.AnyResponsive = true;
+                }
+            }
+            catch { }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return states;
     }
 
     public List<FrozenProcessInfo> GetFrozenProcesses()
@@ -229,22 +448,26 @@ public class ProcessKiller : IDisposable
 
         try
         {
+            var windows = GetTopLevelWindowStates();
             foreach (var process in Process.GetProcesses())
             {
-                try
+                using (process)
                 {
-                    if (process.MainWindowHandle != IntPtr.Zero && !process.Responding)
+                    try
                     {
-                        frozen.Add(new FrozenProcessInfo
+                        if (windows.TryGetValue(process.Id, out var window) && window.IsFrozen)
                         {
-                            ProcessId = process.Id,
-                            ProcessName = process.ProcessName,
-                            MainWindowTitle = process.MainWindowTitle,
-                            MemoryMB = process.WorkingSet64 / (1024 * 1024)
-                        });
+                            frozen.Add(new FrozenProcessInfo
+                            {
+                                ProcessId = process.Id,
+                                ProcessName = process.ProcessName,
+                                MainWindowTitle = window.Title,
+                                MemoryMB = process.WorkingSet64 / (1024 * 1024)
+                            });
+                        }
                     }
+                    catch { }
                 }
-                catch { }
             }
         }
         catch { }
@@ -260,14 +483,17 @@ public class ProcessKiller : IDisposable
         {
             foreach (var process in Process.GetProcesses())
             {
-                try
+                using (process)
                 {
-                    if (IsBloatware(process.ProcessName) && !running.Contains(process.ProcessName))
+                    try
                     {
-                        running.Add(process.ProcessName);
+                        if (IsBloatware(process.ProcessName) && !running.Contains(process.ProcessName))
+                        {
+                            running.Add(process.ProcessName);
+                        }
                     }
+                    catch { }
                 }
-                catch { }
             }
         }
         catch { }
@@ -279,6 +505,10 @@ public class ProcessKiller : IDisposable
 
     #region Manual Kill
 
+    /// <summary>
+    /// Ends every running instance of <paramref name="processName"/> — each
+    /// process only, never its child processes. Returns true if any was ended.
+    /// </summary>
     public bool KillProcess(string processName)
     {
         if (IsProtectedProcess(processName))
@@ -289,12 +519,17 @@ public class ProcessKiller : IDisposable
         {
             foreach (var process in Process.GetProcessesByName(processName))
             {
-                try
+                using (process)
                 {
-                    process.Kill(true);
-                    killed = true;
+                    try
+                    {
+                        if (process.Id == _ownProcessId)
+                            continue;
+                        process.Kill(entireProcessTree: false);
+                        killed = true;
+                    }
+                    catch { }
                 }
-                catch { }
             }
         }
         catch { }
@@ -302,41 +537,111 @@ public class ProcessKiller : IDisposable
         return killed;
     }
 
-    public bool KillProcess(int processId)
+    /// <summary>
+    /// Ends one process. Only that process is closed unless the caller
+    /// explicitly asks for the whole tree. Returns true only once the process
+    /// has actually exited (or was already gone).
+    /// </summary>
+    public bool KillProcess(int processId, bool killEntireTree = false)
     {
+        if (processId == _ownProcessId)
+            return false;
+
+        Process process;
         try
         {
-            var process = Process.GetProcessById(processId);
-            if (IsProtectedProcess(process.ProcessName))
-                return false;
-
-            process.Kill(true);
-            return true;
+            process = Process.GetProcessById(processId);
+        }
+        catch (ArgumentException)
+        {
+            return true; // no such process any more — it is gone
         }
         catch
         {
             return false;
+        }
+
+        using (process)
+        {
+            try
+            {
+                if (IsProtectedProcess(process.ProcessName))
+                    return false;
+
+                process.Kill(killEntireTree);
+                return process.WaitForExit(3000);
+            }
+            catch (InvalidOperationException)
+            {
+                return true; // it exited before we could kill it
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
-    public bool ForceKillProcess(int processId)
+    /// <summary>
+    /// Last resort via taskkill /F. Returns the real outcome: true only if the
+    /// process is no longer running afterwards.
+    /// </summary>
+    public bool ForceKillProcess(int processId, bool killEntireTree = false)
     {
+        if (processId == _ownProcessId)
+            return false;
+
+        Process target;
         try
         {
-            // Use taskkill /F /PID for more forceful termination
-            var psi = new ProcessStartInfo
-            {
-                FileName = "taskkill",
-                Arguments = $"/F /PID {processId}",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            Process.Start(psi)?.WaitForExit(5000);
-            return true;
+            target = Process.GetProcessById(processId);
+        }
+        catch (ArgumentException)
+        {
+            return true; // already gone
         }
         catch
         {
             return false;
+        }
+
+        using (target)
+        {
+            try
+            {
+                if (IsProtectedProcess(target.ProcessName))
+                    return false;
+            }
+            catch { }
+
+            try
+            {
+                // Full System32 path: an elevated app must not resolve "taskkill"
+                // through the working directory or PATH.
+                var psi = new ProcessStartInfo
+                {
+                    FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
+                    Arguments = killEntireTree ? $"/F /T /PID {processId}" : $"/F /PID {processId}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var taskkill = Process.Start(psi);
+                if (taskkill != null && !taskkill.WaitForExit(5000))
+                {
+                    try { taskkill.Kill(); } catch { }
+                }
+            }
+            catch { }
+
+            try
+            {
+                return target.WaitForExit(2000);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -349,12 +654,61 @@ public class ProcessKiller : IDisposable
         return ProtectedProcesses.Contains(processName.ToLowerInvariant());
     }
 
-    public static bool IsBloatware(string processName)
+    /// <summary>True for processes that are never closed automatically (protected or shell hosts).</summary>
+    public static bool IsAutoKillExcluded(string processName)
     {
-        var name = processName.ToLowerInvariant();
-        return KnownBloatware.Any(b => name.Contains(b));
+        return IsProtectedProcess(processName) || NeverAutoKill.Contains(processName);
     }
 
+    public static bool IsBloatware(string processName)
+    {
+        return KnownBloatware.Contains(processName);
+    }
+
+    /// <summary>
+    /// Returns the rule key for a user-entered name (lower case, no ".exe"),
+    /// or null when it is not a plain process name or must never be killed.
+    /// </summary>
+    public static string? NormalizeRuleName(string? processName)
+    {
+        var name = processName?.Trim() ?? "";
+        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            name = name[..^4];
+
+        if (name.Length == 0 || name.Length > 100)
+            return null;
+        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return null;
+
+        name = name.ToLowerInvariant();
+        return IsAutoKillExcluded(name) ? null : name;
+    }
+
+    private void RaiseAutoKilled(int pid, string name, string windowTitle, AutoKillReason reason, long detail)
+    {
+        var args = new ProcessAutoKilledEventArgs
+        {
+            ProcessId = pid,
+            ProcessName = name,
+            WindowTitle = windowTitle,
+            Reason = reason,
+            Detail = detail,
+            Time = DateTime.Now
+        };
+
+        Debug.WriteLine($"[ProcessKiller] Auto-killed {name} ({pid}): {args.ReasonText}");
+
+        try { ProcessAutoKilled?.Invoke(this, args); } catch { /* a UI handler must not stop the watchdog */ }
+        try { OnProcessAutoKilled?.Invoke(name, args.ReasonText); } catch { }
+    }
+
+    /// <summary>
+    /// Raised (on a background thread) after every automatic kill with what was
+    /// closed and why. Marshal to the UI thread before touching controls.
+    /// </summary>
+    public event EventHandler<ProcessAutoKilledEventArgs>? ProcessAutoKilled;
+
+    /// <summary>Legacy form of <see cref="ProcessAutoKilled"/>: (process name, English reason).</summary>
     public event Action<string, string>? OnProcessAutoKilled;
 
     #endregion
@@ -363,35 +717,72 @@ public class ProcessKiller : IDisposable
 
     private void LoadSettings()
     {
+        var settings = AdminOnlyStore.Load<KillSettings>(SettingsFileName);
+        var fromLegacyFile = false;
+
+        if (settings == null)
+        {
+            // Present but untrusted/corrupt: start clean rather than guess.
+            if (AdminOnlyStore.Exists(SettingsFileName))
+                return;
+
+            settings = LoadLegacySettings();
+            fromLegacyFile = settings != null;
+        }
+
+        if (settings == null)
+            return;
+
+        foreach (var saved in (settings.Rules ?? new List<KillRule>()).Take(MaxRules))
+        {
+            var name = NormalizeRuleName(saved?.ProcessName);
+            if (name == null || saved == null)
+                continue; // whitelist: plain, non-protected process names only
+
+            _killRules[name] = new KillRule
+            {
+                ProcessName = name,
+                Reason = (saved.Reason ?? "").Length > 200 ? saved.Reason![..200] : saved.Reason ?? "",
+                CreatedAt = saved.CreatedAt,
+                LastKilled = saved.LastKilled,
+                KillCount = Math.Max(0, saved.KillCount)
+            };
+        }
+
+        // The old file lived in a user-writable folder. Smart Kill only ever closes
+        // hung windows under the rules above, so its switch is carried over; the
+        // Auto-Kill switch is NOT — with rules anyone could have planted it would
+        // make the elevated app kill arbitrary programs. It starts OFF and turning
+        // it on shows the rule list. From now on only the admin-only copy is used.
+        _isSmartKillEnabled = settings.SmartKillEnabled;
+        if (fromLegacyFile)
+            SaveSettings();
+        else
+            _isAutoKillEnabled = settings.AutoKillEnabled;
+    }
+
+    private static KillSettings? LoadLegacySettings()
+    {
         try
         {
-            if (File.Exists(_settingsPath))
-            {
-                var json = File.ReadAllText(_settingsPath);
-                var settings = JsonSerializer.Deserialize<KillSettings>(json);
-                if (settings != null)
-                {
-                    _isAutoKillEnabled = settings.AutoKillEnabled;
-                    _isSmartKillEnabled = settings.SmartKillEnabled;
+            var legacyPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "NetX", "kill_rules.json");
+            if (!File.Exists(legacyPath) || new FileInfo(legacyPath).Length > 1024 * 1024)
+                return null;
 
-                    foreach (var rule in settings.Rules)
-                    {
-                        _killRules[rule.ProcessName.ToLowerInvariant()] = rule;
-                    }
-                }
-            }
+            return JsonSerializer.Deserialize<KillSettings>(File.ReadAllText(legacyPath));
         }
-        catch { }
+        catch
+        {
+            return null;
+        }
     }
 
     private void SaveSettings()
     {
-        try
+        lock (_settingsLock)
         {
-            var dir = Path.GetDirectoryName(_settingsPath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
             var settings = new KillSettings
             {
                 AutoKillEnabled = _isAutoKillEnabled,
@@ -399,10 +790,9 @@ public class ProcessKiller : IDisposable
                 Rules = _killRules.Values.ToList()
             };
 
-            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_settingsPath, json);
+            if (!AdminOnlyStore.Save(SettingsFileName, settings))
+                Debug.WriteLine("[ProcessKiller] Settings not persisted (admin-only store unavailable).");
         }
-        catch { }
     }
 
     #endregion
@@ -412,6 +802,37 @@ public class ProcessKiller : IDisposable
         _watchdogTimer.Dispose();
         _healthCheckTimer.Dispose();
     }
+}
+
+public enum AutoKillReason
+{
+    /// <summary>Matched a user kill rule while Auto-Kill was on.</summary>
+    MatchedKillRule,
+    /// <summary>Window was "Not Responding" for at least the Smart Kill threshold.</summary>
+    NotResponding,
+    /// <summary>Known background bloatware exceeded the memory limit.</summary>
+    ExcessiveMemory
+}
+
+public sealed class ProcessAutoKilledEventArgs : EventArgs
+{
+    public int ProcessId { get; init; }
+    public string ProcessName { get; init; } = "";
+    public string WindowTitle { get; init; } = "";
+    public AutoKillReason Reason { get; init; }
+
+    /// <summary>Seconds not responding (NotResponding) or working set in MB (ExcessiveMemory).</summary>
+    public long Detail { get; init; }
+
+    public DateTime Time { get; init; }
+
+    /// <summary>English reason for logs; the UI should localize from <see cref="Reason"/>.</summary>
+    public string ReasonText => Reason switch
+    {
+        AutoKillReason.NotResponding => $"Not responding for {Detail} s",
+        AutoKillReason.ExcessiveMemory => $"Excessive memory ({Detail} MB)",
+        _ => "Matched auto-kill rule"
+    };
 }
 
 public class KillRule
@@ -429,6 +850,9 @@ public class ProcessHealthInfo
     public string ProcessName { get; set; } = "";
     public DateTime StartTime { get; set; }
     public int NotRespondingCount { get; set; }
+
+    /// <summary>UTC time the window was first seen hung in the current unbroken streak.</summary>
+    public DateTime? NotRespondingSince { get; set; }
 }
 
 public class FrozenProcessInfo

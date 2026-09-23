@@ -122,7 +122,7 @@
     <system:String x:Key="Settings_LicenseStatus">สถานะใบอนุญาต</system:String>
     <system:String x:Key="Settings_Activate">เปิดใช้งาน</system:String>
     <system:String x:Key="Settings_Deactivate">ยกเลิกการเปิดใช้งาน</system:String>
-    <system:String x:Key="Settings_LicenseKeyPlaceholder">ใส่คีย์ใบอนุญาต (WXT-XXXX-XXXX-XXXX)</system:String>
+    <system:String x:Key="Settings_LicenseKeyPlaceholder">คีย์ License ของคุณ (XXXX-XXXX-XXXX-XXXX) จากอีเมลที่ได้รับหลังซื้อ Pro</system:String>
 
     <!-- Updates -->
     <system:String x:Key="Settings_Updates">อัพเดท</system:String>
@@ -184,7 +184,7 @@
     <system:String x:Key="GameMode_Revert">คืนค่าเดิม</system:String>
     <system:String x:Key="GameMode_On">เปิดอยู่</system:String>
     <system:String x:Key="GameMode_Off">ปิดอยู่</system:String>
-    <system:String x:Key="GameMode_ConfirmApply">เปิดโหมดเกมเมอร์?&#10;&#10;ปิด GameDVR · เปิด Game Mode · GPU scheduling · ให้เกมใช้ CPU/เน็ตเต็มที่ · แผนพลังงาน Ultimate&#10;&#10;ทุกค่าจะถูกบันทึกไว้ก่อน สามารถคืนค่าเดิมได้ครบทุกอย่าง</system:String>
+    <system:String x:Key="GameMode_ConfirmApply" xml:space="preserve">เปิดโหมดเกมเมอร์?&#10;&#10;ปิดการอัดวิดีโอของ Game Bar · ปิด Fullscreen Optimizations · ปิดการจำกัดเน็ตของ Windows ระหว่างเล่น · เปิด GPU scheduling (ถ้าการ์ดจอรองรับ) · ปิด Power Throttling และใช้แผนพลังงาน Ultimate (เฉพาะคอมตั้งโต๊ะ)&#10;&#10;ทุกค่าจะถูกบันทึกไว้ก่อน คืนค่าเดิมได้ครบทุกอย่าง แนะนำให้รีสตาร์ตเครื่องหลังเปิด</system:String>
     <system:String x:Key="GameMode_NeedAdmin">รันแบบ Administrator เพื่อใช้ทุกการปรับแต่ง</system:String>
 
     <!-- Network Tools -->
@@ -192,9 +192,9 @@
     <system:String x:Key="NetworkTools_Subtitle">เครื่องมือวินิจฉัยและวิเคราะห์สำหรับแก้ไขปัญหาเครือข่าย</system:String>
 
     <!-- Proxy VPN -->
-    <system:String x:Key="Nav_ProxyVpn">มุดประเทศ</system:String>
-    <system:String x:Key="ProxyVpn_Title">มุดประเทศ (Proxy VPN)</system:String>
-    <system:String x:Key="ProxyVpn_Subtitle">เชื่อมต่อผ่าน Proxy ฟรีทั่วโลก</system:String>
+    <system:String x:Key="Nav_ProxyVpn">พร็อกซีฟรี</system:String>
+    <system:String x:Key="ProxyVpn_Title">พร็อกซีฟรี (ไม่เข้ารหัส)</system:String>
+    <system:String x:Key="ProxyVpn_Subtitle">ท่องเว็บผ่านพร็อกซีสาธารณะฟรีในต่างประเทศ — นี่ไม่ใช่ VPN</system:String>
 
     <!-- Pro Banner -->
     <system:String x:Key="Pro_UpgradeTitle">อัพเกรดเป็น Pro</system:String>
@@ -290,5 +290,562 @@
     <system:String x:Key="Admin_RunAsAdmin">เรียกใช้ในฐานะผู้ดูแลระบบ</system:String>
     <system:String x:Key="Admin_LimitedMode">เรียกใช้โหมดจำกัด</system:String>
     <system:String x:Key="Admin_Exit">ออก</system:String>
+
+    <!-- Bandwidth limiter (packet engine v2) -->
+    <system:String x:Key="BW_Unlimited">ไม่จำกัด</system:String>
+    <system:String x:Key="BW_Blocked">บล็อก</system:String>
+    <system:String x:Key="BW_Down">ดาวน์โหลด</system:String>
+    <system:String x:Key="BW_Up">อัปโหลด</system:String>
+    <system:String x:Key="BW_Status_Idle">พร้อมใช้งาน — ยังไม่ได้ตั้งจำกัดความเร็ว</system:String>
+    <system:String x:Key="BW_Status_Active">กำลังจำกัดความเร็วจริง (เอนจินระดับ Kernel)</system:String>
+    <system:String x:Key="BW_Status_NoDriver">โหลดไดรเวอร์ไม่ได้ — บันทึกค่าไว้แต่ยังไม่ได้จำกัดจริง</system:String>
+    <system:String x:Key="BW_Status_Error">ยังไม่ได้จำกัดจริง: {0}</system:String>
+    <system:String x:Key="BW_PageSubtitle">จำกัดความเร็วทั้งเครื่องหรือรายแอป — วัดและคุมจริงที่ระดับแพ็กเก็ต</system:String>
+    <system:String x:Key="BW_WholePcTitle">จำกัดความเร็วทั้งเครื่อง</system:String>
+    <system:String x:Key="BW_WholePcDesc">มีผลกับทุกแอปรวมกัน ทุกการ์ดเครือข่าย • เลื่อนไปทางซ้ายเพื่อลดความเร็ว • ซ้ายสุด = ตัดอินเทอร์เน็ตทั้งเครื่อง • ขวาสุด = ไม่จำกัด</system:String>
+    <system:String x:Key="BW_AppRulesTitle">การจำกัด / บล็อกรายแอป</system:String>
+    <system:String x:Key="BW_AppRulesEmpty">ยังไม่มีกฎรายแอป — เปิดหน้า Network Monitor เลือกแอปที่ต้องการ แล้วเลื่อนแถบ ดาวน์โหลด/อัปโหลด หรือกดปุ่มบล็อกท้ายแถว</system:String>
+    <system:String x:Key="BW_Remove">ลบกฎ</system:String>
+    <system:String x:Key="BW_Unblock">เลิกบล็อก</system:String>
+    <system:String x:Key="BW_ResetAll">ล้างทั้งหมด</system:String>
+    <system:String x:Key="BW_ResetAllConfirm">ลบการจำกัดความเร็ว การบล็อกทุกแอป และการจำกัดทั้งเครื่องทั้งหมดใช่ไหม?</system:String>
+    <system:String x:Key="BW_BlockedPermanent">บล็อกถาวร (Firewall)</system:String>
+    <system:String x:Key="BW_NowSpeed">ตอนนี้ ↓{0}  ↑{1}</system:String>
+    <system:String x:Key="BW_HowTitle">วิธีใช้งาน</system:String>
+    <system:String x:Key="BW_HowText" xml:space="preserve">• จำกัดทั้งเครื่อง: เลื่อนแถบด้านบน ความเร็วรวมของทุกแอปจะไม่เกินค่านี้ (หน่วย Mbps แบบเดียวกับแพ็กเกจเน็ต)&#x0a;• จำกัดรายแอป: หน้า Network Monitor → คลิกแอป → เลื่อนแถบ ดาวน์/อัป (หน่วย KB/s หรือ MB/s) ทุก process ของแอปเดียวกันใช้โควตาร่วมกัน&#x0a;• บล็อกแอป: กดปุ่ม ⛔ ท้ายแถวใน Network Monitor ตัดการเชื่อมต่อทันที และสร้างกฎ Windows Firewall ที่มีผลแม้ปิด WinXTools แล้ว&#x0a;• การจำกัดความเร็วทำงานขณะเปิด WinXTools อยู่เท่านั้น (ย่อหน้าต่างไว้ได้) เมื่อไม่มีการจำกัด เอนจินจะอยู่โหมดดูอย่างเดียว ไม่เพิ่ม ping ให้เกม&#x0a;• ถ้าเกมที่มีระบบกันโกง (เช่น FACEIT, Vanguard) แจ้งเตือนไดรเวอร์ WinDivert ให้ปิด WinXTools ก่อนเข้าเกม</system:String>
+    <system:String x:Key="BW_Control">ควบคุมความเร็วแอปนี้</system:String>
+    <system:String x:Key="BW_QuickPresets">ค่าด่วน</system:String>
+    <system:String x:Key="BW_SetFor">{0}: ↓{1}  ↑{2}</system:String>
+    <system:String x:Key="BW_RemovedFor">ยกเลิกการจำกัดความเร็วของ {0} แล้ว</system:String>
+    <system:String x:Key="BW_BlockConfirm" xml:space="preserve">บล็อกอินเทอร์เน็ตของ {0} ทั้งหมด?&#x0a;&#x0a;• ตัดการเชื่อมต่อที่ใช้อยู่ทันที&#x0a;• สร้างกฎ Windows Firewall กันการเชื่อมต่อใหม่ (มีผลแม้ปิด WinXTools)&#x0a;&#x0a;เลิกบล็อกได้ภายหลังจากปุ่มเดิม หรือหน้า ควบคุมแบนด์วิดท์</system:String>
+    <system:String x:Key="BW_UnblockConfirm">เลิกบล็อก {0} ให้กลับมาใช้อินเทอร์เน็ตได้?</system:String>
+    <system:String x:Key="BW_BlockedMsg">บล็อก {0} แล้ว</system:String>
+    <system:String x:Key="BW_UnblockedMsg">เลิกบล็อก {0} แล้ว</system:String>
+    <system:String x:Key="BW_Estimated">(ความเร็วรายแอปเป็นค่าประมาณ — ไดรเวอร์แพ็กเก็ตใช้งานไม่ได้)</system:String>
+    <system:String x:Key="BW_ActionFailed">ทำไม่สำเร็จ</system:String>
+
+    <!-- Cleaner (accurate engine) -->
+    <system:String x:Key="Cleaner_Subtitle">สแกนแล้วจะเห็นพื้นที่ที่ได้คืนจริง — ไฟล์ที่โปรแกรมอื่นเปิดใช้อยู่จะถูกข้ามและไม่นับรวม</system:String>
+    <system:String x:Key="Cleaner_Hint">กด "สแกน" เพื่อดูว่าลบอะไรได้บ้าง จากนั้นเลือกหมวดแล้วกด "ทำความสะอาด"</system:String>
+    <system:String x:Key="Cleaner_Summary">สรุป</system:String>
+    <system:String x:Key="Cleaner_Selected">ขนาดที่จะได้คืน (เฉพาะหมวดที่เลือก)</system:String>
+    <system:String x:Key="Cleaner_Cancel">ยกเลิก</system:String>
+    <system:String x:Key="Cleaner_Cancelled">ยกเลิกแล้ว</system:String>
+    <system:String x:Key="Cleaner_Footer">ลบเฉพาะไฟล์ขยะเท่านั้น — ไม่แตะเอกสาร รูปภาพ รหัสผ่าน คุกกี้ หรือโปรแกรมที่ติดตั้งไว้</system:String>
+    <system:String x:Key="Cleaner_Files">{0:N0} ไฟล์</system:String>
+    <system:String x:Key="Cleaner_InUse">กำลังใช้งาน {0:N0} ไฟล์ (ข้าม)</system:String>
+    <system:String x:Key="Cleaner_InUseSize">กำลังใช้งาน {0:N0} ไฟล์ ({1}) จะถูกข้าม</system:String>
+    <system:String x:Key="Cleaner_Recent">ไฟล์ใหม่ {0:N0} ไฟล์ (เก็บไว้)</system:String>
+    <system:String x:Key="Cleaner_Denied">ไฟล์ที่ระบบป้องกัน {0:N0} ไฟล์ (ข้าม)</system:String>
+    <system:String x:Key="Cleaner_NotFound">ไม่พบ</system:String>
+    <system:String x:Key="Cleaner_Scanning">กำลังสแกน {0}…</system:String>
+    <system:String x:Key="Cleaner_ScanDone">สแกนเสร็จ — ลบได้ {0} (เลือกเปิด/ปิดแต่ละหมวดได้ แล้วกด ทำความสะอาด)</system:String>
+    <system:String x:Key="Cleaner_ConfirmTitle">ยืนยันการทำความสะอาด</system:String>
+    <system:String x:Key="Cleaner_Confirm" xml:space="preserve">ทำความสะอาดรายการเหล่านี้?&#x0a;&#x0a;{0}&#x0a;รวม: {1}&#x0a;&#x0a;ไฟล์ที่กำลังใช้งานจะถูกข้ามอัตโนมัติ และลบแล้วกู้คืนไม่ได้</system:String>
+    <system:String x:Key="Cleaner_CleaningItem">กำลังล้าง {0}…</system:String>
+    <system:String x:Key="Cleaner_Done">ได้พื้นที่คืน {0} ({1:N0} ไฟล์) • พื้นที่ว่างของไดรฟ์เปลี่ยนไป {2}</system:String>
+    <system:String x:Key="Cleaner_SkippedTotal">มี {0:N0} ไฟล์ที่กำลังใช้งานหรือถูกระบบป้องกัน จึงไม่ได้ลบ</system:String>
+    <system:String x:Key="Cleaner_Freed">ลบแล้ว {0}</system:String>
+    <system:String x:Key="Cleaner_Deleted">ลบ {0:N0} ไฟล์</system:String>
+    <system:String x:Key="Cleaner_Skipped">ข้าม {0:N0} ไฟล์</system:String>
+    <system:String x:Key="Cleaner_NothingSelected">เลือกอย่างน้อย 1 หมวดที่มีไฟล์ให้ลบ (สแกนก่อน)</system:String>
+    <system:String x:Key="Risk_Safe">ปลอดภัย</system:String>
+    <system:String x:Key="Risk_Medium">ควรอ่านก่อน</system:String>
+    <system:String x:Key="Risk_Caution">ระวัง</system:String>
+    <system:String x:Key="CleanCat_Temp_Title">ไฟล์ชั่วคราว (Temp)</system:String>
+    <system:String x:Key="CleanCat_Temp_Desc">%TEMP% และ Windows\Temp — เก็บไฟล์ที่อายุไม่ถึง 24 ชม. ไว้ เพราะโปรแกรมติดตั้งอาจยังใช้อยู่</system:String>
+    <system:String x:Key="CleanCat_Browser_Title">แคชเบราว์เซอร์</system:String>
+    <system:String x:Key="CleanCat_Browser_Desc">Chrome, Edge, Brave, Opera, Vivaldi, Firefox — ลบเฉพาะแคช ไม่แตะรหัสผ่าน คุกกี้ ประวัติ หรือการล็อกอิน (ปิดเบราว์เซอร์ก่อนจะล้างได้หมด)</system:String>
+    <system:String x:Key="CleanCat_Apps_Title">แคชของแอป</system:String>
+    <system:String x:Key="CleanCat_Apps_Desc">Discord, Teams (แบบเดิม), VS Code, Slack, แคชเว็บของ Steam และ Epic — แอปจะสร้างใหม่เองอัตโนมัติ แชทและการล็อกอินไม่หาย</system:String>
+    <system:String x:Key="CleanCat_WER_Title">รายงานข้อผิดพลาดและไฟล์ Dump</system:String>
+    <system:String x:Key="CleanCat_WER_Desc">Windows Error Reporting, minidump, MEMORY.DMP — จำเป็นเฉพาะตอนกำลังหาสาเหตุเครื่องค้างหรือจอฟ้า</system:String>
+    <system:String x:Key="CleanCat_Thumbs_Title">แคชรูปตัวอย่าง (Thumbnail)</system:String>
+    <system:String x:Key="CleanCat_Thumbs_Desc">Windows สร้างใหม่เองเมื่อเปิดโฟลเดอร์ ไฟล์ที่ Explorer ใช้อยู่จะถูกข้าม</system:String>
+    <system:String x:Key="CleanCat_Logs_Title">ไฟล์ Log ของ Windows</system:String>
+    <system:String x:Key="CleanCat_Logs_Desc">โฟลเดอร์ Windows\Logs (setup, CBS, DISM…) — ไฟล์ที่กำลังเขียนอยู่จะถูกข้าม</system:String>
+    <system:String x:Key="CleanCat_DO_Title">ไฟล์ Delivery Optimization</system:String>
+    <system:String x:Key="CleanCat_DO_Desc">ชิ้นส่วนอัปเดตที่ Windows ใช้แชร์กับเครื่องอื่น — ลบด้วยคำสั่งล้างของ Windows เอง</system:String>
+    <system:String x:Key="CleanCat_WU_Title">ไฟล์ดาวน์โหลดของ Windows Update</system:String>
+    <system:String x:Key="CleanCat_WU_Desc">โฟลเดอร์ SoftwareDistribution\Download — ถ้ามีอัปเดตรอรีสตาร์ตอยู่จะข้ามให้อัตโนมัติ</system:String>
+    <system:String x:Key="CleanCat_WU_Warn">อัปเดตที่ดาวน์โหลดไว้แต่ยังไม่ติดตั้งจะต้องดาวน์โหลดใหม่</system:String>
+    <system:String x:Key="CleanCat_Shaders_Title">แคช Shader ของการ์ดจอ</system:String>
+    <system:String x:Key="CleanCat_Shaders_Desc">DirectX / NVIDIA / AMD / Intel — ช่วยแก้เกมกระตุกหลังอัปเดตไดรเวอร์ได้บางครั้ง</system:String>
+    <system:String x:Key="CleanCat_Shaders_Warn">เปิดเกมครั้งแรกหลังล้าง อาจกระตุกสักครู่ระหว่างสร้าง shader ใหม่</system:String>
+    <system:String x:Key="CleanCat_Recycle_Title">ถังขยะ (Recycle Bin)</system:String>
+    <system:String x:Key="CleanCat_Recycle_Desc">ทุกไดรฟ์ — ไฟล์ในถังขยะจะถูกลบถาวร</system:String>
+    <system:String x:Key="CleanCat_Recycle_Warn">ไฟล์ในถังขยะจะกู้คืนไม่ได้อีก</system:String>
+    <system:String x:Key="CleanCat_WinOld_Title">Windows เวอร์ชันเก่า (Windows.old)</system:String>
+    <system:String x:Key="CleanCat_WinOld_Desc">ลบด้วย Disk Cleanup ของ Windows (อาจใช้เวลาหลายนาที และจะมีหน้าต่าง Disk Cleanup ขึ้นมา)</system:String>
+    <system:String x:Key="CleanCat_WinOld_Warn">หลังลบจะย้อนกลับไป Windows เวอร์ชันก่อนหน้าไม่ได้</system:String>
+    <system:String x:Key="Cleaner_Note_AppRunning">{0} เปิดอยู่ — ปิดโปรแกรมก่อนถ้าต้องการล้างไฟล์ที่มันใช้อยู่ด้วย</system:String>
+    <system:String x:Key="Cleaner_Note_RebootPending">Windows Update รอรีสตาร์ตอยู่ — รีสตาร์ตเครื่องก่อนแล้วค่อยล้างหมวดนี้</system:String>
+    <system:String x:Key="Cleaner_Note_ExplorerLocked">บางไฟล์ Explorer ใช้อยู่ จะล้างได้หลังรีสตาร์ต Windows</system:String>
+    <system:String x:Key="Cleaner_Note_NoCleanmgr">เครื่องนี้ไม่มี Disk Cleanup — ลบได้ที่ Settings › System › Storage › Temporary files</system:String>
+    <system:String x:Key="Cleaner_Note_WindowsOldPartial">ยังเหลือบางส่วนของ Windows.old — ลองอีกครั้งหลังรีสตาร์ต</system:String>
+
+    <!-- Dashboard quick actions -->
+    <system:String x:Key="Dashboard_DownloadSpeed">ความเร็วดาวน์โหลด</system:String>
+    <system:String x:Key="Dashboard_UploadSpeed">ความเร็วอัปโหลด</system:String>
+    <system:String x:Key="Dash_BlockAll">บล็อกเน็ตทั้งหมด</system:String>
+    <system:String x:Key="Dash_BlockAllConfirm" xml:space="preserve">ตัดอินเทอร์เน็ตของเครื่องนี้ทั้งหมด?&#x0a;&#x0a;ทุกแอปจะออกเน็ตไม่ได้จนกว่าจะกด "Resume All" (ถ้าปิด WinXTools เน็ตจะกลับมาเอง)</system:String>
+    <system:String x:Key="Dash_BlockAllDone">บล็อกอินเทอร์เน็ตทั้งเครื่องแล้ว — กด Resume All เพื่อเชื่อมต่อกลับ</system:String>
+    <system:String x:Key="Dash_ResumeAll">กลับมาใช้เน็ต</system:String>
+    <system:String x:Key="Dash_ResumeDone">อินเทอร์เน็ตกลับมาใช้ได้ตามปกติแล้ว</system:String>
+    <system:String x:Key="Dash_ResumeNothing">ตอนนี้ไม่ได้บล็อกหรือจำกัดความเร็วทั้งเครื่องอยู่</system:String>
+    <system:String x:Key="Dash_ResumeAppRules">ยังมีกฎจำกัด/บล็อกรายแอปอีก {0} รายการ — จัดการได้ที่หน้า ควบคุมแบนด์วิดท์</system:String>
+    <system:String x:Key="Dash_QuickClean">ทำความสะอาดด่วน</system:String>
+    <system:String x:Key="Dash_QuickCleanConfirm" xml:space="preserve">ลบไฟล์ชั่วคราว แคชเบราว์เซอร์ แคชรูปตัวอย่าง และรายงานข้อผิดพลาด?&#x0a;&#x0a;(เฉพาะหมวดที่ปลอดภัย ไฟล์ที่กำลังใช้งานจะถูกข้าม)</system:String>
+    <system:String x:Key="Dash_QuickCleanDone">ได้พื้นที่คืน {0} ({1:N0} ไฟล์)</system:String>
+    <system:String x:Key="Dash_Ram">ปรับแต่ง RAM</system:String>
+    <system:String x:Key="Dash_RamDone" xml:space="preserve">ปรับแต่ง RAM เสร็จแล้ว&#x0a;&#x0a;ก่อนหน้า: ใช้อยู่ {0}%&#x0a;จำนวนโปรเซสที่ปรับ: {1}&#x0a;RAM ที่ว่างเพิ่ม: {2}</system:String>
+    <system:String x:Key="Dash_DnsDone">ล้าง DNS cache เรียบร้อยแล้ว</system:String>
+    <system:String x:Key="Dash_DnsFailed">ล้าง DNS cache ไม่สำเร็จ (exit code {0})</system:String>
+    <system:String x:Key="Dash_Reset">รีเซ็ตการ์ดเครือข่าย</system:String>
+    <system:String x:Key="Dash_ResetNoAdapter">ไม่พบการ์ดเครือข่ายที่เชื่อมต่ออยู่</system:String>
+    <system:String x:Key="Dash_ResetConfirm" xml:space="preserve">รีสตาร์ตการ์ดเครือข่ายต่อไปนี้? เน็ตจะหลุดไม่กี่วินาที&#x0a;&#x0a;{0}</system:String>
+    <system:String x:Key="Dash_ResetDone">รีสตาร์ตการ์ดเครือข่ายแล้ว อีกไม่กี่วินาทีเน็ตจะกลับมา</system:String>
+    <system:String x:Key="Dash_ResetFailed">รีสตาร์ตไม่สำเร็จ: {0}</system:String>
+
+    <system:String x:Key="App_UnexpectedError">เกิดข้อผิดพลาดบางอย่าง แต่ WinXTools ยังทำงานต่อได้ตามปกติ:</system:String>
+
+    <!-- Free Proxy (honest wording, safe restore) -->
+    <system:String x:Key="Proxy_Warning">นี่ไม่ใช่ VPN — WinXTools ไม่ได้เข้ารหัสข้อมูลใดๆ พร็อกซีฟรีดำเนินการโดยบุคคลที่ไม่รู้จัก ซึ่งเห็นได้ว่าคุณเข้าเว็บไซต์ใด และอ่านหรือแก้ไขข้อมูลที่ไม่เข้ารหัส (http://) ได้ จึงไม่ควรล็อกอินบัญชีสำคัญ มีเพียงแอปที่ใช้การตั้งค่าพร็อกซีของ Windows (เบราว์เซอร์ส่วนใหญ่) เท่านั้นที่ผ่านพร็อกซี ส่วนเกมและแอปอื่นๆ ส่วนใหญ่ยังเชื่อมต่อโดยตรงตามปกติ</system:String>
+    <system:String x:Key="Proxy_DialogTitle">พร็อกซีฟรี</system:String>
+    <system:String x:Key="Proxy_Connect">เชื่อมต่อ</system:String>
+    <system:String x:Key="Proxy_Disconnect">ยกเลิกการเชื่อมต่อ</system:String>
+    <system:String x:Key="Proxy_SearchPlaceholder">ค้นหาประเทศ...</system:String>
+    <system:String x:Key="Proxy_RefreshTooltip">ดาวน์โหลดรายการพร็อกซีล่าสุดของทุกประเทศ</system:String>
+    <system:String x:Key="Proxy_CardTooltip">คลิกการ์ดเพื่อโหลดรายการของประเทศนี้ใหม่ (ยังไม่ได้ทดสอบ) กดเชื่อมต่อเพื่อทดสอบพร็อกซีผ่าน HTTPS แล้วเชื่อมต่อ</system:String>
+    <system:String x:Key="Proxy_CardClickToLoad">คลิกการ์ดเพื่อโหลดรายการ</system:String>
+    <system:String x:Key="Proxy_CardLoading">กำลังโหลดรายการ...</system:String>
+    <system:String x:Key="Proxy_CardListed">มีพร็อกซีในรายการ {0} ตัว</system:String>
+    <system:String x:Key="Proxy_CardNoneListed">ไม่มีพร็อกซีในรายการ</system:String>
+    <system:String x:Key="Proxy_CardLoadFailed">โหลดรายการไม่สำเร็จ</system:String>
+    <system:String x:Key="Proxy_CountryUnknown">ประเทศที่ไม่ทราบ</system:String>
+    <system:String x:Key="Proxy_StatusNotConnected">ยังไม่ได้เชื่อมต่อ</system:String>
+    <system:String x:Key="Proxy_StatusPickCountry">เลือกประเทศ แล้วกดปุ่มเชื่อมต่อ</system:String>
+    <system:String x:Key="Proxy_StatusConnected">เชื่อมต่อผ่านพร็อกซีแล้ว: {0}</system:String>
+    <system:String x:Key="Proxy_StatusConnectedDetail">IP ขาออก {0} · {1} ms · ตรวจสอบ HTTPS แล้ว</system:String>
+    <system:String x:Key="Proxy_StatusExitMismatch">เชื่อมต่อแล้ว — ออกเน็ตที่ {0}</system:String>
+    <system:String x:Key="Proxy_StatusExitMismatchDetail">คุณเลือก {0} แต่พร็อกซีนี้ออกเน็ตจริงที่ {1} · IP {2} · {3} ms</system:String>
+    <system:String x:Key="Proxy_StatusUnhealthy">พร็อกซีไม่ตอบสนอง</system:String>
+    <system:String x:Key="Proxy_StatusUnhealthyDetail">เว็บไซต์อาจโหลดไม่ขึ้น กดยกเลิกการเชื่อมต่อ หรือเลือกประเทศอื่น</system:String>
+    <system:String x:Key="Proxy_StatusLeftOver">Windows ยังใช้พร็อกซีของ WinXTools อยู่</system:String>
+    <system:String x:Key="Proxy_StatusLeftOverDetail">กดยกเลิกการเชื่อมต่อเพื่อคืนค่าพร็อกซีเดิมของคุณ</system:String>
+    <system:String x:Key="Proxy_StatusOtherInstance">หน้าต่าง WinXTools อีกหน้าต่างกำลังใช้พร็อกซีอยู่</system:String>
+    <system:String x:Key="Proxy_StatusOtherInstanceDetail">กรุณายกเลิกการเชื่อมต่อในหน้าต่างนั้นก่อน</system:String>
+    <system:String x:Key="Proxy_StatusRestoredLeftOver">ครั้งก่อน WinXTools ถูกปิดขณะยังเชื่อมต่ออยู่ — คืนค่าพร็อกซีเดิมของคุณเรียบร้อยแล้ว</system:String>
+    <system:String x:Key="Proxy_ProgressFetching">กำลังดาวน์โหลดรายการพร็อกซีของ {0}...</system:String>
+    <system:String x:Key="Proxy_ProgressTesting">กำลังทดสอบพร็อกซีของ {0} ผ่าน HTTPS... {1}/{2}</system:String>
+    <system:String x:Key="Proxy_ProgressApplying">กำลังตั้งค่าพร็อกซีของ Windows...</system:String>
+    <system:String x:Key="Proxy_ProgressRechecking">กำลังตรวจสอบพร็อกซีผ่าน HTTPS อีกครั้ง...</system:String>
+    <system:String x:Key="Proxy_ProgressRefreshing">กำลังรีเฟรชรายการพร็อกซี... {0}/{1}</system:String>
+    <system:String x:Key="Proxy_Cancelling">กำลังยกเลิก...</system:String>
+    <system:String x:Key="Proxy_AskOtherCountry" xml:space="preserve">ไม่พบพร็อกซีที่ใช้งานได้ซึ่งออกเน็ตที่ {0}&#10;&#10;พร็อกซีที่ใช้งานได้ดีที่สุดที่พบออกเน็ตที่ {1} (IP {2}, {3} ms)&#10;&#10;ต้องการเชื่อมต่อกับพร็อกซีนี้หรือไม่?</system:String>
+    <system:String x:Key="Proxy_ErrNoWorking">ไม่พบพร็อกซีที่ใช้งานได้สำหรับ {0} (ทดสอบแล้ว {1} ตัว) พร็อกซีฟรีล่มบ่อย — ลองใหม่ในอีกไม่กี่นาที กดรีเฟรช หรือเลือกประเทศอื่น</system:String>
+    <system:String x:Key="Proxy_ErrNoneListed">ขณะนี้ไม่มีพร็อกซีในรายการของ {0} ลองเลือกประเทศอื่น</system:String>
+    <system:String x:Key="Proxy_ErrListUnavailable">ดาวน์โหลดรายการพร็อกซีไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Proxy_ErrOtherInstance">มีหน้าต่าง WinXTools อีกหน้าต่างกำลังใช้พร็อกซีอยู่ กรุณายกเลิกการเชื่อมต่อในหน้าต่างนั้นก่อน</system:String>
+    <system:String x:Key="Proxy_ErrBackupFailed">บันทึกสำรองการตั้งค่าพร็อกซีปัจจุบันไม่สำเร็จ จึงไม่มีการเปลี่ยนแปลงใดๆ</system:String>
+    <system:String x:Key="Proxy_ErrApplyFailed">Windows ไม่ยอมรับการตั้งค่าพร็อกซี — อาจถูกล็อกโดยองค์กรของคุณ ขณะนี้ยังไม่ได้เชื่อมต่อ</system:String>
+    <system:String x:Key="Proxy_ErrProxyStopped">พร็อกซีนั้นหยุดตอบสนอง จึงไม่มีการเปลี่ยนแปลงใดๆ กรุณาลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Proxy_ErrUnexpected">เกิดข้อผิดพลาดระหว่างเชื่อมต่อ กรุณาลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Proxy_ErrRestoreFailed">คืนค่าการตั้งค่าพร็อกซีเดิมไม่สำเร็จ โปรดตรวจสอบที่ การตั้งค่า Windows &gt; เครือข่ายและอินเทอร์เน็ต &gt; พร็อกซี — WinXTools จะลองคืนค่าอีกครั้งเมื่อเปิดโปรแกรมครั้งถัดไป</system:String>
+    <system:String x:Key="Proxy_InfoChangedElsewhere">การตั้งค่าพร็อกซีของ Windows ถูกเปลี่ยนจากภายนอก WinXTools ระหว่างที่เชื่อมต่ออยู่ WinXTools จึงไม่แก้ไขการตั้งค่านั้น</system:String>
+
+    <!-- Windows Optimizer / RAM / Kill safety -->
+    <system:String x:Key="WinOpt_Enable">เปิด</system:String>
+    <system:String x:Key="WinOpt_Disable">ปิด</system:String>
+    <system:String x:Key="WinOpt_StatusDisabled">ปิดแล้ว</system:String>
+    <system:String x:Key="WinOpt_StatusDisabledRunning">ปิดแล้ว · ยังทำงานอยู่จนกว่าจะรีสตาร์ท</system:String>
+    <system:String x:Key="WinOpt_StatusEnabled">เปิดอยู่</system:String>
+    <system:String x:Key="WinOpt_StatusRunning">กำลังทำงาน</system:String>
+    <system:String x:Key="WinOpt_StatusStopped">หยุดอยู่</system:String>
+    <system:String x:Key="WinOpt_RamEstimateItem">~{0} MB (ค่าประมาณ)</system:String>
+    <system:String x:Key="WinOpt_RamEstimateLine">RAM ที่อาจประหยัดได้โดยประมาณ (อิงการใช้งานทั่วไป ไม่ได้วัดจากเครื่องนี้): ~{0} MB</system:String>
+    <system:String x:Key="WinOpt_RamEstimateTooltip">ค่าประมาณคร่าวๆ จากการใช้งานทั่วไป ไม่ได้วัดจากเครื่องนี้</system:String>
+    <system:String x:Key="WinOpt_Busy">กำลังดำเนินการ… อาจใช้เวลาถึงหนึ่งนาที</system:String>
+    <system:String x:Key="WinOpt_ConfirmDisableOne">ปิด "{0}" หรือไม่?</system:String>
+    <system:String x:Key="WinOpt_ConfirmEnableOne">เปิด "{0}" กลับมาหรือไม่?</system:String>
+    <system:String x:Key="WinOpt_ConfirmDisableList" xml:space="preserve">จะปิด {0} รายการ:&#10;{1}</system:String>
+    <system:String x:Key="WinOpt_ConfirmRestoreAll" xml:space="preserve">จะเปิด {0} รายการกลับมา:&#10;{1}</system:String>
+    <system:String x:Key="WinOpt_RestoreAllExplain">บริการจะได้ประเภทการเริ่มทำงานเดิมก่อนที่ WinXTools จะปิด (หรือค่าเริ่มต้นของ Windows หากไม่ได้บันทึกไว้) และจะเริ่มทำงานอีกครั้งหากเดิมทำงานอยู่</system:String>
+    <system:String x:Key="WinOpt_RestorePointPromise">WinXTools จะพยายามสร้าง System Restore Point ก่อน โดย Windows อนุญาตให้สร้างได้ครั้งเดียวในทุก 24 ชั่วโมง และต้องเปิด System Protection ไว้ ผลลัพธ์จะแจ้งให้ทราบเมื่อดำเนินการเสร็จ</system:String>
+    <system:String x:Key="WinOpt_Continue">ดำเนินการต่อหรือไม่?</system:String>
+    <system:String x:Key="WinOpt_AndMore">…และอีก {0} รายการ</system:String>
+    <system:String x:Key="WinOpt_NoSelection">กรุณาเลือกรายการที่ต้องการปิด</system:String>
+    <system:String x:Key="WinOpt_AlreadyOptimized">ปรับแต่งแบบปลอดภัยครบทุกรายการแล้ว</system:String>
+    <system:String x:Key="WinOpt_NothingToRestore">ไม่มีรายการที่ต้องคืนค่า ทุกรายการอยู่ที่ค่าเดิมแล้ว</system:String>
+    <system:String x:Key="WinOpt_PlanFeature">จะคืนเป็นค่าเริ่มต้นของ Windows</system:String>
+    <system:String x:Key="WinOpt_PlanService">จะตั้งประเภทการเริ่มทำงานเป็น {0} ({1})</system:String>
+    <system:String x:Key="WinOpt_PlanSourceSaved">ค่าเดิมก่อนที่ WinXTools จะปิด</system:String>
+    <system:String x:Key="WinOpt_PlanSourceDefault">ค่าเริ่มต้นของ Windows</system:String>
+    <system:String x:Key="WinOpt_PlanSourceManual">Windows ปิดบริการนี้ไว้ตั้งแต่แรก การตั้งเป็น "ด้วยตนเอง" จะให้ทำงานเฉพาะเมื่อมีโปรแกรมเรียกใช้</system:String>
+    <system:String x:Key="WinOpt_PlanStartsNow">และจะเริ่มบริการนี้ทันที</system:String>
+    <system:String x:Key="WinOpt_StartAutomatic">อัตโนมัติ</system:String>
+    <system:String x:Key="WinOpt_StartAutomaticDelayed">อัตโนมัติ (หน่วงเวลาเริ่มต้น)</system:String>
+    <system:String x:Key="WinOpt_StartManual">ด้วยตนเอง</system:String>
+    <system:String x:Key="WinOpt_StartDisabled">ปิดใช้งาน</system:String>
+    <system:String x:Key="WinOpt_ResultDisabled">ปิดแล้ว {0} รายการ</system:String>
+    <system:String x:Key="WinOpt_ResultRestored">เปิด {0} รายการกลับมาด้วยค่าเดิมแล้ว</system:String>
+    <system:String x:Key="WinOpt_ResultNoChange">ไม่มีรายการที่ต้องเปลี่ยนแปลง</system:String>
+    <system:String x:Key="WinOpt_ResultAlready">อยู่ในสถานะที่ต้องการอยู่แล้ว: {0}</system:String>
+    <system:String x:Key="WinOpt_ResultNotPresent">ไม่มีในเครื่องนี้ (ข้าม): {0}</system:String>
+    <system:String x:Key="WinOpt_ResultStillRunning">ปิดแล้ว แต่ยังหยุดการทำงานตอนนี้ไม่ได้ (จะหยุดหลังรีสตาร์ทเครื่อง): {0}</system:String>
+    <system:String x:Key="WinOpt_ResultNotStarted">เปิดกลับมาแล้ว แต่ยังเริ่มทำงานตอนนี้ไม่ได้ (จะเริ่มหลังรีสตาร์ทเครื่อง): {0}</system:String>
+    <system:String x:Key="WinOpt_ResultFailed" xml:space="preserve">เปลี่ยนไม่สำเร็จ {0} รายการ:&#10;{1}</system:String>
+    <system:String x:Key="WinOpt_ResultRestartHint">การเปลี่ยนแปลงบางอย่างจะมีผลเต็มที่หลังรีสตาร์ทเครื่อง</system:String>
+    <system:String x:Key="WinOpt_RestorePointCreated">สร้าง Restore Point แล้ว ({0})</system:String>
+    <system:String x:Key="WinOpt_RestorePointSkipped">Windows ไม่ได้สร้าง Restore Point ใหม่ เพราะมีการสร้างไปแล้วภายใน 24 ชั่วโมงที่ผ่านมา ({0}) คุณใช้จุดนั้นย้อนกลับการเปลี่ยนแปลงครั้งนี้ได้</system:String>
+    <system:String x:Key="WinOpt_RestorePointFailed">ไม่ได้สร้าง Restore Point กรุณาตรวจสอบว่าเปิด System Protection ของไดรฟ์ระบบไว้แล้ว</system:String>
+    <system:String x:Key="WinOpt_ConfirmCreateRestore" xml:space="preserve">สร้าง System Restore Point ตอนนี้หรือไม่?&#10;&#10;ใช้ย้อนกลับการเปลี่ยนแปลงได้หากเกิดปัญหา Windows อนุญาตให้สร้างได้ครั้งเดียวในทุก 24 ชั่วโมง และอาจใช้เวลาประมาณหนึ่งนาที</system:String>
+    <system:String x:Key="WinOpt_UnexpectedError" xml:space="preserve">เปลี่ยนการตั้งค่า Windows ไม่สำเร็จ:&#10;{0}</system:String>
+    <system:String x:Key="Ram_LastOptimized">ล่าสุด: {0} – คืนหน่วยความจำ {1}</system:String>
+    <system:String x:Key="Ram_ProcessesTrimmed">ลดหน่วยความจำ {0} โปรเซส</system:String>
+    <system:String x:Key="Ram_StandbyCleared">ล้างแคช Standby แล้ว</system:String>
+    <system:String x:Key="Ram_EndProcessTitle">ปิดโปรเซส</system:String>
+    <system:String x:Key="Ram_ProtectedProcess">{0} เป็นโปรเซสสำคัญของ Windows จึงปิดจากหน้านี้ไม่ได้</system:String>
+    <system:String x:Key="Ram_ConfirmEndProcess" xml:space="preserve">ปิด {0} (PID {1}) หรือไม่?&#10;&#10;จะปิดเฉพาะโปรเซสนี้ ไม่รวมโปรเซสที่มันเปิดไว้ งานที่ยังไม่ได้บันทึกในโปรแกรมนี้จะหายไป</system:String>
+    <system:String x:Key="Ram_EndProcessFailed">ปิด {0} ไม่สำเร็จ Windows อาจป้องกันโปรเซสนี้อยู่ หรือโปรเซสยังปิดตัวไม่เสร็จ</system:String>
+    <system:String x:Key="Ram_SmartKillConfirm" xml:space="preserve">เปิด Smart Kill หรือไม่?&#10;&#10;โปรแกรมที่หน้าต่างขึ้นว่า "ไม่ตอบสนอง" ต่อเนื่องตั้งแต่ {0} วินาทีขึ้นไปจะถูกปิดอัตโนมัติ งานที่ยังไม่ได้บันทึกในโปรแกรมนั้นจะหายไป&#10;&#10;จะไม่ถูกปิดเด็ดขาด: โปรแกรมที่คุณกำลังใช้งานอยู่, โปรเซสของ Windows และ Explorer, WebView2 (ที่ Outlook และ Teams ใช้) และ WinXTools เอง ทุกโปรแกรมที่ถูกปิดจะแสดงในประวัติ</system:String>
+    <system:String x:Key="Ram_AutoKillConfirm" xml:space="preserve">เปิด Auto Kill หรือไม่?&#10;&#10;โปรแกรมต่อไปนี้จะถูกปิดทันทีและทุกครั้งที่เปิดขึ้นมา งานที่ยังไม่ได้บันทึกจะหายไป:&#10;{0}</system:String>
+    <system:String x:Key="Ram_AddRuleConfirm" xml:space="preserve">เพิ่ม "{0}" ในกฎการปิดหรือไม่?&#10;&#10;ถ้ากำลังเปิดอยู่จะถูกปิดทันที (งานที่ยังไม่ได้บันทึกจะหายไป) และจะถูกปิดอัตโนมัติทุกครั้งที่เปิดขึ้นมาขณะที่ Auto Kill เปิดอยู่</system:String>
+    <system:String x:Key="Ram_ProtectedRule">เพิ่ม "{0}" ไม่ได้ เพราะเป็นโปรเซสสำคัญของ Windows</system:String>
+    <system:String x:Key="Ram_InvalidProcessName">"{0}" ไม่ใช่ชื่อโปรแกรมที่ถูกต้อง ให้พิมพ์ชื่อโดยไม่ต้องมี .exe เช่น notepad</system:String>
+    <system:String x:Key="Ram_AutoClosed">ปิดอัตโนมัติ: {0}</system:String>
+    <system:String x:Key="Ram_ReasonNotResponding">ไม่ตอบสนองนาน {0} วินาที</system:String>
+    <system:String x:Key="Ram_ReasonMemory">ใช้หน่วยความจำ {0} MB</system:String>
+    <system:String x:Key="Ram_ReasonRule">ตามกฎการปิด</system:String>
+
+    <!-- Network Tools / Packet Monitor / Connections -->
+    <system:String x:Key="NetTools_Running">กำลังทำงาน...</system:String>
+    <system:String x:Key="NetTools_Cancelled">[ยกเลิกแล้ว]</system:String>
+    <system:String x:Key="NetTools_Error">ข้อผิดพลาด: {0}</system:String>
+    <system:String x:Key="NetTools_EnterHost">กรุณาป้อนชื่อโฮสต์หรือหมายเลข IP</system:String>
+    <system:String x:Key="NetTools_EnterHostname">กรุณาป้อนชื่อโฮสต์</system:String>
+    <system:String x:Key="NetTools_EnterDomain">กรุณาป้อนชื่อโดเมน</system:String>
+    <system:String x:Key="NetTools_EnterUrl">กรุณาป้อน URL</system:String>
+    <system:String x:Key="NetTools_SslExpired">[หมดอายุ]</system:String>
+    <system:String x:Key="NetTools_SslInvalid">[ไม่ถูกต้อง]</system:String>
+    <system:String x:Key="NetTools_SslWarning">[คำเตือน]</system:String>
+    <system:String x:Key="NetTools_SslValid">[ถูกต้อง]</system:String>
+    <system:String x:Key="NetTools_SslReasonLabel">ข้อผิดพลาดของใบรับรอง:</system:String>
+    <system:String x:Key="NetTools_SubnetPrompt">กรุณาป้อน IP พร้อม CIDR (เช่น 192.168.1.0/24)</system:String>
+    <system:String x:Key="NetTools_SubnetIpv4Only">รองรับเฉพาะที่อยู่ IPv4 เท่านั้น</system:String>
+    <system:String x:Key="NetTools_SubnetCidrRange">ค่า CIDR ต้องอยู่ระหว่าง 0 ถึง 32</system:String>
+    <system:String x:Key="NetTools_SubnetFormat">รูปแบบไม่ถูกต้อง ใช้: 192.168.1.0/24</system:String>
+    <system:String x:Key="NetTools_SpeedStarting">กำลังเริ่มทดสอบดาวน์โหลด...</system:String>
+    <system:String x:Key="NetTools_SpeedProgress">ดาวน์โหลดแล้ว {0:F1} MB — {1:F1} Mbps</system:String>
+    <system:String x:Key="NetTools_SpeedFailed">ทดสอบความเร็วไม่สำเร็จ: {0}</system:String>
+    <system:String x:Key="NetTools_FloodFormat">รูปแบบ FLOOD ไม่ถูกต้อง ใช้: FLOOD:PROTOCOL:HOST:PORT:COUNT:DELAY:DATA</system:String>
+    <system:String x:Key="NetTools_FloodBadNumbers">จำนวนแพ็กเก็ตและดีเลย์ต้องเป็นจำนวนเต็ม</system:String>
+    <system:String x:Key="NetTools_FloodWarning">คำเตือน: โหมด FLOOD ส่งแพ็กเก็ตจำนวนมากอย่างรวดเร็ว ใช้กับโฮสต์ที่คุณเป็นเจ้าของหรือได้รับอนุญาตให้ทดสอบเท่านั้น</system:String>
+    <system:String x:Key="NetTools_FloodCapped">จำกัดที่ {0} แพ็กเก็ต ดีเลย์อย่างน้อย {1} ms (สูงสุดประมาณ {2} แพ็กเก็ต/วินาที)</system:String>
+    <system:String x:Key="PktMon_NoSelection">กรุณาเลือกแพ็กเก็ตก่อน</system:String>
+    <system:String x:Key="PktMon_NoBlockableIp">แพ็กเก็ตนี้ไม่มี IP ที่บล็อกได้</system:String>
+    <system:String x:Key="PktMon_BlockConfirm">บล็อกหมายเลข IP {0} หรือไม่?</system:String>
+    <system:String x:Key="PktMon_BlockTitle">บล็อก IP</system:String>
+    <system:String x:Key="PktMon_Blocked">บล็อก IP แล้ว: {0}</system:String>
+    <system:String x:Key="PktMon_BlockFailed">บล็อก {0} ไม่สำเร็จ — Windows Firewall ไม่ยอมรับกฎนี้</system:String>
+    <system:String x:Key="PktMon_Copied">คัดลอกรายละเอียดแพ็กเก็ตไปยังคลิปบอร์ดแล้ว</system:String>
+    <system:String x:Key="ConnMon_BlockConfirm" xml:space="preserve">บล็อกการเชื่อมต่อทั้งหมดไปยัง/จาก {0} หรือไม่?&#x0a;&#x0a;ระบบจะเพิ่มกฎ Windows Firewall บล็อก IP นี้สำหรับทุกแอป</system:String>
+    <system:String x:Key="ConnMon_BlockTitle">บล็อกหมายเลข IP</system:String>
+    <system:String x:Key="ConnMon_BlockSuccess">บล็อก {0} แล้ว</system:String>
+    <system:String x:Key="ConnMon_BlockFailed">บล็อก {0} ไม่สำเร็จ — Windows Firewall ไม่ยอมรับกฎนี้</system:String>
+
+    <!-- Settings: Start with Windows / reset / updates -->
+    <system:String x:Key="Settings_StartWithWindowsDesc">เปิด WinXTools อัตโนมัติ (ด้วยสิทธิ์ผู้ดูแลระบบ) เมื่อลงชื่อเข้าใช้ Windows</system:String>
+    <system:String x:Key="Settings_StartupUnsafeFolder" xml:space="preserve">WinXTools จะเริ่มพร้อม Windows ได้เฉพาะเมื่ออยู่ในโฟลเดอร์ที่มีแต่ผู้ดูแลระบบเท่านั้นที่แก้ไขได้ เช่น C:\Program Files\WinXTools&#x0a;&#x0a;ตอนนี้โปรแกรมทำงานจาก:&#x0a;{0}&#x0a;&#x0a;กรุณาย้ายโฟลเดอร์ WinXTools ไปไว้ที่นั่น แล้วเปิดตัวเลือกนี้อีกครั้ง</system:String>
+    <system:String x:Key="Settings_StartupFailed">Task Scheduler ของ Windows ไม่ยอมรับการเปลี่ยนแปลง จึงยังไม่ได้เปลี่ยนการเริ่มพร้อม Windows</system:String>
+    <system:String x:Key="Settings_SaveFailed">เปลี่ยนภาษาแล้ว แต่บันทึกการตั้งค่าไม่สำเร็จ ครั้งหน้า WinXTools อาจเปิดด้วยภาษาเดิม</system:String>
+    <system:String x:Key="Settings_ResetConfirm" xml:space="preserve">รีเซ็ตการตั้งค่ากลับเป็นค่าเริ่มต้นหรือไม่?&#x0a;&#x0a;• ภาษา: ใช้ตามภาษาที่แสดงของ Windows&#x0a;• เริ่มพร้อม Windows: ปิด&#x0a;&#x0a;คีย์ใบอนุญาตจะยังคงอยู่</system:String>
+    <system:String x:Key="Settings_ResetDone">รีเซ็ตการตั้งค่าเป็นค่าเริ่มต้นแล้ว</system:String>
+    <system:String x:Key="Settings_ResetPartial">รีเซ็ตภาษาแล้ว แต่ยังปิดการเริ่มพร้อม Windows ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Settings_ResetFailed">รีเซ็ตการตั้งค่าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Settings_VersionFormat">เวอร์ชัน {0}</system:String>
+    <system:String x:Key="Settings_CurrentVersion">เวอร์ชันปัจจุบัน: v{0}</system:String>
+    <system:String x:Key="Settings_VersionChange">ปัจจุบัน: v{0} → ใหม่: v{1}</system:String>
+    <system:String x:Key="Settings_UpdateNotChecked">ยังไม่ได้ตรวจสอบอัพเดท</system:String>
+    <system:String x:Key="Settings_Checking">กำลังตรวจสอบ...</system:String>
+    <system:String x:Key="Settings_UpdateCheckFailed" xml:space="preserve">ตรวจสอบอัพเดทไม่สำเร็จ&#x0a;&#x0a;กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Settings_UpdateCheckFailedShort">ตรวจสอบอัพเดทไม่สำเร็จ</system:String>
+    <system:String x:Key="Settings_UpdateAvailable">มีอัพเดทใหม่: v{0}</system:String>
+    <system:String x:Key="Settings_UpdatePrompt" xml:space="preserve">WinXTools มีเวอร์ชันใหม่&#x0a;&#x0a;ปัจจุบัน: v{0}&#x0a;ใหม่: v{1}&#x0a;&#x0a;ดาวน์โหลดและติดตั้งเลยหรือไม่? WinXTools จะปิดแล้วเปิดใหม่ให้อัตโนมัติ</system:String>
+    <system:String x:Key="Settings_DownloadProgress">ดาวน์โหลดแล้ว {0:0.0} MB จาก {1:0.0} MB</system:String>
+    <system:String x:Key="Settings_DownloadProgressUnknown">ดาวน์โหลดแล้ว {0:0.0} MB</system:String>
+    <system:String x:Key="Settings_UpdatePreparing">กำลังตรวจสอบและเตรียมอัพเดท...</system:String>
+    <system:String x:Key="Settings_UpdateRestarting">กำลังเปิด WinXTools ใหม่เพื่อติดตั้งอัพเดทให้เสร็จ...</system:String>
+    <system:String x:Key="Settings_UpdateFailedTitle">ไม่ได้ติดตั้งอัพเดท</system:String>
+    <system:String x:Key="Settings_UpdateErrManual">อัพเดทนี้ดาวน์โหลดอัตโนมัติไม่ได้ จึงยังไม่ได้ติดตั้งอะไร</system:String>
+    <system:String x:Key="Settings_UpdateErrDownload">ดาวน์โหลดอัพเดทไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Settings_UpdateErrVerify">ไฟล์ที่ดาวน์โหลดมาไม่ตรงกับข้อมูลที่เซิร์ฟเวอร์แจ้งไว้ จึงลบทิ้งและไม่ได้ติดตั้ง</system:String>
+    <system:String x:Key="Settings_UpdateErrInvalid">ไฟล์ที่ดาวน์โหลดมาไม่ใช่อัพเดทของ WinXTools ที่ถูกต้อง จึงยังไม่ได้ติดตั้งอะไร</system:String>
+    <system:String x:Key="Settings_UpdateErrFolder">WinXTools เตรียมโฟลเดอร์ที่ปลอดภัยสำหรับอัพเดทไม่สำเร็จ จึงยังไม่ได้ติดตั้งอะไร</system:String>
+    <system:String x:Key="Settings_UpdateErrGeneric">ติดตั้งอัพเดทไม่สำเร็จ ไม่มีการเปลี่ยนแปลงใด ๆ</system:String>
+    <system:String x:Key="Settings_UpdateOpenPage">เปิดหน้าดาวน์โหลดในเบราว์เซอร์หรือไม่?</system:String>
+
+    <!-- Uninstaller (safe Deep Clean) -->
+    <system:String x:Key="Uninstall_ColProgram">โปรแกรม</system:String>
+    <system:String x:Key="Uninstall_Actions">จัดการ</system:String>
+    <system:String x:Key="Uninstall_SelectAll">เลือกทั้งหมด</system:String>
+    <system:String x:Key="Uninstall_KeepAll">เก็บไว้ทั้งหมด</system:String>
+    <system:String x:Key="Uninstall_MoveToRecycleBin">ย้ายไปถังขยะ</system:String>
+    <system:String x:Key="Uninstall_Loading">กำลังโหลดรายการโปรแกรม…</system:String>
+    <system:String x:Key="Uninstall_LoadFailed" xml:space="preserve">อ่านรายการโปรแกรมที่ติดตั้งไว้ไม่ได้&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_Empty">ไม่พบโปรแกรมที่ติดตั้งไว้</system:String>
+    <system:String x:Key="Uninstall_NoMatch">ไม่พบโปรแกรมที่ตรงกับคำค้นหา</system:String>
+    <system:String x:Key="Uninstall_Count">{0:N0} โปรแกรม</system:String>
+    <system:String x:Key="Uninstall_CountFiltered">แสดง {0:N0} จาก {1:N0} โปรแกรม</system:String>
+    <system:String x:Key="Uninstall_PerUser">เฉพาะผู้ใช้นี้</system:String>
+    <system:String x:Key="Uninstall_SystemComponent">ส่วนประกอบของระบบ</system:String>
+    <system:String x:Key="Uninstall_ScanTitle">สแกนเสร็จแล้ว</system:String>
+    <system:String x:Key="Uninstall_ScanResult" xml:space="preserve">พบโปรแกรมที่ติดตั้งไว้ {0:N0} โปรแกรม:&#x0a;• ติดตั้งให้ผู้ใช้ทุกคน {1:N0} โปรแกรม&#x0a;• ติดตั้งเฉพาะบัญชีของคุณ {2:N0} โปรแกรม&#x0a;&#x0a;ส่วนประกอบของระบบที่ซ่อนอยู่ {3:N0} รายการ — เปิด "แสดงแอประบบ" เพื่อดูรายการเหล่านี้</system:String>
+    <system:String x:Key="Uninstall_CannotTitle">ถอนการติดตั้งไม่ได้</system:String>
+    <system:String x:Key="Uninstall_NoCommand" xml:space="preserve">{0} ไม่ได้ลงทะเบียนตัวถอนการติดตั้งไว้กับ Windows จึงถอนการติดตั้งจากที่นี่ไม่ได้&#x0a;&#x0a;ลองใช้ไฟล์ติดตั้งของโปรแกรมเอง หรือไปที่ การตั้งค่า Windows › แอป</system:String>
+    <system:String x:Key="Uninstall_UninstallerMissing" xml:space="preserve">ไม่พบไฟล์ตัวถอนการติดตั้งของ {0}:&#x0a;{1}&#x0a;&#x0a;โปรแกรมอาจถูกลบไปแล้วบางส่วน ลองติดตั้งใหม่แล้วค่อยถอนการติดตั้ง หรือใช้ การตั้งค่า Windows › แอป</system:String>
+    <system:String x:Key="Uninstall_NoRemove">ผู้พัฒนา {0} ปิดการถอนการติดตั้งจากรายการแอปไว้ WinXTools จึงจะไม่ถอนโปรแกรมนี้</system:String>
+    <system:String x:Key="Uninstall_ConfirmTitle">ยืนยันการถอนการติดตั้ง</system:String>
+    <system:String x:Key="Uninstall_Confirm" xml:space="preserve">ถอนการติดตั้ง {0} ใช่ไหม?&#x0a;&#x0a;ตัวถอนการติดตั้งของโปรแกรมจะเปิดขึ้นมา ให้ทำตามขั้นตอนจนเสร็จ WinXTools จะรอจนเสร็จแล้วตรวจว่าโปรแกรมถูกถอนออกจริง</system:String>
+    <system:String x:Key="Uninstall_ConfirmSystem" xml:space="preserve">{0} เป็นส่วนประกอบของระบบที่ซ่อนอยู่ โปรแกรมอื่นอาจต้องใช้ ถ้าถอนออก โปรแกรมเหล่านั้นอาจทำงานผิดปกติ&#x0a;&#x0a;ยังต้องการถอนการติดตั้งใช่ไหม?</system:String>
+    <system:String x:Key="Uninstall_WaitTitle">กำลังถอนการติดตั้ง {0}</system:String>
+    <system:String x:Key="Uninstall_WaitMsg">ตัวถอนการติดตั้งเปิดอยู่ ให้ทำตามขั้นตอนในหน้าต่างนั้น เมื่อเสร็จแล้ว WinXTools จะทำงานต่อเอง</system:String>
+    <system:String x:Key="Uninstall_WaitClosed" xml:space="preserve">ตัวถอนการติดตั้งปิดไปแล้ว แต่ {0} ยังติดตั้งอยู่&#x0a;&#x0a;ถ้ายังทำงานอยู่เบื้องหลัง WinXTools จะทำต่อเองเมื่อเสร็จ ถ้าคุณกดยกเลิกไปแล้ว ให้กด "หยุดรอ"</system:String>
+    <system:String x:Key="Uninstall_StopWaiting">หยุดรอ</system:String>
+    <system:String x:Key="Uninstall_DoneTitle">ถอนการติดตั้งเสร็จแล้ว</system:String>
+    <system:String x:Key="Uninstall_Done">ถอนการติดตั้ง {0} เรียบร้อยแล้ว</system:String>
+    <system:String x:Key="Uninstall_NotRemovedTitle">ยังติดตั้งอยู่</system:String>
+    <system:String x:Key="Uninstall_StillInstalled" xml:space="preserve">{0} ยังติดตั้งอยู่&#x0a;&#x0a;ตัวถอนการติดตั้งอาจถูกยกเลิก ทำงานไม่สำเร็จ หรือต้องรีสตาร์ตเครื่องก่อนจึงจะเสร็จ ถ้ามีข้อความให้รีสตาร์ต ให้รีสตาร์ต Windows แล้วกด "รีเฟรช" เพื่อตรวจอีกครั้ง</system:String>
+    <system:String x:Key="Uninstall_MsiBusy">Windows Installer กำลังติดตั้งโปรแกรมอื่นอยู่ รอให้เสร็จก่อนแล้วลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Uninstall_PerUserNeedsAdmin" xml:space="preserve">{0} ติดตั้งไว้เฉพาะบัญชีของคุณ แต่ตัวถอนการติดตั้งขอสิทธิ์ผู้ดูแลระบบ&#x0a;&#x0a;เพื่อความปลอดภัย WinXTools จะเปิดตัวถอนการติดตั้งของโปรแกรมที่ติดตั้งเฉพาะผู้ใช้ด้วยสิทธิ์ผู้ใช้ปกติเท่านั้น กรุณาถอนการติดตั้งจาก การตั้งค่า Windows › แอป</system:String>
+    <system:String x:Key="Uninstall_NoDesktopUser" xml:space="preserve">เปิดตัวถอนการติดตั้งของ {0} ด้วยสิทธิ์ผู้ใช้ปกติไม่ได้ (Windows Explorer หรือบริการ Secondary Logon ไม่พร้อมใช้งาน)&#x0a;&#x0a;กรุณาถอนการติดตั้งจาก การตั้งค่า Windows › แอป</system:String>
+    <system:String x:Key="Uninstall_LaunchFailed" xml:space="preserve">เปิดตัวถอนการติดตั้งของ {0} ไม่ได้&#x0a;&#x0a;{1}</system:String>
+    <system:String x:Key="Uninstall_Error" xml:space="preserve">การทำงานหยุดลงเพราะเกิดข้อผิดพลาดที่ไม่คาดคิด:&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_ProtectedTitle">โปรแกรมที่ได้รับการป้องกัน</system:String>
+    <system:String x:Key="Uninstall_DeepSystemBlocked" xml:space="preserve">ใช้ทำความสะอาดลึกกับ {0} ไม่ได้&#x0a;&#x0a;โปรแกรมนี้เป็นส่วนประกอบของระบบ Windows — การลบไฟล์ของมันอาจทำให้ Windows หรือโปรแกรมอื่นทำงานผิดปกติ</system:String>
+    <system:String x:Key="Uninstall_PublisherWarningTitle">คำเตือน: ซอฟต์แวร์ระบบหรือไดรเวอร์</system:String>
+    <system:String x:Key="Uninstall_PublisherWarning" xml:space="preserve">{0} เป็นของ {1} ซึ่งส่วนใหญ่เป็นซอฟต์แวร์ระบบหรือไดรเวอร์&#x0a;&#x0a;การทำความสะอาดลึกอาจทำให้ฮาร์ดแวร์หรือ Windows มีปัญหา แน่ใจหรือไม่?</system:String>
+    <system:String x:Key="Uninstall_DeepTitle">ทำความสะอาดลึก</system:String>
+    <system:String x:Key="Uninstall_DeepConfirm" xml:space="preserve">ทำความสะอาดลึก {0} ใช่ไหม?&#x0a;&#x0a;1. เปิดตัวถอนการติดตั้งของโปรแกรมเองและรอจนเสร็จ&#x0a;2. ตรวจว่าโปรแกรมถูกถอนออกจริง ถ้ายังติดตั้งอยู่จะหยุดทันทีโดยไม่แตะไฟล์ใดๆ&#x0a;3. ค้นหาโฟลเดอร์ตกค้างที่ตรงกับโปรแกรมนี้พอดี ได้แก่ โฟลเดอร์ที่ติดตั้ง และโฟลเดอร์ที่ชื่อตรงกับโปรแกรมใน Program Files, ProgramData และ AppData&#x0a;4. แสดงทุกรายการที่พบพร้อมขนาด ให้คุณเลือกเองว่าจะลบอะไร โฟลเดอร์ที่เลือกจะถูกย้ายไปถังขยะ จึงกู้คืนได้</system:String>
+    <system:String x:Key="Uninstall_DeepStopped" xml:space="preserve">{0} ยังติดตั้งอยู่ จึงหยุดทำความสะอาดลึกโดยไม่แตะไฟล์ใดๆ&#x0a;&#x0a;ตัวถอนการติดตั้งอาจถูกยกเลิก ทำงานไม่สำเร็จ หรือต้องรีสตาร์ตเครื่องก่อนจึงจะเสร็จ</system:String>
+    <system:String x:Key="Uninstall_ScanLeftoversTitle">กำลังค้นหาไฟล์ตกค้างของ {0}</system:String>
+    <system:String x:Key="Uninstall_ScanLeftoversMsg">กำลังตรวจโฟลเดอร์ที่ติดตั้ง, Program Files, ProgramData และ AppData…</system:String>
+    <system:String x:Key="Uninstall_ScanCancelled">ถอนการติดตั้ง {0} แล้ว แต่ยกเลิกการค้นหาไฟล์ตกค้าง — ไม่มีไฟล์ใดถูกลบ</system:String>
+    <system:String x:Key="Uninstall_DeepDoneTitle">ทำความสะอาดลึกเสร็จแล้ว</system:String>
+    <system:String x:Key="Uninstall_NoLeftovers">ถอนการติดตั้ง {0} แล้ว และไม่พบโฟลเดอร์ตกค้าง</system:String>
+    <system:String x:Key="Uninstall_LeftoversTitle">ไฟล์ตกค้างของ {0}</system:String>
+    <system:String x:Key="Uninstall_LeftoversMsg">ถอนการติดตั้ง {0} แล้ว แต่ยังมีโฟลเดอร์เหล่านี้หลงเหลืออยู่ ติ๊กเลือกโฟลเดอร์ที่ต้องการลบ — จะถูกย้ายไปถังขยะ จึงกู้คืนได้ถ้าต้องการ ดูขนาดก่อนเลือก เพราะโฟลเดอร์ขนาดใหญ่อาจมีข้อมูลของคุณอยู่</system:String>
+    <system:String x:Key="Uninstall_LeftoverSelection">เลือก {0} จาก {1} โฟลเดอร์ · {2}</system:String>
+    <system:String x:Key="Uninstall_FileCount">{0:N0} ไฟล์</system:String>
+    <system:String x:Key="Uninstall_KindInstall">โฟลเดอร์ที่ติดตั้ง</system:String>
+    <system:String x:Key="Uninstall_MovingTitle">กำลังย้ายไฟล์ตกค้างไปถังขยะ</system:String>
+    <system:String x:Key="Uninstall_MovingMsg" xml:space="preserve">โฟลเดอร์ที่ {0} จาก {1}:&#x0a;{2}</system:String>
+    <system:String x:Key="Uninstall_ResultMoved">ย้ายไปถังขยะแล้ว: {0} โฟลเดอร์ ({1})</system:String>
+    <system:String x:Key="Uninstall_ResultGone">ตัวถอนการติดตั้งลบไปแล้ว: {0} โฟลเดอร์</system:String>
+    <system:String x:Key="Uninstall_ResultFailed">ย้ายไม่สำเร็จ: {0} โฟลเดอร์</system:String>
+    <system:String x:Key="Uninstall_ResultStopped">ยังไม่ได้ย้ายเพราะกดหยุด: {0} โฟลเดอร์</system:String>
+    <system:String x:Key="Uninstall_ResultRestoreHint">กู้คืนโฟลเดอร์ที่ย้ายไปแล้วได้จากถังขยะ</system:String>
+    <system:String x:Key="Uninstall_FailInUse">มีไฟล์ที่กำลังใช้งานอยู่ หรือไม่มีสิทธิ์เข้าถึง</system:String>
+    <system:String x:Key="Uninstall_FailCancelled">ยกเลิกในหน้าต่างของ Windows — เก็บโฟลเดอร์ไว้ตามเดิม</system:String>
+    <system:String x:Key="Uninstall_FailChanged">ข้ามเพื่อความปลอดภัย — โฟลเดอร์เปลี่ยนไปหลังการสแกน</system:String>
+    <system:String x:Key="Uninstall_FailCode">ข้อผิดพลาดจาก Windows 0x{0:X}</system:String>
+
+    <!-- Automation rules -->
+    <system:String x:Key="Rules_ActivityEmpty">ยังไม่มีรายการ เมื่อกฎทำงาน ทุกการกระทำและผลลัพธ์จะแสดงที่นี่</system:String>
+    <system:String x:Key="Rules_ActivityTitle">กิจกรรม (รอบการใช้งานนี้)</system:String>
+    <system:String x:Key="Rules_CountFormat">ตั้งค่าไว้ {0} กฎ</system:String>
+    <system:String x:Key="Rules_CreateRule">สร้างกฎ</system:String>
+    <system:String x:Key="Rules_DeleteConfirm">ลบกฎ "{0}" ใช่หรือไม่? ไม่สามารถย้อนกลับได้</system:String>
+    <system:String x:Key="Rules_DeleteConfirmTitle">ลบกฎ</system:String>
+    <system:String x:Key="Rules_DeleteTooltip">ลบกฎ</system:String>
+    <system:String x:Key="Rules_EditTooltip">แก้ไขกฎ</system:String>
+    <system:String x:Key="Rules_EmptyDesc">สร้างกฎเพื่อบล็อก จำกัดความเร็ว ปิดแอป หรือแจ้งเตือนคุณโดยอัตโนมัติ</system:String>
+    <system:String x:Key="Rules_EmptyTitle">ยังไม่มีกฎ</system:String>
+    <system:String x:Key="Rules_FiredCount">ทำงานแล้ว {0} ครั้ง</system:String>
+    <system:String x:Key="Rules_LastFired">ล่าสุด: {0}</system:String>
+    <system:String x:Key="Rules_LastRunMixed">สำเร็จ {0}, ล้มเหลว {1}</system:String>
+    <system:String x:Key="Rules_LastRunOk">สำเร็จ {0} การกระทำ</system:String>
+    <system:String x:Key="Rules_LogConditionError">{0}: ตรวจสอบเงื่อนไขไม่ได้ ({1})</system:String>
+    <system:String x:Key="Rules_LogDone">{0}: สำเร็จ</system:String>
+    <system:String x:Key="Rules_LogFailed">{0}: ล้มเหลว ({1})</system:String>
+    <system:String x:Key="Rules_LogFired">กฎ "{0}" ทำงาน</system:String>
+    <system:String x:Key="Rules_LogImported">นำเข้า {0} กฎจากเวอร์ชันก่อนหน้าแล้ว กฎเหล่านี้ถูกปิดไว้ กรุณาตรวจสอบแต่ละกฎก่อนเปิดใช้</system:String>
+    <system:String x:Key="Rules_LogInvalidRules">ข้าม {0} กฎที่ไม่เหลือการกระทำที่ใช้งานได้</system:String>
+    <system:String x:Key="Rules_LogNotification">{0}: แจ้งเตือน "{1}"</system:String>
+    <system:String x:Key="Rules_LogRemovedActions">ลบ {0} การกระทำที่ไม่รองรับแล้ว (รันคำสั่ง, LINE Notify, SMS, อีเมล)</system:String>
+    <system:String x:Key="Rules_LogRequested">{0}: ส่งคำสั่งแล้ว</system:String>
+    <system:String x:Key="Rules_LogSkipped">{0}: ข้าม ({1})</system:String>
+    <system:String x:Key="Rules_LogUnknownSettings">ปิด {0} กฎที่มีค่าที่เวอร์ชันนี้ไม่รู้จัก กรุณาแก้ไขก่อนเปิดใช้</system:String>
+    <system:String x:Key="Rules_LogUnreadableFile">อ่านไฟล์กฎไม่ได้ จึงย้ายออกไปไว้ที่: {0}</system:String>
+    <system:String x:Key="Rules_LogUntrustedFile">ย้ายไฟล์กฎที่โปรแกรมอื่นอาจแก้ไขได้ออกไปและไม่ได้นำมาใช้: {0}</system:String>
+    <system:String x:Key="Rules_NeverFired">ยังไม่เคยทำงาน</system:String>
+    <system:String x:Key="Rules_NewRule">สร้างกฎใหม่</system:String>
+    <system:String x:Key="Rules_ReasonAlreadyBlocked">บล็อกอยู่แล้ว</system:String>
+    <system:String x:Key="Rules_ReasonError">ข้อผิดพลาดที่ไม่คาดคิด: {0}</system:String>
+    <system:String x:Key="Rules_ReasonFirewall">Windows Firewall ไม่ยอมรับการเปลี่ยนแปลง</system:String>
+    <system:String x:Key="Rules_ReasonInvalid">ค่าของการกระทำไม่ถูกต้อง กรุณาแก้ไขกฎ</system:String>
+    <system:String x:Key="Rules_ReasonKill">ปิดแอปไม่ได้</system:String>
+    <system:String x:Key="Rules_ReasonNotRunning">แอปไม่ได้เปิดอยู่</system:String>
+    <system:String x:Key="Rules_ReasonProtected">ปิดโปรเซสของระบบ Windows ไม่ได้</system:String>
+    <system:String x:Key="Rules_ReasonRemoved">ไม่รองรับการกระทำนี้แล้ว</system:String>
+    <system:String x:Key="Rules_ReasonWebhook">เซิร์ฟเวอร์ตอบกลับ {0}</system:String>
+    <system:String x:Key="Rules_ReasonWebhookTimeout">ไม่มีการตอบกลับภายใน 10 วินาที</system:String>
+    <system:String x:Key="Rules_ReasonWebhookUnreachable">ติดต่อเซิร์ฟเวอร์ไม่ได้</system:String>
+    <system:String x:Key="Rules_ReasonWrite">เขียนไฟล์ log ไม่ได้</system:String>
+    <system:String x:Key="Rules_RunsAtStart">ทำงานครั้งเดียวเมื่อเปิดใช้</system:String>
+    <system:String x:Key="Rules_SaveFailed">บันทึกการเปลี่ยนแปลงไม่สำเร็จ: {0}</system:String>
+    <system:String x:Key="Rules_SaveFailedTitle">บันทึกกฎไม่สำเร็จ</system:String>
+    <system:String x:Key="Rules_StatusNoPro">หยุดชั่วคราว: กฎอัตโนมัติต้องใช้ WinXTools Pro</system:String>
+    <system:String x:Key="Rules_StatusRunning">ระบบอัตโนมัติทำงานอยู่: ตรวจสอบกฎทุก 5 วินาที</system:String>
+    <system:String x:Key="Rules_StatusStopped">ระบบอัตโนมัติยังไม่ทำงาน</system:String>
+    <system:String x:Key="Rules_StorageAccessDenied">ปิดการทำงานของกฎ: WinXTools ป้องกันโฟลเดอร์เก็บกฎ ({0}) ไม่ได้ กรุณาเปิด WinXTools ในฐานะผู้ดูแลระบบ</system:String>
+    <system:String x:Key="Rules_StorageIoError">ปิดการทำงานของกฎ: อ่านหรือบันทึกไฟล์กฎใน {0} ไม่ได้</system:String>
+    <system:String x:Key="Rules_StorageUnsafe">ปิดการทำงานของกฎ: โฟลเดอร์เก็บกฎ ({0}) ไม่ปลอดภัย กรุณาลบโฟลเดอร์นี้แล้วเปิด WinXTools ใหม่</system:String>
+    <system:String x:Key="Rules_Subtitle">ทำงานให้อัตโนมัติเมื่อเงื่อนไขที่ตั้งไว้เป็นจริง</system:String>
+    <system:String x:Key="Rules_Title">กฎอัตโนมัติ</system:String>
+    <system:String x:Key="Rules_ToastCaption">WinXTools · ระบบอัตโนมัติ</system:String>
+    <system:String x:Key="Rules_ToggleTooltip">เปิด/ปิดกฎนี้</system:String>
+    <system:String x:Key="RuleEditor_ActBlockIP">บล็อก IP</system:String>
+    <system:String x:Key="RuleEditor_ActBlockPort">บล็อกพอร์ต</system:String>
+    <system:String x:Key="RuleEditor_ActKillProcess">ปิดแอป</system:String>
+    <system:String x:Key="RuleEditor_ActLimitBandwidth">จำกัดความเร็ว</system:String>
+    <system:String x:Key="RuleEditor_ActSendWebhook">ส่ง Webhook</system:String>
+    <system:String x:Key="RuleEditor_ActShowNotification">แสดงการแจ้งเตือน</system:String>
+    <system:String x:Key="RuleEditor_ActUnblockIP">เลิกบล็อก IP</system:String>
+    <system:String x:Key="RuleEditor_ActUnblockPort">เลิกบล็อกพอร์ต</system:String>
+    <system:String x:Key="RuleEditor_ActUnlimitBandwidth">ยกเลิกการจำกัดความเร็ว</system:String>
+    <system:String x:Key="RuleEditor_ActWriteToFile">เขียนลงไฟล์ log</system:String>
+    <system:String x:Key="RuleEditor_Actions">การกระทำ (ทำอะไร)</system:String>
+    <system:String x:Key="RuleEditor_AlwaysHint">ทำงานครั้งเดียวทุกครั้งที่กฎเริ่มทำงาน: ตอนเปิด WinXTools ตอนเปิดใช้กฎ หรือหลังบันทึกกฎ</system:String>
+    <system:String x:Key="RuleEditor_BasicInfo">ข้อมูลทั่วไป</system:String>
+    <system:String x:Key="RuleEditor_Blocked">บล็อก</system:String>
+    <system:String x:Key="RuleEditor_CapApp">ชื่อแอป (เว้นว่าง = แอปเป้าหมาย)</system:String>
+    <system:String x:Key="RuleEditor_CapAppOrPc">แอป (* = ทั้งเครื่อง, เว้นว่าง = แอปเป้าหมาย)</system:String>
+    <system:String x:Key="RuleEditor_CapConnections">จำนวนการเชื่อมต่อ</system:String>
+    <system:String x:Key="RuleEditor_CapFileName">ชื่อไฟล์ log (เก็บในโฟลเดอร์ log ของ WinXTools)</system:String>
+    <system:String x:Key="RuleEditor_CapIpConnected">IP ปลายทาง</system:String>
+    <system:String x:Key="RuleEditor_CapIpTarget">IP หรือช่วง IP เช่น 203.0.113.5 หรือ 10.0.0.0/24</system:String>
+    <system:String x:Key="RuleEditor_CapLimit">จำกัดความเร็ว KB/s (0 = บล็อก)</system:String>
+    <system:String x:Key="RuleEditor_CapMessage">ข้อความ (ใช้ {rule_name}, {datetime} ได้)</system:String>
+    <system:String x:Key="RuleEditor_CapPort">พอร์ต (1–65535)</system:String>
+    <system:String x:Key="RuleEditor_CapProtocol">โปรโตคอล</system:String>
+    <system:String x:Key="RuleEditor_CapSpeed">ดาวน์โหลด + อัปโหลด (KB/s)</system:String>
+    <system:String x:Key="RuleEditor_CapUrl">URL ของ Webhook (https://…)</system:String>
+    <system:String x:Key="RuleEditor_CondAlways">เมื่อกฎเริ่มทำงาน</system:String>
+    <system:String x:Key="RuleEditor_CondBandwidth">ความเร็วเครือข่ายรวม</system:String>
+    <system:String x:Key="RuleEditor_CondConnectionCount">จำนวนการเชื่อมต่อ</system:String>
+    <system:String x:Key="RuleEditor_CondDayOfWeek">วันในสัปดาห์</system:String>
+    <system:String x:Key="RuleEditor_CondIpConnected">เชื่อมต่อกับ IP</system:String>
+    <system:String x:Key="RuleEditor_CondPortInUse">พอร์ตถูกใช้งาน</system:String>
+    <system:String x:Key="RuleEditor_CondProcessRunning">แอปกำลังทำงาน</system:String>
+    <system:String x:Key="RuleEditor_CondTimeRange">ช่วงเวลา</system:String>
+    <system:String x:Key="RuleEditor_Conditions">เงื่อนไข (เมื่อไร)</system:String>
+    <system:String x:Key="RuleEditor_Cooldown">ระยะพัก (วินาที)</system:String>
+    <system:String x:Key="RuleEditor_CooldownHint">เวลาขั้นต่ำระหว่างการทำงานแต่ละครั้ง (ค่าเริ่มต้น 60)</system:String>
+    <system:String x:Key="RuleEditor_DayFri">ศ.</system:String>
+    <system:String x:Key="RuleEditor_DayMon">จ.</system:String>
+    <system:String x:Key="RuleEditor_DaySat">ส.</system:String>
+    <system:String x:Key="RuleEditor_DaySun">อา.</system:String>
+    <system:String x:Key="RuleEditor_DayThu">พฤ.</system:String>
+    <system:String x:Key="RuleEditor_DayTue">อ.</system:String>
+    <system:String x:Key="RuleEditor_DayWed">พ.</system:String>
+    <system:String x:Key="RuleEditor_Days">วัน</system:String>
+    <system:String x:Key="RuleEditor_Description">คำอธิบาย</system:String>
+    <system:String x:Key="RuleEditor_Do">ทำ</system:String>
+    <system:String x:Key="RuleEditor_EdgeHint">กฎจะทำงานครั้งเดียวเมื่อเงื่อนไขเริ่มเป็นจริง และจะไม่ทำซ้ำระหว่างที่ยังเป็นจริงอยู่ จะทำงานอีกครั้งเมื่อเงื่อนไขกลับมาเป็นจริงใหม่ (หลังพ้นระยะพัก)</system:String>
+    <system:String x:Key="RuleEditor_Enable">เปิดใช้กฎนี้</system:String>
+    <system:String x:Key="RuleEditor_ErrAction">การกระทำที่ {0}: {1}</system:String>
+    <system:String x:Key="RuleEditor_ErrAppName">ใส่เฉพาะชื่อแอป เช่น chrome (ห้ามมีโฟลเดอร์หรือไวลด์การ์ด)</system:String>
+    <system:String x:Key="RuleEditor_ErrAppRequired">ใส่ชื่อแอป หรือกำหนดแอปเป้าหมายของกฎ</system:String>
+    <system:String x:Key="RuleEditor_ErrCondition">เงื่อนไขที่ {0}: {1}</system:String>
+    <system:String x:Key="RuleEditor_ErrCooldown">ระยะพักต้องเป็นจำนวนเต็มวินาทีตั้งแต่ 0 ถึง {0}</system:String>
+    <system:String x:Key="RuleEditor_ErrFileName">ใช้ชื่อไฟล์ธรรมดาที่ลงท้ายด้วย .log หรือ .txt เช่น rules.log</system:String>
+    <system:String x:Key="RuleEditor_ErrIp">ใส่ IP ที่ถูกต้อง เช่น 203.0.113.5</system:String>
+    <system:String x:Key="RuleEditor_ErrLimit">ใส่ความเร็วเป็น KB/s ตั้งแต่ 0 ถึง {0}</system:String>
+    <system:String x:Key="RuleEditor_ErrNameRequired">กรุณาใส่ชื่อกฎ</system:String>
+    <system:String x:Key="RuleEditor_ErrNoActions">กรุณาเพิ่มการกระทำอย่างน้อยหนึ่งรายการ</system:String>
+    <system:String x:Key="RuleEditor_ErrNoDays">เลือกอย่างน้อยหนึ่งวัน</system:String>
+    <system:String x:Key="RuleEditor_ErrNumber">ใส่จำนวนเต็มตั้งแต่ 0 ขึ้นไป</system:String>
+    <system:String x:Key="RuleEditor_ErrPort">ใส่พอร์ตตั้งแต่ 1 ถึง 65535</system:String>
+    <system:String x:Key="RuleEditor_ErrProtected">กฎไม่สามารถปิดโปรเซสของระบบ Windows หรือตัว WinXTools เองได้</system:String>
+    <system:String x:Key="RuleEditor_ErrProtocol">เลือก TCP หรือ UDP</system:String>
+    <system:String x:Key="RuleEditor_ErrRemoved">ไม่รองรับการกระทำนี้แล้ว</system:String>
+    <system:String x:Key="RuleEditor_ErrSameTime">เวลาเริ่มและเวลาสิ้นสุดต้องไม่เท่ากัน</system:String>
+    <system:String x:Key="RuleEditor_ErrTargetApp">แอปเป้าหมายต้องเป็นชื่อแอปเท่านั้น เช่น chrome</system:String>
+    <system:String x:Key="RuleEditor_ErrTime">ใส่เวลาในรูปแบบ ชช:นน เช่น 22:00</system:String>
+    <system:String x:Key="RuleEditor_ErrTitle">ตรวจสอบกฎ</system:String>
+    <system:String x:Key="RuleEditor_ErrTooMany">กฎหนึ่งมีได้สูงสุด {0} เงื่อนไขและ {0} การกระทำ</system:String>
+    <system:String x:Key="RuleEditor_ErrTooManyRules">สร้างกฎได้สูงสุด {0} กฎ กรุณาลบกฎที่ไม่ใช้แล้วก่อน</system:String>
+    <system:String x:Key="RuleEditor_ErrUnknownType">กรุณาเลือกประเภท</system:String>
+    <system:String x:Key="RuleEditor_ErrUrl">ใส่ที่อยู่เต็มที่ขึ้นต้นด้วย https:// หรือ http://</system:String>
+    <system:String x:Key="RuleEditor_From">ตั้งแต่ (ชช:นน)</system:String>
+    <system:String x:Key="RuleEditor_LogicAll">ครบทุกเงื่อนไข (AND)</system:String>
+    <system:String x:Key="RuleEditor_LogicAny">เงื่อนไขใดก็ได้ (OR)</system:String>
+    <system:String x:Key="RuleEditor_Name">ชื่อกฎ</system:String>
+    <system:String x:Key="RuleEditor_NoActions">ยังไม่มีการกระทำ กรุณาเพิ่มอย่างน้อยหนึ่งรายการ</system:String>
+    <system:String x:Key="RuleEditor_NoConditions">ไม่มีเงื่อนไข: กฎจะทำงานครั้งเดียวตอนเปิด WinXTools ตอนเปิดใช้กฎ หรือหลังบันทึกกฎ</system:String>
+    <system:String x:Key="RuleEditor_Remove">นำออก</system:String>
+    <system:String x:Key="RuleEditor_SaveRule">บันทึกกฎ</system:String>
+    <system:String x:Key="RuleEditor_TargetApp">แอปเป้าหมาย (ไม่บังคับ)</system:String>
+    <system:String x:Key="RuleEditor_TargetAppHint">ใช้กับเงื่อนไขและการกระทำที่เว้นช่องแอปไว้ เช่น chrome</system:String>
+    <system:String x:Key="RuleEditor_TitleEdit">แก้ไขกฎ</system:String>
+    <system:String x:Key="RuleEditor_TitleNew">สร้างกฎใหม่</system:String>
+    <system:String x:Key="RuleEditor_To">ถึง (ชช:นน)</system:String>
+    <system:String x:Key="RuleEditor_When">เมื่อ</system:String>
+    <system:String x:Key="RuleEditor_WholePc">ทั้งเครื่อง</system:String>
+
+    <!-- License, trial and updates (xman studio product API) -->
+    <system:String x:Key="Settings_BuyPro">ซื้อ Pro — ฿199</system:String>
+    <system:String x:Key="Settings_LicenseRefresh">ตรวจสอบอีกครั้ง</system:String>
+    <system:String x:Key="Settings_Activating">กำลังเปิดใช้งาน...</system:String>
+    <system:String x:Key="Settings_UpdateErrNotSigned">อัพเดทนี้ไม่มีลายเซ็นของ xman studio จึงไม่ได้ติดตั้ง และไม่มีอะไรถูกเปลี่ยนแปลง</system:String>
+    <system:String x:Key="Settings_UpdateErrSignature">อัพเดทนี้ตรวจลายเซ็นไม่ผ่าน อาจถูกดัดแปลงระหว่างทาง จึงลบทิ้งและไม่ได้ติดตั้งอะไร</system:String>
+    <system:String x:Key="License_ProLifetime">WinXTools Pro — ใช้ได้ตลอดชีพ ไม่มีวันหมดอายุ</system:String>
+    <system:String x:Key="License_ProUntil">WinXTools Pro — ใช้ได้ถึง {0}</system:String>
+    <system:String x:Key="License_OfflineSince">รอบนี้ยังไม่ได้ยืนยันกับเซิร์ฟเวอร์ (ยืนยันล่าสุด {0}) — Pro ยังใช้ต่อได้โดยไม่ต้องต่อเน็ตนานสุด {1} วัน</system:String>
+    <system:String x:Key="License_ExpiredOn">License Pro ของคุณหมดอายุเมื่อ {0}</system:String>
+    <system:String x:Key="License_Expired">License Pro ของคุณหมดอายุแล้ว</system:String>
+    <system:String x:Key="License_ExpiredHelp">ซื้อ Pro ใหม่เพื่อใช้ฟีเจอร์ Pro ต่อ ส่วนฟีเจอร์ฟรียังใช้ได้ตามปกติ</system:String>
+    <system:String x:Key="License_BadgeExpired">หมดอายุ</system:String>
+    <system:String x:Key="License_Revoked">License นี้ถูกยกเลิกโดย xman studio</system:String>
+    <system:String x:Key="License_RevokedHelp">ถ้าคิดว่าผิดพลาด ติดต่อฝ่ายบริการลูกค้า xman studio พร้อมแจ้งคีย์ License ของคุณ</system:String>
+    <system:String x:Key="License_BadgeRevoked">ถูกยกเลิก</system:String>
+    <system:String x:Key="License_OtherMachine">License นี้ถูกเปิดใช้งานอยู่บนเครื่องอื่นแล้ว</system:String>
+    <system:String x:Key="License_OtherMachineHelp">กด “เปิดใช้งาน” เพื่อย้ายกลับมาเครื่องนี้ (เครื่องอื่นจะหยุดใช้ Pro ทันที)</system:String>
+    <system:String x:Key="License_Unverified">ยังยืนยัน License ไม่ได้</system:String>
+    <system:String x:Key="License_UnverifiedHelp">WinXTools ต้องเชื่อมต่อเซิร์ฟเวอร์ License อย่างน้อยทุก {0} วัน — ต่ออินเทอร์เน็ตแล้วกด “ตรวจสอบอีกครั้ง”</system:String>
+    <system:String x:Key="License_TrialUntil">ทดลองใช้ Pro ฟรี — ปลดล็อกทุกฟีเจอร์ถึง {0}</system:String>
+    <system:String x:Key="License_TrialHelp">หมดช่วงทดลองแล้วฟีเจอร์ฟรียังใช้ได้ต่อ ซื้อ Pro (฿199 จ่ายครั้งเดียว) เพื่อใช้ครบทุกฟีเจอร์ตลอดไป</system:String>
+    <system:String x:Key="License_BadgeTrial">ทดลอง</system:String>
+    <system:String x:Key="License_FreeTrialUsed">รุ่นฟรี — เครื่องนี้ใช้สิทธิ์ทดลอง Pro ไปแล้ว</system:String>
+    <system:String x:Key="License_Free">รุ่นฟรี</system:String>
+    <system:String x:Key="License_EnterKey">กรุณาใส่คีย์ License — คุณจะได้รับคีย์ทางอีเมล (และดูได้ในบัญชี xman studio) หลังซื้อ Pro</system:String>
+    <system:String x:Key="License_KeyFormat">รูปแบบคีย์ไม่ถูกต้อง คีย์จะมีหน้าตาแบบ ABCD-1234-EFGH-5678 (ตัวอักษร ตัวเลข และขีด)</system:String>
+    <system:String x:Key="License_Activated">เปิดใช้งาน WinXTools Pro บนเครื่องนี้เรียบร้อยแล้ว ขอบคุณที่สนับสนุน!</system:String>
+    <system:String x:Key="License_MoveConfirm" xml:space="preserve">License นี้ถูกเปิดใช้งานอยู่บนเครื่องอื่น&#x0a;&#x0a;ย้ายมาใช้ที่เครื่องนี้ไหม? เครื่องเดิมจะใช้ WinXTools Pro ไม่ได้อีก (ย้ายกลับภายหลังได้ด้วยวิธีเดียวกัน)</system:String>
+    <system:String x:Key="License_Failed">เปิดใช้งาน License ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="License_DeactivateConfirm" xml:space="preserve">ถอด License ออกจากเครื่องนี้ไหม?&#x0a;&#x0a;เครื่องนี้จะหยุดใช้ Pro และนำคีย์ไปเปิดใช้งานบนเครื่องอื่นได้ทันที (กลับมาเปิดใช้งานที่เครื่องนี้ใหม่ภายหลังได้)</system:String>
+    <system:String x:Key="License_Deactivated" xml:space="preserve">ถอด License ออกจากเครื่องนี้แล้ว เก็บคีย์นี้ไว้ใช้เปิดใช้งานอีกครั้ง:&#x0a;&#x0a;{0}</system:String>
+    <system:String x:Key="License_DeactivateOffline">ติดต่อเซิร์ฟเวอร์ License ไม่ได้ License จึงยังผูกกับเครื่องนี้อยู่และไม่มีอะไรเปลี่ยน — ลองใหม่เมื่อต่ออินเทอร์เน็ตได้</system:String>
+    <system:String x:Key="License_Confirmed">เซิร์ฟเวอร์ยืนยัน License ของคุณเรียบร้อยแล้ว</system:String>
+    <system:String x:Key="License_OpenPageFailed" xml:space="preserve">เปิดเบราว์เซอร์ไม่ได้ กรุณาเข้าไปที่:&#x0a;{0}</system:String>
+    <system:String x:Key="License_ErrInvalidKey">คีย์นี้ไม่ใช่ License ของ WinXTools โปรดตรวจตัวสะกดอีกครั้ง — คีย์ของแอปอื่นของ xman studio ใช้กับ WinXTools ไม่ได้</system:String>
+    <system:String x:Key="License_ErrExpired">License นี้หมดอายุแล้ว ซื้อ Pro ใหม่เพื่อใช้ฟีเจอร์ Pro ต่อ</system:String>
+    <system:String x:Key="License_ErrRevoked">License นี้ถูกยกเลิกโดย xman studio ถ้าคิดว่าผิดพลาดโปรดติดต่อฝ่ายบริการลูกค้า</system:String>
+    <system:String x:Key="License_ErrOtherDevice">License ยังอยู่ที่เครื่องเดิม ไม่มีอะไรเปลี่ยนแปลง</system:String>
+    <system:String x:Key="License_ErrTrialKey">นี่คือคีย์ทดลองใช้ ไม่ใช่ License Pro — ซื้อ WinXTools Pro เพื่อรับคีย์ License</system:String>
+    <system:String x:Key="License_ErrNoLicense">เซิร์ฟเวอร์ไม่พบ License ของเครื่องนี้</system:String>
+    <system:String x:Key="License_ErrOffline">ติดต่อเซิร์ฟเวอร์ License ไม่ได้ ตรวจการเชื่อมต่ออินเทอร์เน็ต (และไฟร์วอลล์หรือไฟล์ hosts ต้องไม่บล็อก xman4289.com) แล้วลองใหม่</system:String>
+    <system:String x:Key="License_ErrBusy">เซิร์ฟเวอร์ License ไม่ว่างหรือกำลังปิดปรับปรุง กรุณาลองใหม่ในอีกสักครู่</system:String>
+    <system:String x:Key="License_DeactivateFailed">ถอด License ออกจากเครื่องนี้ไม่สำเร็จ ยังไม่มีอะไรเปลี่ยน — กรุณาลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Pro_BannerExpiredTitle">License Pro หมดอายุ</system:String>
+    <system:String x:Key="Pro_BannerExpiredDesc">ต่ออายุเพื่อปลดล็อกฟีเจอร์ Pro อีกครั้ง</system:String>
+    <system:String x:Key="Pro_BannerMovedTitle">License อยู่ที่เครื่องอื่น</system:String>
+    <system:String x:Key="Pro_BannerMovedDesc">ไปที่ ตั้งค่า → ใบอนุญาต เพื่อย้ายกลับมา</system:String>
+    <system:String x:Key="Pro_BannerUnverifiedTitle">ยังยืนยัน License ไม่ได้</system:String>
+    <system:String x:Key="Pro_BannerUnverifiedDesc">ต่ออินเทอร์เน็ตเพื่อยืนยัน License Pro</system:String>
+    <system:String x:Key="Pro_BannerRevokedTitle">License ถูกยกเลิก</system:String>
+    <system:String x:Key="Update_StartupPrompt" xml:space="preserve">มี WinXTools เวอร์ชัน {1} ใหม่แล้ว (เครื่องนี้ใช้ {0})&#x0a;&#x0a;อัพเดทเลยไหม? WinXTools จะดาวน์โหลด ตรวจลายเซ็น ปิดตัวเอง อัพเดท แล้วเปิดขึ้นมาใหม่ การตั้งค่าและ License ยังอยู่ครบ</system:String>
+    <system:String x:Key="Update_Later">WinXTools {0} พร้อมติดตั้งแล้ว — คลิกที่นี่ หรือไปที่ ตั้งค่า → อัพเดท</system:String>
 
 </ResourceDictionary>

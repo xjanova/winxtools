@@ -122,7 +122,7 @@
     <system:String x:Key="Settings_LicenseStatus">License Status</system:String>
     <system:String x:Key="Settings_Activate">Activate</system:String>
     <system:String x:Key="Settings_Deactivate">Deactivate</system:String>
-    <system:String x:Key="Settings_LicenseKeyPlaceholder">Enter license key (WXT-XXXX-XXXX-XXXX)</system:String>
+    <system:String x:Key="Settings_LicenseKeyPlaceholder">Your license key (XXXX-XXXX-XXXX-XXXX) — from the email you got after buying Pro</system:String>
 
     <!-- Updates -->
     <system:String x:Key="Settings_Updates">Updates</system:String>
@@ -184,7 +184,7 @@
     <system:String x:Key="GameMode_Revert">Restore Defaults</system:String>
     <system:String x:Key="GameMode_On">ON</system:String>
     <system:String x:Key="GameMode_Off">OFF</system:String>
-    <system:String x:Key="GameMode_ConfirmApply">Apply Gamer Mode?&#10;&#10;GameDVR off · Game Mode on · GPU scheduling · full CPU/network priority for games · Ultimate power plan&#10;&#10;Every setting is saved first, so this is fully reversible.</system:String>
+    <system:String x:Key="GameMode_ConfirmApply" xml:space="preserve">Apply Gamer Mode?&#10;&#10;Game Bar recording off · fullscreen optimizations off · Windows network throttling off · GPU scheduling (if supported) · power throttling off and Ultimate power plan (desktop PCs)&#10;&#10;Every setting is saved first, so this is fully reversible. A restart is recommended.</system:String>
     <system:String x:Key="GameMode_NeedAdmin">Run as Administrator to apply all tweaks</system:String>
 
     <!-- Network Tools -->
@@ -192,9 +192,9 @@
     <system:String x:Key="NetworkTools_Subtitle">Diagnostic and analysis tools for network troubleshooting</system:String>
 
     <!-- Proxy VPN -->
-    <system:String x:Key="Nav_ProxyVpn">Proxy VPN</system:String>
-    <system:String x:Key="ProxyVpn_Title">Proxy VPN</system:String>
-    <system:String x:Key="ProxyVpn_Subtitle">Connect through free proxies worldwide</system:String>
+    <system:String x:Key="Nav_ProxyVpn">Free Proxy</system:String>
+    <system:String x:Key="ProxyVpn_Title">Free Proxy (not encrypted)</system:String>
+    <system:String x:Key="ProxyVpn_Subtitle">Browse through a free public proxy in another country — this is not a VPN</system:String>
 
     <!-- Pro Banner -->
     <system:String x:Key="Pro_UpgradeTitle">Upgrade to Pro</system:String>
@@ -290,5 +290,562 @@
     <system:String x:Key="Admin_RunAsAdmin">Run as Administrator</system:String>
     <system:String x:Key="Admin_LimitedMode">Run Limited Mode</system:String>
     <system:String x:Key="Admin_Exit">Exit</system:String>
+
+    <!-- Bandwidth limiter (packet engine v2) -->
+    <system:String x:Key="BW_Unlimited">Unlimited</system:String>
+    <system:String x:Key="BW_Blocked">Blocked</system:String>
+    <system:String x:Key="BW_Down">Down</system:String>
+    <system:String x:Key="BW_Up">Up</system:String>
+    <system:String x:Key="BW_Status_Idle">Ready — no limits set</system:String>
+    <system:String x:Key="BW_Status_Active">Limits active (kernel packet engine)</system:String>
+    <system:String x:Key="BW_Status_NoDriver">Driver unavailable — limits saved but NOT active</system:String>
+    <system:String x:Key="BW_Status_Error">Limits not active: {0}</system:String>
+    <system:String x:Key="BW_PageSubtitle">Limit the whole PC or single apps — measured and enforced at the packet level</system:String>
+    <system:String x:Key="BW_WholePcTitle">Whole-PC speed limit</system:String>
+    <system:String x:Key="BW_WholePcDesc">Applies to every app together on all network adapters • slide left to slow down • far left = no internet for the whole PC • far right = unlimited</system:String>
+    <system:String x:Key="BW_AppRulesTitle">Per-app limits &amp; blocks</system:String>
+    <system:String x:Key="BW_AppRulesEmpty">No app rules yet — open Network Monitor, click an app, then drag its Down/Up sliders or press the block button at the end of its row.</system:String>
+    <system:String x:Key="BW_Remove">Remove</system:String>
+    <system:String x:Key="BW_Unblock">Unblock</system:String>
+    <system:String x:Key="BW_ResetAll">Reset all</system:String>
+    <system:String x:Key="BW_ResetAllConfirm">Remove every app limit, every app block and the whole-PC limit?</system:String>
+    <system:String x:Key="BW_BlockedPermanent">Blocked (firewall)</system:String>
+    <system:String x:Key="BW_NowSpeed">now ↓{0}  ↑{1}</system:String>
+    <system:String x:Key="BW_HowTitle">How it works</system:String>
+    <system:String x:Key="BW_HowText" xml:space="preserve">• Whole PC: drag the sliders above; all apps together never exceed this speed (Mbps, like your internet plan).&#x0a;• Per app: Network Monitor → click an app → drag Down/Up (KB/s or MB/s). All processes of that app share one limit.&#x0a;• Block an app: press ⛔ at the end of its row in Network Monitor. Live connections are cut at once and a Windows Firewall rule keeps it blocked even after WinXTools is closed.&#x0a;• Speed limits work while WinXTools is open (minimized is fine). With no limits the engine only watches traffic and adds no latency to games.&#x0a;• If a game anti-cheat (e.g. FACEIT, Vanguard) complains about the WinDivert driver, close WinXTools before playing.</system:String>
+    <system:String x:Key="BW_Control">Limit this app</system:String>
+    <system:String x:Key="BW_QuickPresets">Quick presets</system:String>
+    <system:String x:Key="BW_SetFor">{0}: ↓{1}  ↑{2}</system:String>
+    <system:String x:Key="BW_RemovedFor">Speed limits removed for {0}</system:String>
+    <system:String x:Key="BW_BlockConfirm" xml:space="preserve">Block all internet access for {0}?&#x0a;&#x0a;• Live connections are cut immediately&#x0a;• A Windows Firewall rule stops new connections (even after WinXTools is closed)&#x0a;&#x0a;Unblock it later with the same button or from Bandwidth Control.</system:String>
+    <system:String x:Key="BW_UnblockConfirm">Unblock {0} so it can use the internet again?</system:String>
+    <system:String x:Key="BW_BlockedMsg">{0} is blocked</system:String>
+    <system:String x:Key="BW_UnblockedMsg">{0} is unblocked</system:String>
+    <system:String x:Key="BW_Estimated">(per-app speeds are estimates — packet driver unavailable)</system:String>
+    <system:String x:Key="BW_ActionFailed">Failed</system:String>
+
+    <!-- Cleaner (accurate engine) -->
+    <system:String x:Key="Cleaner_Subtitle">The scan shows exactly the space you will get back — files another program has open are skipped and not counted</system:String>
+    <system:String x:Key="Cleaner_Hint">Press "Scan" to see what can be removed, pick the categories, then press "Clean".</system:String>
+    <system:String x:Key="Cleaner_Summary">Summary</system:String>
+    <system:String x:Key="Cleaner_Selected">Space you will get back (selected items)</system:String>
+    <system:String x:Key="Cleaner_Cancel">Cancel</system:String>
+    <system:String x:Key="Cleaner_Cancelled">Cancelled</system:String>
+    <system:String x:Key="Cleaner_Footer">Only junk is removed — never your documents, photos, passwords, cookies or installed programs.</system:String>
+    <system:String x:Key="Cleaner_Files">{0:N0} files</system:String>
+    <system:String x:Key="Cleaner_InUse">{0:N0} in use (skipped)</system:String>
+    <system:String x:Key="Cleaner_InUseSize">{0:N0} in use ({1}) will be skipped</system:String>
+    <system:String x:Key="Cleaner_Recent">{0:N0} recent (kept)</system:String>
+    <system:String x:Key="Cleaner_Denied">{0:N0} protected (skipped)</system:String>
+    <system:String x:Key="Cleaner_NotFound">Not found</system:String>
+    <system:String x:Key="Cleaner_Scanning">Scanning {0}…</system:String>
+    <system:String x:Key="Cleaner_ScanDone">Scan complete — {0} can be freed. Turn categories on/off, then press Clean.</system:String>
+    <system:String x:Key="Cleaner_ConfirmTitle">Confirm cleanup</system:String>
+    <system:String x:Key="Cleaner_Confirm" xml:space="preserve">Clean these items?&#x0a;&#x0a;{0}&#x0a;Total: {1}&#x0a;&#x0a;Files in use are skipped automatically. This cannot be undone.</system:String>
+    <system:String x:Key="Cleaner_CleaningItem">Cleaning {0}…</system:String>
+    <system:String x:Key="Cleaner_Done">Freed {0} ({1:N0} files) • drive free space changed by {2}</system:String>
+    <system:String x:Key="Cleaner_SkippedTotal">{0:N0} files were in use or protected and were left alone.</system:String>
+    <system:String x:Key="Cleaner_Freed">freed {0}</system:String>
+    <system:String x:Key="Cleaner_Deleted">{0:N0} deleted</system:String>
+    <system:String x:Key="Cleaner_Skipped">{0:N0} skipped</system:String>
+    <system:String x:Key="Cleaner_NothingSelected">Select at least one category that has something to clean (scan first).</system:String>
+    <system:String x:Key="Risk_Safe">Safe</system:String>
+    <system:String x:Key="Risk_Medium">Read first</system:String>
+    <system:String x:Key="Risk_Caution">Caution</system:String>
+    <system:String x:Key="CleanCat_Temp_Title">Temporary files</system:String>
+    <system:String x:Key="CleanCat_Temp_Desc">%TEMP% and Windows\Temp — files newer than 24 hours are kept because installers may still need them</system:String>
+    <system:String x:Key="CleanCat_Browser_Title">Browser cache</system:String>
+    <system:String x:Key="CleanCat_Browser_Desc">Chrome, Edge, Brave, Opera, Vivaldi, Firefox — cache only; passwords, cookies, history and logins are never touched (close the browser for a full clean)</system:String>
+    <system:String x:Key="CleanCat_Apps_Title">App caches</system:String>
+    <system:String x:Key="CleanCat_Apps_Desc">Discord, Teams (classic), VS Code, Slack, Steam and Epic web caches — rebuilt automatically; chats and logins stay</system:String>
+    <system:String x:Key="CleanCat_WER_Title">Error reports &amp; crash dumps</system:String>
+    <system:String x:Key="CleanCat_WER_Desc">Windows Error Reporting, minidumps, MEMORY.DMP — only needed while troubleshooting a crash or blue screen</system:String>
+    <system:String x:Key="CleanCat_Thumbs_Title">Thumbnail cache</system:String>
+    <system:String x:Key="CleanCat_Thumbs_Desc">Rebuilt when you open folders; files Explorer is using are skipped</system:String>
+    <system:String x:Key="CleanCat_Logs_Title">Windows log files</system:String>
+    <system:String x:Key="CleanCat_Logs_Desc">Windows\Logs (setup, CBS, DISM…) — logs being written are skipped</system:String>
+    <system:String x:Key="CleanCat_DO_Title">Delivery Optimization files</system:String>
+    <system:String x:Key="CleanCat_DO_Desc">Update pieces Windows shares with other PCs — removed with Windows' own cleanup command</system:String>
+    <system:String x:Key="CleanCat_WU_Title">Windows Update downloads</system:String>
+    <system:String x:Key="CleanCat_WU_Desc">SoftwareDistribution\Download — skipped automatically while an update is waiting for a restart</system:String>
+    <system:String x:Key="CleanCat_WU_Warn">Updates downloaded but not installed yet will be downloaded again</system:String>
+    <system:String x:Key="CleanCat_Shaders_Title">GPU shader cache</system:String>
+    <system:String x:Key="CleanCat_Shaders_Desc">DirectX / NVIDIA / AMD / Intel — can fix stutter after a driver update</system:String>
+    <system:String x:Key="CleanCat_Shaders_Warn">The first launch of each game may stutter briefly while shaders rebuild</system:String>
+    <system:String x:Key="CleanCat_Recycle_Title">Recycle Bin</system:String>
+    <system:String x:Key="CleanCat_Recycle_Desc">All drives — items in the Recycle Bin are deleted permanently</system:String>
+    <system:String x:Key="CleanCat_Recycle_Warn">Items in the Recycle Bin can no longer be restored</system:String>
+    <system:String x:Key="CleanCat_WinOld_Title">Previous Windows installation (Windows.old)</system:String>
+    <system:String x:Key="CleanCat_WinOld_Desc">Removed with Windows Disk Cleanup (can take several minutes; its window will appear)</system:String>
+    <system:String x:Key="CleanCat_WinOld_Warn">You can no longer roll back to the previous Windows version</system:String>
+    <system:String x:Key="Cleaner_Note_AppRunning">{0} is running — close it to clean the files it is using</system:String>
+    <system:String x:Key="Cleaner_Note_RebootPending">Windows Update is waiting for a restart — restart first, then clean this</system:String>
+    <system:String x:Key="Cleaner_Note_ExplorerLocked">Some files are in use by Explorer; they can be cleaned after restarting Windows</system:String>
+    <system:String x:Key="Cleaner_Note_NoCleanmgr">Disk Cleanup is not available — use Settings › System › Storage › Temporary files</system:String>
+    <system:String x:Key="Cleaner_Note_WindowsOldPartial">Part of Windows.old is still there — try again after a restart</system:String>
+
+    <!-- Dashboard quick actions -->
+    <system:String x:Key="Dashboard_DownloadSpeed">Download speed</system:String>
+    <system:String x:Key="Dashboard_UploadSpeed">Upload speed</system:String>
+    <system:String x:Key="Dash_BlockAll">Block All</system:String>
+    <system:String x:Key="Dash_BlockAllConfirm" xml:space="preserve">Cut off all internet traffic of this PC?&#x0a;&#x0a;No app can go online until you press "Resume All" (closing WinXTools also restores the connection).</system:String>
+    <system:String x:Key="Dash_BlockAllDone">All internet traffic is blocked. Press Resume All to reconnect.</system:String>
+    <system:String x:Key="Dash_ResumeAll">Resume All</system:String>
+    <system:String x:Key="Dash_ResumeDone">Internet traffic is back to normal.</system:String>
+    <system:String x:Key="Dash_ResumeNothing">Nothing is blocked or limited for the whole PC right now.</system:String>
+    <system:String x:Key="Dash_ResumeAppRules">{0} per-app limit/block rule(s) are still active — manage them in Bandwidth Control.</system:String>
+    <system:String x:Key="Dash_QuickClean">Quick Clean</system:String>
+    <system:String x:Key="Dash_QuickCleanConfirm" xml:space="preserve">Remove temporary files, browser cache, thumbnail cache and crash reports?&#x0a;&#x0a;(Safe categories only; files in use are skipped.)</system:String>
+    <system:String x:Key="Dash_QuickCleanDone">Freed {0} ({1:N0} files).</system:String>
+    <system:String x:Key="Dash_Ram">RAM Optimization</system:String>
+    <system:String x:Key="Dash_RamDone" xml:space="preserve">RAM optimization complete.&#x0a;&#x0a;Before: {0}% used&#x0a;Processes optimized: {1}&#x0a;Memory freed: {2}</system:String>
+    <system:String x:Key="Dash_DnsDone">DNS cache has been flushed.</system:String>
+    <system:String x:Key="Dash_DnsFailed">Flushing the DNS cache failed (exit code {0}).</system:String>
+    <system:String x:Key="Dash_Reset">Reset Network Adapter</system:String>
+    <system:String x:Key="Dash_ResetNoAdapter">No connected network adapter was found.</system:String>
+    <system:String x:Key="Dash_ResetConfirm" xml:space="preserve">Restart these network adapters? You will be offline for a few seconds.&#x0a;&#x0a;{0}</system:String>
+    <system:String x:Key="Dash_ResetDone">Network adapters restarted. The connection comes back in a few seconds.</system:String>
+    <system:String x:Key="Dash_ResetFailed">Could not restart: {0}</system:String>
+
+    <system:String x:Key="App_UnexpectedError">Something went wrong, but WinXTools is still running:</system:String>
+
+    <!-- Free Proxy (honest wording, safe restore) -->
+    <system:String x:Key="Proxy_Warning">Not a VPN — WinXTools encrypts nothing. Free proxies are run by unknown operators who can see which sites you visit and read or change unencrypted (http://) traffic, so don't sign in to important accounts. Only apps that use the Windows proxy setting (most browsers) go through the proxy; games and most other apps still connect directly.</system:String>
+    <system:String x:Key="Proxy_DialogTitle">Free Proxy</system:String>
+    <system:String x:Key="Proxy_Connect">Connect</system:String>
+    <system:String x:Key="Proxy_Disconnect">Disconnect</system:String>
+    <system:String x:Key="Proxy_SearchPlaceholder">Search countries...</system:String>
+    <system:String x:Key="Proxy_RefreshTooltip">Download fresh proxy lists for every country</system:String>
+    <system:String x:Key="Proxy_CardTooltip">Click the card to reload this country's list (untested). Press Connect to test proxies over HTTPS and connect.</system:String>
+    <system:String x:Key="Proxy_CardClickToLoad">Click card to load list</system:String>
+    <system:String x:Key="Proxy_CardLoading">Loading list...</system:String>
+    <system:String x:Key="Proxy_CardListed">{0} proxies listed</system:String>
+    <system:String x:Key="Proxy_CardNoneListed">No proxies listed</system:String>
+    <system:String x:Key="Proxy_CardLoadFailed">Couldn't load list</system:String>
+    <system:String x:Key="Proxy_CountryUnknown">an unknown country</system:String>
+    <system:String x:Key="Proxy_StatusNotConnected">Not connected</system:String>
+    <system:String x:Key="Proxy_StatusPickCountry">Pick a country and press Connect.</system:String>
+    <system:String x:Key="Proxy_StatusConnected">Connected via proxy: {0}</system:String>
+    <system:String x:Key="Proxy_StatusConnectedDetail">Exit IP {0} · {1} ms · HTTPS checked</system:String>
+    <system:String x:Key="Proxy_StatusExitMismatch">Connected — exits in {0}</system:String>
+    <system:String x:Key="Proxy_StatusExitMismatchDetail">You picked {0}, but this proxy really exits in {1}. IP {2} · {3} ms</system:String>
+    <system:String x:Key="Proxy_StatusUnhealthy">Proxy not responding</system:String>
+    <system:String x:Key="Proxy_StatusUnhealthyDetail">Websites may not load. Disconnect, or pick another country.</system:String>
+    <system:String x:Key="Proxy_StatusLeftOver">Windows is still using a WinXTools proxy</system:String>
+    <system:String x:Key="Proxy_StatusLeftOverDetail">Press Disconnect to restore your original proxy settings.</system:String>
+    <system:String x:Key="Proxy_StatusOtherInstance">Another WinXTools window is using a proxy</system:String>
+    <system:String x:Key="Proxy_StatusOtherInstanceDetail">Disconnect it in that window first.</system:String>
+    <system:String x:Key="Proxy_StatusRestoredLeftOver">WinXTools was closed while connected last time — your original proxy settings have been restored.</system:String>
+    <system:String x:Key="Proxy_ProgressFetching">Downloading the proxy list for {0}...</system:String>
+    <system:String x:Key="Proxy_ProgressTesting">Testing proxies for {0} over HTTPS... {1}/{2}</system:String>
+    <system:String x:Key="Proxy_ProgressApplying">Applying the Windows proxy setting...</system:String>
+    <system:String x:Key="Proxy_ProgressRechecking">Re-checking the proxy over HTTPS...</system:String>
+    <system:String x:Key="Proxy_ProgressRefreshing">Refreshing proxy lists... {0}/{1}</system:String>
+    <system:String x:Key="Proxy_Cancelling">Cancelling...</system:String>
+    <system:String x:Key="Proxy_AskOtherCountry" xml:space="preserve">No working proxy exits in {0}.&#10;&#10;The best working proxy found exits in {1} (IP {2}, {3} ms).&#10;&#10;Connect to it anyway?</system:String>
+    <system:String x:Key="Proxy_ErrNoWorking">No working proxy was found for {0} ({1} tested). Free proxies go offline often — try again in a few minutes, press Refresh, or pick another country.</system:String>
+    <system:String x:Key="Proxy_ErrNoneListed">No proxies are listed for {0} right now. Try another country.</system:String>
+    <system:String x:Key="Proxy_ErrListUnavailable">Couldn't download the proxy lists. Check your internet connection and try again.</system:String>
+    <system:String x:Key="Proxy_ErrOtherInstance">Another WinXTools window is already using a proxy. Disconnect it in that window first.</system:String>
+    <system:String x:Key="Proxy_ErrBackupFailed">Couldn't save a backup of your current proxy settings, so nothing was changed.</system:String>
+    <system:String x:Key="Proxy_ErrApplyFailed">Windows didn't accept the proxy setting — it may be locked by your organization. You are not connected.</system:String>
+    <system:String x:Key="Proxy_ErrProxyStopped">That proxy stopped responding, so nothing was changed. Please try again.</system:String>
+    <system:String x:Key="Proxy_ErrUnexpected">Something went wrong while connecting. Please try again.</system:String>
+    <system:String x:Key="Proxy_ErrRestoreFailed">Couldn't restore your original proxy settings. Check Windows Settings &gt; Network &amp; internet &gt; Proxy. WinXTools will try again the next time it starts.</system:String>
+    <system:String x:Key="Proxy_InfoChangedElsewhere">Your Windows proxy settings were changed outside WinXTools while connected, so WinXTools left them as they are.</system:String>
+
+    <!-- Windows Optimizer / RAM / Kill safety -->
+    <system:String x:Key="WinOpt_Enable">Enable</system:String>
+    <system:String x:Key="WinOpt_Disable">Disable</system:String>
+    <system:String x:Key="WinOpt_StatusDisabled">Disabled</system:String>
+    <system:String x:Key="WinOpt_StatusDisabledRunning">Disabled · still running until restart</system:String>
+    <system:String x:Key="WinOpt_StatusEnabled">Enabled</system:String>
+    <system:String x:Key="WinOpt_StatusRunning">Running</system:String>
+    <system:String x:Key="WinOpt_StatusStopped">Stopped</system:String>
+    <system:String x:Key="WinOpt_RamEstimateItem">~{0} MB (estimate)</system:String>
+    <system:String x:Key="WinOpt_RamEstimateLine">Rough RAM estimate (typical usage, not measured on this PC): ~{0} MB</system:String>
+    <system:String x:Key="WinOpt_RamEstimateTooltip">Rough estimate from typical usage — not measured on this PC.</system:String>
+    <system:String x:Key="WinOpt_Busy">Applying changes… this can take up to a minute.</system:String>
+    <system:String x:Key="WinOpt_ConfirmDisableOne">Disable "{0}"?</system:String>
+    <system:String x:Key="WinOpt_ConfirmEnableOne">Turn "{0}" back on?</system:String>
+    <system:String x:Key="WinOpt_ConfirmDisableList" xml:space="preserve">This will disable {0} item(s):&#10;{1}</system:String>
+    <system:String x:Key="WinOpt_ConfirmRestoreAll" xml:space="preserve">This will turn {0} item(s) back on:&#10;{1}</system:String>
+    <system:String x:Key="WinOpt_RestoreAllExplain">Services get back the startup type they had before WinXTools disabled them (or the Windows default if that was not recorded) and are started again if they were running.</system:String>
+    <system:String x:Key="WinOpt_RestorePointPromise">WinXTools will first try to create a System Restore point. Windows allows only one every 24 hours and System Protection must be on; you will see whether it worked when the changes finish.</system:String>
+    <system:String x:Key="WinOpt_Continue">Continue?</system:String>
+    <system:String x:Key="WinOpt_AndMore">…and {0} more</system:String>
+    <system:String x:Key="WinOpt_NoSelection">Please select items to disable.</system:String>
+    <system:String x:Key="WinOpt_AlreadyOptimized">All safe optimizations are already applied.</system:String>
+    <system:String x:Key="WinOpt_NothingToRestore">Nothing to restore: every item is already at its original setting.</system:String>
+    <system:String x:Key="WinOpt_PlanFeature">The Windows default setting will be restored.</system:String>
+    <system:String x:Key="WinOpt_PlanService">Startup type will be set to {0} ({1}).</system:String>
+    <system:String x:Key="WinOpt_PlanSourceSaved">the setting it had before WinXTools disabled it</system:String>
+    <system:String x:Key="WinOpt_PlanSourceDefault">the Windows default</system:String>
+    <system:String x:Key="WinOpt_PlanSourceManual">Windows ships this service disabled; Manual lets it run only when something needs it</system:String>
+    <system:String x:Key="WinOpt_PlanStartsNow">The service will also be started now.</system:String>
+    <system:String x:Key="WinOpt_StartAutomatic">Automatic</system:String>
+    <system:String x:Key="WinOpt_StartAutomaticDelayed">Automatic (Delayed Start)</system:String>
+    <system:String x:Key="WinOpt_StartManual">Manual</system:String>
+    <system:String x:Key="WinOpt_StartDisabled">Disabled</system:String>
+    <system:String x:Key="WinOpt_ResultDisabled">Disabled {0} item(s).</system:String>
+    <system:String x:Key="WinOpt_ResultRestored">Turned {0} item(s) back on with their original settings.</system:String>
+    <system:String x:Key="WinOpt_ResultNoChange">No changes were needed.</system:String>
+    <system:String x:Key="WinOpt_ResultAlready">Already in the right state: {0}</system:String>
+    <system:String x:Key="WinOpt_ResultNotPresent">Not present on this PC (skipped): {0}</system:String>
+    <system:String x:Key="WinOpt_ResultStillRunning">Disabled, but could not be stopped right now (they stop after the next restart): {0}</system:String>
+    <system:String x:Key="WinOpt_ResultNotStarted">Turned back on, but could not be started right now (they start after the next restart): {0}</system:String>
+    <system:String x:Key="WinOpt_ResultFailed" xml:space="preserve">Could not change {0} item(s):&#10;{1}</system:String>
+    <system:String x:Key="WinOpt_ResultRestartHint">Some changes take full effect only after a restart.</system:String>
+    <system:String x:Key="WinOpt_RestorePointCreated">Restore point created ({0}).</system:String>
+    <system:String x:Key="WinOpt_RestorePointSkipped">Windows did not create a new restore point because one was already made in the last 24 hours ({0}). You can use that one to undo these changes.</system:String>
+    <system:String x:Key="WinOpt_RestorePointFailed">No restore point was created. Make sure System Protection is turned on for your system drive.</system:String>
+    <system:String x:Key="WinOpt_ConfirmCreateRestore" xml:space="preserve">Create a System Restore point now?&#10;&#10;It lets you undo changes if something goes wrong. Windows allows only one every 24 hours, and creating it can take a minute.</system:String>
+    <system:String x:Key="WinOpt_UnexpectedError" xml:space="preserve">Windows settings could not be changed:&#10;{0}</system:String>
+    <system:String x:Key="Ram_LastOptimized">Last: {0} – freed {1}</system:String>
+    <system:String x:Key="Ram_ProcessesTrimmed">{0} processes trimmed</system:String>
+    <system:String x:Key="Ram_StandbyCleared">standby cache cleared</system:String>
+    <system:String x:Key="Ram_EndProcessTitle">End Process</system:String>
+    <system:String x:Key="Ram_ProtectedProcess">{0} is a protected Windows process and cannot be ended here.</system:String>
+    <system:String x:Key="Ram_ConfirmEndProcess" xml:space="preserve">End {0} (PID {1})?&#10;&#10;Only this process is closed, not the processes it started. Any unsaved work in it will be lost.</system:String>
+    <system:String x:Key="Ram_EndProcessFailed">Could not end {0}. Windows may be protecting it, or it is still shutting down.</system:String>
+    <system:String x:Key="Ram_SmartKillConfirm" xml:space="preserve">Turn on Smart Kill?&#10;&#10;Apps whose window stays "Not Responding" for {0} seconds or more will be closed automatically. Unsaved work in them will be lost.&#10;&#10;Never closed: the app you are using right now, Windows and Explorer processes, WebView2 (used by Outlook and Teams) and WinXTools itself. Every app that gets closed is listed in the history.</system:String>
+    <system:String x:Key="Ram_AutoKillConfirm" xml:space="preserve">Turn on Auto Kill?&#10;&#10;These apps will be closed now and every time they start. Unsaved work in them will be lost:&#10;{0}</system:String>
+    <system:String x:Key="Ram_AddRuleConfirm" xml:space="preserve">Add "{0}" to the kill rules?&#10;&#10;If it is running it will be closed now (unsaved work will be lost), and it will be closed automatically whenever it starts while Auto Kill is on.</system:String>
+    <system:String x:Key="Ram_ProtectedRule">Cannot add "{0}": it is a protected Windows process.</system:String>
+    <system:String x:Key="Ram_InvalidProcessName">"{0}" is not a valid program name. Type the name without .exe, for example: notepad</system:String>
+    <system:String x:Key="Ram_AutoClosed">Auto-closed: {0}</system:String>
+    <system:String x:Key="Ram_ReasonNotResponding">Not responding for {0} s</system:String>
+    <system:String x:Key="Ram_ReasonMemory">Using {0} MB</system:String>
+    <system:String x:Key="Ram_ReasonRule">Kill rule</system:String>
+
+    <!-- Network Tools / Packet Monitor / Connections -->
+    <system:String x:Key="NetTools_Running">Running...</system:String>
+    <system:String x:Key="NetTools_Cancelled">[Cancelled]</system:String>
+    <system:String x:Key="NetTools_Error">Error: {0}</system:String>
+    <system:String x:Key="NetTools_EnterHost">Please enter a hostname or IP address.</system:String>
+    <system:String x:Key="NetTools_EnterHostname">Please enter a hostname.</system:String>
+    <system:String x:Key="NetTools_EnterDomain">Please enter a domain name.</system:String>
+    <system:String x:Key="NetTools_EnterUrl">Please enter a URL.</system:String>
+    <system:String x:Key="NetTools_SslExpired">[EXPIRED]</system:String>
+    <system:String x:Key="NetTools_SslInvalid">[INVALID]</system:String>
+    <system:String x:Key="NetTools_SslWarning">[WARNING]</system:String>
+    <system:String x:Key="NetTools_SslValid">[VALID]</system:String>
+    <system:String x:Key="NetTools_SslReasonLabel">Validation errors:</system:String>
+    <system:String x:Key="NetTools_SubnetPrompt">Please enter an IP address with CIDR (e.g., 192.168.1.0/24).</system:String>
+    <system:String x:Key="NetTools_SubnetIpv4Only">Only IPv4 addresses are supported.</system:String>
+    <system:String x:Key="NetTools_SubnetCidrRange">CIDR prefix must be between 0 and 32.</system:String>
+    <system:String x:Key="NetTools_SubnetFormat">Invalid format. Use: 192.168.1.0/24</system:String>
+    <system:String x:Key="NetTools_SpeedStarting">Starting download test...</system:String>
+    <system:String x:Key="NetTools_SpeedProgress">Downloaded {0:F1} MB — {1:F1} Mbps</system:String>
+    <system:String x:Key="NetTools_SpeedFailed">Speed test failed: {0}</system:String>
+    <system:String x:Key="NetTools_FloodFormat">Invalid FLOOD format. Use: FLOOD:PROTOCOL:HOST:PORT:COUNT:DELAY:DATA</system:String>
+    <system:String x:Key="NetTools_FloodBadNumbers">Count and delay must be whole numbers.</system:String>
+    <system:String x:Key="NetTools_FloodWarning">WARNING: FLOOD sends many packets quickly. Only target hosts you own or have permission to test.</system:String>
+    <system:String x:Key="NetTools_FloodCapped">Capped to {0} packets, min {1} ms delay (max ~{2}/s).</system:String>
+    <system:String x:Key="PktMon_NoSelection">Select a packet first.</system:String>
+    <system:String x:Key="PktMon_NoBlockableIp">This packet has no blockable IP address.</system:String>
+    <system:String x:Key="PktMon_BlockConfirm">Block IP address {0}?</system:String>
+    <system:String x:Key="PktMon_BlockTitle">Block IP</system:String>
+    <system:String x:Key="PktMon_Blocked">Blocked IP: {0}</system:String>
+    <system:String x:Key="PktMon_BlockFailed">Failed to block {0} — Windows Firewall rejected the rule.</system:String>
+    <system:String x:Key="PktMon_Copied">Packet details copied to clipboard</system:String>
+    <system:String x:Key="ConnMon_BlockConfirm" xml:space="preserve">Block all connections to/from {0}?&#x0a;&#x0a;This adds a Windows Firewall rule that blocks this IP address for every app.</system:String>
+    <system:String x:Key="ConnMon_BlockTitle">Block IP Address</system:String>
+    <system:String x:Key="ConnMon_BlockSuccess">Blocked {0}</system:String>
+    <system:String x:Key="ConnMon_BlockFailed">Failed to block {0} — Windows Firewall rejected the rule.</system:String>
+
+    <!-- Settings: Start with Windows / reset / updates -->
+    <system:String x:Key="Settings_StartWithWindowsDesc">Start WinXTools automatically (as administrator) when you sign in</system:String>
+    <system:String x:Key="Settings_StartupUnsafeFolder" xml:space="preserve">WinXTools can only start with Windows from a folder that only administrators can change, such as C:\Program Files\WinXTools.&#x0a;&#x0a;It is running from:&#x0a;{0}&#x0a;&#x0a;Move the WinXTools folder there, then turn this on again.</system:String>
+    <system:String x:Key="Settings_StartupFailed">Windows Task Scheduler did not accept the change, so Start with Windows was not changed.</system:String>
+    <system:String x:Key="Settings_SaveFailed">The language was changed, but it could not be saved. WinXTools may start in the previous language next time.</system:String>
+    <system:String x:Key="Settings_ResetConfirm" xml:space="preserve">Reset settings to their defaults?&#x0a;&#x0a;• Language: follow the Windows display language&#x0a;• Start with Windows: off&#x0a;&#x0a;Your license key is kept.</system:String>
+    <system:String x:Key="Settings_ResetDone">Settings have been reset to their defaults.</system:String>
+    <system:String x:Key="Settings_ResetPartial">The language was reset, but Start with Windows could not be turned off. Please try again.</system:String>
+    <system:String x:Key="Settings_ResetFailed">The settings could not be reset. Please try again.</system:String>
+    <system:String x:Key="Settings_VersionFormat">Version {0}</system:String>
+    <system:String x:Key="Settings_CurrentVersion">Current: v{0}</system:String>
+    <system:String x:Key="Settings_VersionChange">Current: v{0} → New: v{1}</system:String>
+    <system:String x:Key="Settings_UpdateNotChecked">Updates not checked yet</system:String>
+    <system:String x:Key="Settings_Checking">Checking...</system:String>
+    <system:String x:Key="Settings_UpdateCheckFailed" xml:space="preserve">Couldn't check for updates.&#x0a;&#x0a;Please check your internet connection and try again.</system:String>
+    <system:String x:Key="Settings_UpdateCheckFailedShort">Couldn't check for updates</system:String>
+    <system:String x:Key="Settings_UpdateAvailable">Update available: v{0}</system:String>
+    <system:String x:Key="Settings_UpdatePrompt" xml:space="preserve">A new version of WinXTools is available.&#x0a;&#x0a;Current: v{0}&#x0a;New: v{1}&#x0a;&#x0a;Download and install it now? WinXTools will close and restart.</system:String>
+    <system:String x:Key="Settings_DownloadProgress">Downloaded {0:0.0} MB of {1:0.0} MB</system:String>
+    <system:String x:Key="Settings_DownloadProgressUnknown">Downloaded {0:0.0} MB</system:String>
+    <system:String x:Key="Settings_UpdatePreparing">Checking and preparing the update...</system:String>
+    <system:String x:Key="Settings_UpdateRestarting">Restarting WinXTools to finish the update...</system:String>
+    <system:String x:Key="Settings_UpdateFailedTitle">Update not installed</system:String>
+    <system:String x:Key="Settings_UpdateErrManual">This update can't be downloaded automatically. Nothing was installed.</system:String>
+    <system:String x:Key="Settings_UpdateErrDownload">The update could not be downloaded. Please check your internet connection and try again.</system:String>
+    <system:String x:Key="Settings_UpdateErrVerify">The downloaded file did not match what the server announced, so it was deleted and nothing was installed.</system:String>
+    <system:String x:Key="Settings_UpdateErrInvalid">The downloaded file is not a valid WinXTools update. Nothing was installed.</system:String>
+    <system:String x:Key="Settings_UpdateErrFolder">WinXTools could not prepare a protected folder for the update, so nothing was installed.</system:String>
+    <system:String x:Key="Settings_UpdateErrGeneric">The update could not be installed. Nothing was changed.</system:String>
+    <system:String x:Key="Settings_UpdateOpenPage">Open the download page in your browser?</system:String>
+
+    <!-- Uninstaller (safe Deep Clean) -->
+    <system:String x:Key="Uninstall_ColProgram">Program</system:String>
+    <system:String x:Key="Uninstall_Actions">Actions</system:String>
+    <system:String x:Key="Uninstall_SelectAll">Select all</system:String>
+    <system:String x:Key="Uninstall_KeepAll">Keep all</system:String>
+    <system:String x:Key="Uninstall_MoveToRecycleBin">Move to Recycle Bin</system:String>
+    <system:String x:Key="Uninstall_Loading">Loading installed programs…</system:String>
+    <system:String x:Key="Uninstall_LoadFailed" xml:space="preserve">Couldn't read the list of installed programs.&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_Empty">No installed programs were found.</system:String>
+    <system:String x:Key="Uninstall_NoMatch">No programs match your search.</system:String>
+    <system:String x:Key="Uninstall_Count">{0:N0} programs</system:String>
+    <system:String x:Key="Uninstall_CountFiltered">Showing {0:N0} of {1:N0} programs</system:String>
+    <system:String x:Key="Uninstall_PerUser">Current user only</system:String>
+    <system:String x:Key="Uninstall_SystemComponent">System component</system:String>
+    <system:String x:Key="Uninstall_ScanTitle">Scan Complete</system:String>
+    <system:String x:Key="Uninstall_ScanResult" xml:space="preserve">Found {0:N0} installed programs:&#x0a;• {1:N0} installed for all users&#x0a;• {2:N0} installed for your account only&#x0a;&#x0a;Hidden system components: {3:N0} — turn on "Show System Apps" to list them.</system:String>
+    <system:String x:Key="Uninstall_CannotTitle">Can't Uninstall</system:String>
+    <system:String x:Key="Uninstall_NoCommand" xml:space="preserve">{0} doesn't register an uninstaller with Windows, so it can't be removed from here.&#x0a;&#x0a;Try the program's own setup file, or Windows Settings › Apps.</system:String>
+    <system:String x:Key="Uninstall_UninstallerMissing" xml:space="preserve">The uninstaller for {0} is missing:&#x0a;{1}&#x0a;&#x0a;The program may already be partly removed. Reinstall it and then uninstall, or use Windows Settings › Apps.</system:String>
+    <system:String x:Key="Uninstall_NoRemove">The publisher of {0} has turned off uninstalling it from the apps list, so WinXTools won't remove it.</system:String>
+    <system:String x:Key="Uninstall_ConfirmTitle">Confirm Uninstall</system:String>
+    <system:String x:Key="Uninstall_Confirm" xml:space="preserve">Uninstall {0}?&#x0a;&#x0a;The program's own uninstaller will open — follow its steps to finish. WinXTools waits for it, then checks that the program is really gone.</system:String>
+    <system:String x:Key="Uninstall_ConfirmSystem" xml:space="preserve">{0} is a hidden system component. Other programs may need it, and removing it can break them.&#x0a;&#x0a;Uninstall it anyway?</system:String>
+    <system:String x:Key="Uninstall_WaitTitle">Uninstalling {0}</system:String>
+    <system:String x:Key="Uninstall_WaitMsg">The uninstaller is open — follow its steps. WinXTools continues automatically when it finishes.</system:String>
+    <system:String x:Key="Uninstall_WaitClosed" xml:space="preserve">The uninstaller has closed, but {0} is still installed.&#x0a;&#x0a;If it is still finishing in the background, WinXTools continues automatically. If you cancelled it, click "Stop waiting".</system:String>
+    <system:String x:Key="Uninstall_StopWaiting">Stop waiting</system:String>
+    <system:String x:Key="Uninstall_DoneTitle">Uninstall Complete</system:String>
+    <system:String x:Key="Uninstall_Done">{0} was uninstalled.</system:String>
+    <system:String x:Key="Uninstall_NotRemovedTitle">Still Installed</system:String>
+    <system:String x:Key="Uninstall_StillInstalled" xml:space="preserve">{0} is still installed.&#x0a;&#x0a;The uninstaller may have been cancelled, failed, or needs a restart to finish. If it asked for a restart, restart Windows and click Refresh to check again.</system:String>
+    <system:String x:Key="Uninstall_MsiBusy">Windows Installer is busy with another installation. Wait for it to finish, then try again.</system:String>
+    <system:String x:Key="Uninstall_PerUserNeedsAdmin" xml:space="preserve">{0} is installed for your account only, but its uninstaller asks for administrator rights.&#x0a;&#x0a;For your safety, WinXTools runs per-user uninstallers with normal user rights only. Please uninstall it from Windows Settings › Apps.</system:String>
+    <system:String x:Key="Uninstall_NoDesktopUser" xml:space="preserve">Couldn't start the uninstaller for {0} with your normal user rights (Windows Explorer or the Secondary Logon service isn't available).&#x0a;&#x0a;Please uninstall it from Windows Settings › Apps.</system:String>
+    <system:String x:Key="Uninstall_LaunchFailed" xml:space="preserve">Couldn't start the uninstaller for {0}.&#x0a;&#x0a;{1}</system:String>
+    <system:String x:Key="Uninstall_Error" xml:space="preserve">The operation stopped because of an unexpected error:&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_ProtectedTitle">Protected Program</system:String>
+    <system:String x:Key="Uninstall_DeepSystemBlocked" xml:space="preserve">Deep Clean isn't available for {0}.&#x0a;&#x0a;It is marked as a Windows system component — removing its files could make Windows or other programs unstable.</system:String>
+    <system:String x:Key="Uninstall_PublisherWarningTitle">Protected Publisher Warning</system:String>
+    <system:String x:Key="Uninstall_PublisherWarning" xml:space="preserve">{0} is published by {1}, which usually makes system or driver software.&#x0a;&#x0a;Deep cleaning it could cause problems with your hardware or Windows. Are you sure?</system:String>
+    <system:String x:Key="Uninstall_DeepTitle">Deep Clean</system:String>
+    <system:String x:Key="Uninstall_DeepConfirm" xml:space="preserve">Deep Clean {0}?&#x0a;&#x0a;1. Run the program's own uninstaller and wait for it to finish.&#x0a;2. Check that the program is really gone. If it is still installed, stop without touching any files.&#x0a;3. Look for leftover folders that match this program exactly: its install folder, and folders named after it in Program Files, ProgramData and AppData.&#x0a;4. Show you everything found, with sizes — you choose what to remove. Chosen folders go to the Recycle Bin, so you can restore them.</system:String>
+    <system:String x:Key="Uninstall_DeepStopped" xml:space="preserve">{0} is still installed, so Deep Clean stopped without touching any files.&#x0a;&#x0a;The uninstaller may have been cancelled, failed, or needs a restart to finish.</system:String>
+    <system:String x:Key="Uninstall_ScanLeftoversTitle">Looking for leftovers of {0}</system:String>
+    <system:String x:Key="Uninstall_ScanLeftoversMsg">Checking its install folder, Program Files, ProgramData and AppData…</system:String>
+    <system:String x:Key="Uninstall_ScanCancelled">{0} was uninstalled. The leftover search was cancelled — nothing was removed.</system:String>
+    <system:String x:Key="Uninstall_DeepDoneTitle">Deep Clean Finished</system:String>
+    <system:String x:Key="Uninstall_NoLeftovers">{0} was uninstalled and no leftover folders were found.</system:String>
+    <system:String x:Key="Uninstall_LeftoversTitle">Leftovers of {0}</system:String>
+    <system:String x:Key="Uninstall_LeftoversMsg">{0} was uninstalled, but these folders were left behind. Tick the ones you want to remove — they are moved to the Recycle Bin, so you can restore them if needed. Check the size first: a large folder may contain your own data.</system:String>
+    <system:String x:Key="Uninstall_LeftoverSelection">Selected {0} of {1} folders · {2}</system:String>
+    <system:String x:Key="Uninstall_FileCount">{0:N0} files</system:String>
+    <system:String x:Key="Uninstall_KindInstall">Install folder</system:String>
+    <system:String x:Key="Uninstall_MovingTitle">Moving leftovers to the Recycle Bin</system:String>
+    <system:String x:Key="Uninstall_MovingMsg" xml:space="preserve">Folder {0} of {1}:&#x0a;{2}</system:String>
+    <system:String x:Key="Uninstall_ResultMoved">Moved to the Recycle Bin: {0} folder(s) ({1})</system:String>
+    <system:String x:Key="Uninstall_ResultGone">Already removed by the uninstaller: {0} folder(s)</system:String>
+    <system:String x:Key="Uninstall_ResultFailed">Not moved: {0} folder(s)</system:String>
+    <system:String x:Key="Uninstall_ResultStopped">Not processed because you stopped: {0} folder(s)</system:String>
+    <system:String x:Key="Uninstall_ResultRestoreHint">Moved folders can be restored from the Recycle Bin.</system:String>
+    <system:String x:Key="Uninstall_FailInUse">some files are in use or access was denied</system:String>
+    <system:String x:Key="Uninstall_FailCancelled">cancelled in the Windows prompt — the folder was kept</system:String>
+    <system:String x:Key="Uninstall_FailChanged">skipped for safety — the folder changed after the scan</system:String>
+    <system:String x:Key="Uninstall_FailCode">Windows error 0x{0:X}</system:String>
+
+    <!-- Automation rules -->
+    <system:String x:Key="Rules_ActivityEmpty">Nothing yet. When a rule runs, each action and its result appear here.</system:String>
+    <system:String x:Key="Rules_ActivityTitle">Activity (this session)</system:String>
+    <system:String x:Key="Rules_CountFormat">{0} rule(s) configured</system:String>
+    <system:String x:Key="Rules_CreateRule">Create Rule</system:String>
+    <system:String x:Key="Rules_DeleteConfirm">Delete the rule "{0}"? This cannot be undone.</system:String>
+    <system:String x:Key="Rules_DeleteConfirmTitle">Delete Rule</system:String>
+    <system:String x:Key="Rules_DeleteTooltip">Delete rule</system:String>
+    <system:String x:Key="Rules_EditTooltip">Edit rule</system:String>
+    <system:String x:Key="Rules_EmptyDesc">Create a rule to block, limit or close apps, or to notify you, automatically.</system:String>
+    <system:String x:Key="Rules_EmptyTitle">No rules yet</system:String>
+    <system:String x:Key="Rules_FiredCount">Fired {0} time(s)</system:String>
+    <system:String x:Key="Rules_LastFired">Last: {0}</system:String>
+    <system:String x:Key="Rules_LastRunMixed">{0} OK, {1} failed</system:String>
+    <system:String x:Key="Rules_LastRunOk">{0} action(s) OK</system:String>
+    <system:String x:Key="Rules_LogConditionError">{0}: a condition could not be checked ({1})</system:String>
+    <system:String x:Key="Rules_LogDone">{0}: done</system:String>
+    <system:String x:Key="Rules_LogFailed">{0}: failed ({1})</system:String>
+    <system:String x:Key="Rules_LogFired">Rule "{0}" fired</system:String>
+    <system:String x:Key="Rules_LogImported">Imported {0} rule(s) from the previous version. They are turned off: check each rule, then turn it on.</system:String>
+    <system:String x:Key="Rules_LogInvalidRules">Skipped {0} rule(s) that had no usable actions left.</system:String>
+    <system:String x:Key="Rules_LogNotification">{0}: notification "{1}"</system:String>
+    <system:String x:Key="Rules_LogRemovedActions">Removed {0} action(s) that are no longer supported (Execute Command, LINE Notify, SMS, Email).</system:String>
+    <system:String x:Key="Rules_LogRequested">{0}: requested</system:String>
+    <system:String x:Key="Rules_LogSkipped">{0}: skipped ({1})</system:String>
+    <system:String x:Key="Rules_LogUnknownSettings">Turned off {0} rule(s) with settings this version does not understand. Edit them before turning them on.</system:String>
+    <system:String x:Key="Rules_LogUnreadableFile">The rules file could not be read and was moved aside: {0}</system:String>
+    <system:String x:Key="Rules_LogUntrustedFile">Rules that other programs could have changed were moved aside and not used: {0}</system:String>
+    <system:String x:Key="Rules_NeverFired">Never fired yet</system:String>
+    <system:String x:Key="Rules_NewRule">New Rule</system:String>
+    <system:String x:Key="Rules_ReasonAlreadyBlocked">already blocked</system:String>
+    <system:String x:Key="Rules_ReasonError">unexpected error: {0}</system:String>
+    <system:String x:Key="Rules_ReasonFirewall">Windows Firewall did not accept the change</system:String>
+    <system:String x:Key="Rules_ReasonInvalid">the action settings are not valid, edit the rule</system:String>
+    <system:String x:Key="Rules_ReasonKill">the app could not be closed</system:String>
+    <system:String x:Key="Rules_ReasonNotRunning">the app is not running</system:String>
+    <system:String x:Key="Rules_ReasonProtected">Windows system processes cannot be closed</system:String>
+    <system:String x:Key="Rules_ReasonRemoved">this action is no longer supported</system:String>
+    <system:String x:Key="Rules_ReasonWebhook">the server answered {0}</system:String>
+    <system:String x:Key="Rules_ReasonWebhookTimeout">no answer within 10 seconds</system:String>
+    <system:String x:Key="Rules_ReasonWebhookUnreachable">the server could not be reached</system:String>
+    <system:String x:Key="Rules_ReasonWrite">the log file could not be written</system:String>
+    <system:String x:Key="Rules_RunsAtStart">Runs once when turned on</system:String>
+    <system:String x:Key="Rules_SaveFailed">The change could not be saved: {0}</system:String>
+    <system:String x:Key="Rules_SaveFailedTitle">Could not save the rule</system:String>
+    <system:String x:Key="Rules_StatusNoPro">Paused: Automation Rules need WinXTools Pro</system:String>
+    <system:String x:Key="Rules_StatusRunning">Automation is on: rules are checked every 5 seconds</system:String>
+    <system:String x:Key="Rules_StatusStopped">Automation is not running</system:String>
+    <system:String x:Key="Rules_StorageAccessDenied">Rules are off: WinXTools could not protect its rules folder ({0}). Run WinXTools as administrator.</system:String>
+    <system:String x:Key="Rules_StorageIoError">Rules are off: the rules file in {0} could not be read or saved.</system:String>
+    <system:String x:Key="Rules_StorageUnsafe">Rules are off: the rules folder ({0}) is not safe to use. Delete that folder and restart WinXTools.</system:String>
+    <system:String x:Key="Rules_Subtitle">Run actions automatically when conditions are met</system:String>
+    <system:String x:Key="Rules_Title">Automation Rules</system:String>
+    <system:String x:Key="Rules_ToastCaption">WinXTools · Automation</system:String>
+    <system:String x:Key="Rules_ToggleTooltip">Turn this rule on or off</system:String>
+    <system:String x:Key="RuleEditor_ActBlockIP">Block IP</system:String>
+    <system:String x:Key="RuleEditor_ActBlockPort">Block port</system:String>
+    <system:String x:Key="RuleEditor_ActKillProcess">Close app</system:String>
+    <system:String x:Key="RuleEditor_ActLimitBandwidth">Limit speed</system:String>
+    <system:String x:Key="RuleEditor_ActSendWebhook">Send webhook</system:String>
+    <system:String x:Key="RuleEditor_ActShowNotification">Show notification</system:String>
+    <system:String x:Key="RuleEditor_ActUnblockIP">Unblock IP</system:String>
+    <system:String x:Key="RuleEditor_ActUnblockPort">Unblock port</system:String>
+    <system:String x:Key="RuleEditor_ActUnlimitBandwidth">Remove speed limit</system:String>
+    <system:String x:Key="RuleEditor_ActWriteToFile">Write to log file</system:String>
+    <system:String x:Key="RuleEditor_Actions">Actions (what to do)</system:String>
+    <system:String x:Key="RuleEditor_AlwaysHint">Runs once each time the rule starts: when WinXTools starts, when the rule is turned on, or after it is saved.</system:String>
+    <system:String x:Key="RuleEditor_BasicInfo">Basic information</system:String>
+    <system:String x:Key="RuleEditor_Blocked">blocked</system:String>
+    <system:String x:Key="RuleEditor_CapApp">App name (blank = target app)</system:String>
+    <system:String x:Key="RuleEditor_CapAppOrPc">App (* = whole PC, blank = target app)</system:String>
+    <system:String x:Key="RuleEditor_CapConnections">Number of connections</system:String>
+    <system:String x:Key="RuleEditor_CapFileName">Log file name (saved in the WinXTools log folder)</system:String>
+    <system:String x:Key="RuleEditor_CapIpConnected">Remote IP address</system:String>
+    <system:String x:Key="RuleEditor_CapIpTarget">IP address or range, e.g. 203.0.113.5 or 10.0.0.0/24</system:String>
+    <system:String x:Key="RuleEditor_CapLimit">Speed limit, KB/s (0 = block)</system:String>
+    <system:String x:Key="RuleEditor_CapMessage">Message (can use {rule_name}, {datetime})</system:String>
+    <system:String x:Key="RuleEditor_CapPort">Port (1–65535)</system:String>
+    <system:String x:Key="RuleEditor_CapProtocol">Protocol</system:String>
+    <system:String x:Key="RuleEditor_CapSpeed">Download + upload, KB/s</system:String>
+    <system:String x:Key="RuleEditor_CapUrl">Webhook URL (https://…)</system:String>
+    <system:String x:Key="RuleEditor_CondAlways">When the rule starts</system:String>
+    <system:String x:Key="RuleEditor_CondBandwidth">Total network speed</system:String>
+    <system:String x:Key="RuleEditor_CondConnectionCount">Connection count</system:String>
+    <system:String x:Key="RuleEditor_CondDayOfWeek">Day of week</system:String>
+    <system:String x:Key="RuleEditor_CondIpConnected">IP connected</system:String>
+    <system:String x:Key="RuleEditor_CondPortInUse">Port in use</system:String>
+    <system:String x:Key="RuleEditor_CondProcessRunning">App running</system:String>
+    <system:String x:Key="RuleEditor_CondTimeRange">Time range</system:String>
+    <system:String x:Key="RuleEditor_Conditions">Conditions (when)</system:String>
+    <system:String x:Key="RuleEditor_Cooldown">Cooldown (seconds)</system:String>
+    <system:String x:Key="RuleEditor_CooldownHint">Minimum time between two runs (default 60)</system:String>
+    <system:String x:Key="RuleEditor_DayFri">Fri</system:String>
+    <system:String x:Key="RuleEditor_DayMon">Mon</system:String>
+    <system:String x:Key="RuleEditor_DaySat">Sat</system:String>
+    <system:String x:Key="RuleEditor_DaySun">Sun</system:String>
+    <system:String x:Key="RuleEditor_DayThu">Thu</system:String>
+    <system:String x:Key="RuleEditor_DayTue">Tue</system:String>
+    <system:String x:Key="RuleEditor_DayWed">Wed</system:String>
+    <system:String x:Key="RuleEditor_Days">Days</system:String>
+    <system:String x:Key="RuleEditor_Description">Description</system:String>
+    <system:String x:Key="RuleEditor_Do">Do</system:String>
+    <system:String x:Key="RuleEditor_EdgeHint">A rule runs once when its conditions become true, not again while they stay true. It runs again the next time they become true (after the cooldown).</system:String>
+    <system:String x:Key="RuleEditor_Enable">Turn this rule on</system:String>
+    <system:String x:Key="RuleEditor_ErrAction">Action {0}: {1}</system:String>
+    <system:String x:Key="RuleEditor_ErrAppName">enter just the app name, e.g. chrome (no folders or wildcards).</system:String>
+    <system:String x:Key="RuleEditor_ErrAppRequired">enter an app name, or set the rule's target app.</system:String>
+    <system:String x:Key="RuleEditor_ErrCondition">Condition {0}: {1}</system:String>
+    <system:String x:Key="RuleEditor_ErrCooldown">Cooldown must be a whole number of seconds from 0 to {0}.</system:String>
+    <system:String x:Key="RuleEditor_ErrFileName">use a simple file name ending in .log or .txt, e.g. rules.log.</system:String>
+    <system:String x:Key="RuleEditor_ErrIp">enter a valid IP address, e.g. 203.0.113.5.</system:String>
+    <system:String x:Key="RuleEditor_ErrLimit">enter a speed in KB/s from 0 to {0}.</system:String>
+    <system:String x:Key="RuleEditor_ErrNameRequired">Please enter a rule name.</system:String>
+    <system:String x:Key="RuleEditor_ErrNoActions">Please add at least one action.</system:String>
+    <system:String x:Key="RuleEditor_ErrNoDays">pick at least one day.</system:String>
+    <system:String x:Key="RuleEditor_ErrNumber">enter a whole number (0 or more).</system:String>
+    <system:String x:Key="RuleEditor_ErrPort">enter a port from 1 to 65535.</system:String>
+    <system:String x:Key="RuleEditor_ErrProtected">Windows system processes and WinXTools itself cannot be closed by a rule.</system:String>
+    <system:String x:Key="RuleEditor_ErrProtocol">choose TCP or UDP.</system:String>
+    <system:String x:Key="RuleEditor_ErrRemoved">this action is no longer supported.</system:String>
+    <system:String x:Key="RuleEditor_ErrSameTime">start and end time must be different.</system:String>
+    <system:String x:Key="RuleEditor_ErrTargetApp">Target app must be just an app name, e.g. chrome.</system:String>
+    <system:String x:Key="RuleEditor_ErrTime">enter times as HH:mm, e.g. 22:00.</system:String>
+    <system:String x:Key="RuleEditor_ErrTitle">Check the rule</system:String>
+    <system:String x:Key="RuleEditor_ErrTooMany">A rule can have at most {0} conditions and {0} actions.</system:String>
+    <system:String x:Key="RuleEditor_ErrTooManyRules">You can have at most {0} rules. Delete a rule you no longer need first.</system:String>
+    <system:String x:Key="RuleEditor_ErrUnknownType">choose a type.</system:String>
+    <system:String x:Key="RuleEditor_ErrUrl">enter a full address starting with https:// or http://.</system:String>
+    <system:String x:Key="RuleEditor_From">From (HH:mm)</system:String>
+    <system:String x:Key="RuleEditor_LogicAll">All conditions (AND)</system:String>
+    <system:String x:Key="RuleEditor_LogicAny">Any condition (OR)</system:String>
+    <system:String x:Key="RuleEditor_Name">Rule name</system:String>
+    <system:String x:Key="RuleEditor_NoActions">No actions yet. Add at least one.</system:String>
+    <system:String x:Key="RuleEditor_NoConditions">No conditions: the rule runs once when WinXTools starts, when it is turned on, or after it is saved.</system:String>
+    <system:String x:Key="RuleEditor_Remove">Remove</system:String>
+    <system:String x:Key="RuleEditor_SaveRule">Save Rule</system:String>
+    <system:String x:Key="RuleEditor_TargetApp">Target app (optional)</system:String>
+    <system:String x:Key="RuleEditor_TargetAppHint">Used by app conditions and actions whose app field is left blank, e.g. chrome</system:String>
+    <system:String x:Key="RuleEditor_TitleEdit">Edit Rule</system:String>
+    <system:String x:Key="RuleEditor_TitleNew">New Rule</system:String>
+    <system:String x:Key="RuleEditor_To">To (HH:mm)</system:String>
+    <system:String x:Key="RuleEditor_When">When</system:String>
+    <system:String x:Key="RuleEditor_WholePc">whole PC</system:String>
+
+    <!-- License, trial and updates (xman studio product API) -->
+    <system:String x:Key="Settings_BuyPro">Buy Pro — ฿199</system:String>
+    <system:String x:Key="Settings_LicenseRefresh">Check again</system:String>
+    <system:String x:Key="Settings_Activating">Activating...</system:String>
+    <system:String x:Key="Settings_UpdateErrNotSigned">This update is not signed by xman studio, so it was not installed. Nothing was changed.</system:String>
+    <system:String x:Key="Settings_UpdateErrSignature">The update failed the signature check — it may have been altered on the way. It was deleted and nothing was installed.</system:String>
+    <system:String x:Key="License_ProLifetime">WinXTools Pro — lifetime license, never expires</system:String>
+    <system:String x:Key="License_ProUntil">WinXTools Pro — valid until {0}</system:String>
+    <system:String x:Key="License_OfflineSince">Not confirmed online yet this session (last confirmed {0}). Pro keeps working for up to {1} days without internet.</system:String>
+    <system:String x:Key="License_ExpiredOn">Your Pro license expired on {0}.</system:String>
+    <system:String x:Key="License_Expired">Your Pro license has expired.</system:String>
+    <system:String x:Key="License_ExpiredHelp">Buy Pro again to keep using the Pro features. The free features keep working.</system:String>
+    <system:String x:Key="License_BadgeExpired">EXPIRED</system:String>
+    <system:String x:Key="License_Revoked">This license was cancelled by xman studio.</system:String>
+    <system:String x:Key="License_RevokedHelp">If you think this is a mistake, contact xman studio support with your license key.</system:String>
+    <system:String x:Key="License_BadgeRevoked">CANCELLED</system:String>
+    <system:String x:Key="License_OtherMachine">This license is now activated on another PC.</system:String>
+    <system:String x:Key="License_OtherMachineHelp">Press Activate to move it back to this PC (Pro then stops on the other PC).</system:String>
+    <system:String x:Key="License_Unverified">Your license could not be confirmed.</system:String>
+    <system:String x:Key="License_UnverifiedHelp">WinXTools needs to reach the license server at least once every {0} days. Connect to the internet and press Check again.</system:String>
+    <system:String x:Key="License_TrialUntil">Free Pro trial — every feature unlocked until {0}</system:String>
+    <system:String x:Key="License_TrialHelp">After the trial the free features keep working. Buy Pro (฿199, one-time) to keep everything.</system:String>
+    <system:String x:Key="License_BadgeTrial">TRIAL</system:String>
+    <system:String x:Key="License_FreeTrialUsed">Free version — the Pro trial on this PC has been used.</system:String>
+    <system:String x:Key="License_Free">Free version</system:String>
+    <system:String x:Key="License_EnterKey">Please enter your license key. You get it by email (and in your xman studio account) after buying Pro.</system:String>
+    <system:String x:Key="License_KeyFormat">That doesn't look like a license key. A key looks like ABCD-1234-EFGH-5678 (letters, numbers and dashes).</system:String>
+    <system:String x:Key="License_Activated">WinXTools Pro is now active on this PC. Thank you for your support!</system:String>
+    <system:String x:Key="License_MoveConfirm" xml:space="preserve">This license is already activated on another PC.&#x0a;&#x0a;Move it to this PC? WinXTools Pro will stop working on the other PC (you can move it back later the same way).</system:String>
+    <system:String x:Key="License_Failed">The license could not be activated. Please try again.</system:String>
+    <system:String x:Key="License_DeactivateConfirm" xml:space="preserve">Remove the license from this PC?&#x0a;&#x0a;Pro stops on this PC and the key becomes free to activate on another PC. You can activate it here again later.</system:String>
+    <system:String x:Key="License_Deactivated" xml:space="preserve">The license was removed from this PC. Keep your key to activate it again:&#x0a;&#x0a;{0}</system:String>
+    <system:String x:Key="License_DeactivateOffline">The license server can't be reached, so the license is still registered to this PC. Nothing was changed — please try again when you're online.</system:String>
+    <system:String x:Key="License_Confirmed">The license server confirmed your license.</system:String>
+    <system:String x:Key="License_OpenPageFailed" xml:space="preserve">The browser could not be opened. Please visit:&#x0a;{0}</system:String>
+    <system:String x:Key="License_ErrInvalidKey">This key is not a WinXTools license. Check it for typos — keys bought for other xman studio apps do not work in WinXTools.</system:String>
+    <system:String x:Key="License_ErrExpired">This license has expired. Buy Pro again to keep the Pro features.</system:String>
+    <system:String x:Key="License_ErrRevoked">This license was cancelled by xman studio. Contact support if you think this is a mistake.</system:String>
+    <system:String x:Key="License_ErrOtherDevice">The license stays on the other PC. Nothing was changed.</system:String>
+    <system:String x:Key="License_ErrTrialKey">This is a trial key, not a Pro license. Buy WinXTools Pro to get a license key.</system:String>
+    <system:String x:Key="License_ErrNoLicense">The license server has no license for this PC.</system:String>
+    <system:String x:Key="License_ErrOffline">Can't reach the license server. Check your internet connection (and that no firewall or hosts entry blocks xman4289.com), then try again.</system:String>
+    <system:String x:Key="License_ErrBusy">The license server is busy or under maintenance. Please try again in a few minutes.</system:String>
+    <system:String x:Key="License_DeactivateFailed">The license could not be removed from this PC. Nothing was changed — please try again.</system:String>
+    <system:String x:Key="Pro_BannerExpiredTitle">Pro license expired</system:String>
+    <system:String x:Key="Pro_BannerExpiredDesc">Renew to unlock the Pro features again</system:String>
+    <system:String x:Key="Pro_BannerMovedTitle">License is on another PC</system:String>
+    <system:String x:Key="Pro_BannerMovedDesc">Open Settings → License to move it back</system:String>
+    <system:String x:Key="Pro_BannerUnverifiedTitle">License not confirmed</system:String>
+    <system:String x:Key="Pro_BannerUnverifiedDesc">Connect to the internet to confirm your Pro license</system:String>
+    <system:String x:Key="Pro_BannerRevokedTitle">License cancelled</system:String>
+    <system:String x:Key="Update_StartupPrompt" xml:space="preserve">WinXTools {1} is available (you have {0}).&#x0a;&#x0a;Update now? WinXTools downloads it, checks its signature, closes, updates itself and opens again. Your settings and license are kept.</system:String>
+    <system:String x:Key="Update_Later">WinXTools {0} is ready to install — click here, or use Settings → Updates.</system:String>
 
 </ResourceDictionary>

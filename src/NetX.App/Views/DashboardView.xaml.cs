@@ -10,6 +10,7 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 using NetX.Core.Network;
 using NetX.Core.Optimization;
+using NetX.Core.System;
 using NetX.App.Helpers;
 
 namespace NetX.App.Views;
@@ -368,148 +369,220 @@ public partial class DashboardView : Page
         UpdateChartType(isLineChart);
     }
 
-    private void BlockAll_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Emergency cut-off: blocks all internet traffic of this PC through the
+    /// packet engine (the whole-PC limit set to Blocked). Closing WinXTools
+    /// always restores the connection.
+    /// </summary>
+    private async void BlockAll_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "This will block all network traffic for all applications.\nAre you sure?",
-            "Block All Traffic",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        if (MessageBox.Show(Loc.T("Dash_BlockAllConfirm", "Block all internet traffic of this PC?"),
+                Loc.T("Dash_BlockAll", "Block All"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        var button = sender as Button;
+        if (button != null) button.IsEnabled = false;
+        try
+        {
+            var result = await BandwidthLimiter.Instance.SetGlobalLimitAsync(RateLimit.Blocked, RateLimit.Blocked);
+            MessageBox.Show(result.Success
+                    ? Loc.T("Dash_BlockAllDone", "All internet traffic is blocked. Press Resume All to reconnect.")
+                    : $"{Loc.T("BW_ActionFailed", "Failed")}: {result.Message}",
+                Loc.T("Dash_BlockAll", "Block All"), MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (button != null) button.IsEnabled = true;
+        }
     }
 
-    private void ResumeAll_Click(object sender, RoutedEventArgs e)
+    /// <summary>Removes the whole-PC block/limit. Per-app rules stay as they are.</summary>
+    private async void ResumeAll_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "All network traffic has been resumed.",
-            "Resume All",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        var button = sender as Button;
+        if (button != null) button.IsEnabled = false;
+        try
+        {
+            bool hadGlobal = BandwidthLimiter.Instance.GlobalRule != null;
+            var result = await BandwidthLimiter.Instance.RemoveGlobalLimitAsync();
+            int appRules = BandwidthLimiter.Instance.GetAppRules().Count;
+
+            string message = !result.Success
+                ? $"{Loc.T("BW_ActionFailed", "Failed")}: {result.Message}"
+                : hadGlobal
+                    ? Loc.T("Dash_ResumeDone", "Internet traffic is back to normal.")
+                    : Loc.T("Dash_ResumeNothing", "Nothing was blocked for the whole PC.");
+            if (result.Success && appRules > 0)
+                message += "\n\n" + Loc.F("Dash_ResumeAppRules", "{0} per-app limit/block rule(s) are still active — manage them in Bandwidth Control.", appRules);
+
+            MessageBox.Show(message, Loc.T("Dash_ResumeAll", "Resume All"), MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (button != null) button.IsEnabled = true;
+        }
     }
 
-    private void QuickClean_Click(object sender, RoutedEventArgs e)
+    // Categories that are always safe to clean without reviewing them first.
+    private static readonly CleanTarget[] QuickCleanTargets =
+        { CleanTarget.TempFiles, CleanTarget.BrowserCache, CleanTarget.Thumbnails, CleanTarget.ErrorReports };
+
+    private async void QuickClean_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "Quick cleanup will remove temporary files.\nProceed?",
-            "Quick Clean",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+        if (MessageBox.Show(Loc.T("Dash_QuickCleanConfirm", "Remove temporary files, browser cache, thumbnail cache and crash reports?"),
+                Loc.T("Dash_QuickClean", "Quick Clean"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        var button = sender as Button;
+        if (button != null) button.IsEnabled = false;
+        try
+        {
+            var results = await Task.Run(() => QuickCleanTargets.Select(t => SystemCleaner.Clean(t)).ToList());
+            long freed = results.Sum(r => r.BytesFreed);
+            int deleted = results.Sum(r => r.FilesDeleted);
+            int skipped = results.Sum(r => r.FilesSkipped);
+
+            var message = Loc.F("Dash_QuickCleanDone", "Freed {0} ({1:N0} files).", FormatBytes(freed), deleted);
+            if (skipped > 0)
+                message += "\n" + Loc.F("Cleaner_SkippedTotal", "{0:N0} files were in use or protected and were left alone.", skipped);
+            MessageBox.Show(message, Loc.T("Dash_QuickClean", "Quick Clean"), MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{Loc.T("BW_ActionFailed", "Failed")}: {ex.Message}", Loc.T("Dash_QuickClean", "Quick Clean"),
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (button != null) button.IsEnabled = true;
+        }
     }
 
-    private void OptimizeRam_Click(object sender, RoutedEventArgs e)
+    private async void OptimizeRam_Click(object sender, RoutedEventArgs e)
     {
+        var button = sender as Button;
+        if (button != null) button.IsEnabled = false;
         try
         {
             var ramOptimizer = RamOptimizer.Instance;
             var beforeInfo = ramOptimizer.GetMemoryInfo();
 
-            var result = ramOptimizer.OptimizeNow();
+            // Trimming walks every process — never on the UI thread.
+            var result = await Task.Run(() => ramOptimizer.OptimizeNow());
 
             var freedMB = Math.Max(0, result.MemoryFreedMB);
             MessageBox.Show(
-                $"RAM Optimization Complete!\n\n" +
-                $"Before: {beforeInfo.UsagePercent}% used\n" +
-                $"Processes optimized: {result.ProcessesOptimized}\n" +
-                $"Memory freed: {FormatBytes(freedMB * 1024 * 1024)}",
-                "RAM Optimization",
+                Loc.F("Dash_RamDone", "RAM optimization complete.\n\nBefore: {0}% used\nProcesses optimized: {1}\nMemory freed: {2}",
+                    beforeInfo.UsagePercent, result.ProcessesOptimized, FormatBytes(freedMB * 1024 * 1024)),
+                Loc.T("Dash_Ram", "RAM Optimization"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                $"Failed to optimize RAM: {ex.Message}",
-                "Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            MessageBox.Show($"{Loc.T("BW_ActionFailed", "Failed")}: {ex.Message}", Loc.T("Dash_Ram", "RAM Optimization"),
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            if (button != null) button.IsEnabled = true;
         }
     }
 
-    private void FlushDns_Click(object sender, RoutedEventArgs e)
+    private async void FlushDns_Click(object sender, RoutedEventArgs e)
+    {
+        var (exitCode, _) = await RunHiddenAsync("ipconfig", "/flushdns");
+        MessageBox.Show(exitCode == 0
+                ? Loc.T("Dash_DnsDone", "DNS cache has been flushed.")
+                : Loc.F("Dash_DnsFailed", "Flushing the DNS cache failed (exit code {0}).", exitCode),
+            "Flush DNS", MessageBoxButton.OK, exitCode == 0 ? MessageBoxImage.Information : MessageBoxImage.Error);
+    }
+
+    /// <summary>
+    /// Disables and re-enables every physical adapter that is connected, using
+    /// the adapters' real names, and reports what actually happened.
+    /// </summary>
+    private async void ResetNetwork_Click(object sender, RoutedEventArgs e)
+    {
+        var adapters = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            .Where(ni => ni.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up &&
+                         ni.NetworkInterfaceType is System.Net.NetworkInformation.NetworkInterfaceType.Ethernet
+                             or System.Net.NetworkInformation.NetworkInterfaceType.Wireless80211
+                             or System.Net.NetworkInformation.NetworkInterfaceType.GigabitEthernet &&
+                         !ni.Description.Contains("virtual", StringComparison.OrdinalIgnoreCase) &&
+                         !ni.Description.Contains("hyper-v", StringComparison.OrdinalIgnoreCase))
+            .Select(ni => ni.Name)
+            .ToList();
+
+        if (adapters.Count == 0)
+        {
+            MessageBox.Show(Loc.T("Dash_ResetNoAdapter", "No connected network adapter was found."), "WinXTools",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (MessageBox.Show(Loc.F("Dash_ResetConfirm", "Restart these network adapters? You will be offline for a few seconds.\n\n{0}",
+                    string.Join("\n", adapters)),
+                Loc.T("Dash_Reset", "Reset Network Adapter"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        var button = sender as Button;
+        if (button != null) button.IsEnabled = false;
+        var failed = new List<string>();
+        try
+        {
+            foreach (var name in adapters)
+            {
+                var (disableCode, _) = await RunHiddenAsync("netsh", $"interface set interface name=\"{name}\" admin=disable");
+                await Task.Delay(1500);
+                // Always try to bring the adapter back, even if disabling failed.
+                var (enableCode, _) = await RunHiddenAsync("netsh", $"interface set interface name=\"{name}\" admin=enable");
+                if (disableCode != 0 || enableCode != 0) failed.Add(name);
+            }
+        }
+        finally
+        {
+            if (button != null) button.IsEnabled = true;
+        }
+
+        MessageBox.Show(failed.Count == 0
+                ? Loc.T("Dash_ResetDone", "Network adapters restarted. The connection comes back in a few seconds.")
+                : Loc.F("Dash_ResetFailed", "Could not restart: {0}", string.Join(", ", failed)),
+            Loc.T("Dash_Reset", "Reset Network Adapter"), MessageBoxButton.OK,
+            failed.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    private static async Task<(int ExitCode, string Output)> RunHiddenAsync(string fileName, string arguments)
     {
         try
         {
-            var psi = new ProcessStartInfo
+            using var process = Process.Start(new ProcessStartInfo(fileName, arguments)
             {
-                FileName = "ipconfig",
-                Arguments = "/flushdns",
                 UseShellExecute = false,
+                CreateNoWindow = true,
                 RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
+                RedirectStandardError = true
+            });
+            if (process == null) return (-1, "");
 
-            using var process = Process.Start(psi);
-            process?.WaitForExit(5000);
-
-            MessageBox.Show(
-                "DNS cache has been flushed successfully!\n\n" +
-                "This can help resolve connection issues caused by stale DNS entries.",
-                "Flush DNS",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            var output = process.StandardOutput.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(); } catch { }
+                return (-1, "");
+            }
+            return (process.ExitCode, await output);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                $"Failed to flush DNS: {ex.Message}",
-                "Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
-    private void ResetNetwork_Click(object sender, RoutedEventArgs e)
-    {
-        var result = MessageBox.Show(
-            "This will reset your network adapter which may temporarily disconnect you.\n\n" +
-            "This can help fix connectivity issues. Continue?",
-            "Reset Network Adapter",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (result == MessageBoxResult.Yes)
-        {
-            try
-            {
-                // Disable and re-enable network adapters
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "netsh",
-                    Arguments = "interface set interface \"Wi-Fi\" admin=disable",
-                    UseShellExecute = true,
-                    Verb = "runas",
-                    CreateNoWindow = true
-                };
-
-                Process.Start(psi)?.WaitForExit(3000);
-
-                psi.Arguments = "interface set interface \"Wi-Fi\" admin=enable";
-                Process.Start(psi)?.WaitForExit(3000);
-
-                // Also try Ethernet
-                psi.Arguments = "interface set interface \"Ethernet\" admin=disable";
-                Process.Start(psi);
-
-                System.Threading.Thread.Sleep(1000);
-
-                psi.Arguments = "interface set interface \"Ethernet\" admin=enable";
-                Process.Start(psi);
-
-                MessageBox.Show(
-                    "Network adapters have been reset.\n\n" +
-                    "Your connection should be restored shortly.",
-                    "Reset Complete",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Failed to reset network: {ex.Message}\n\n" +
-                    "Make sure to run the application as Administrator.",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            return (-1, ex.Message);
         }
     }
 }

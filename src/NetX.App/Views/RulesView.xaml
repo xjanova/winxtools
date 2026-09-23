@@ -1,21 +1,20 @@
 <Page x:Class="NetX.App.Views.RulesView"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Title="Automation Rules">
+      Title="{DynamicResource Rules_Title}">
 
     <Page.Resources>
         <Geometry x:Key="AddIcon">M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z</Geometry>
         <Geometry x:Key="EditIcon">M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z</Geometry>
         <Geometry x:Key="DeleteIcon">M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z</Geometry>
-        <Geometry x:Key="PlayIcon">M8,5.14V19.14L19,12.14L8,5.14Z</Geometry>
-        <Geometry x:Key="PauseIcon">M14,19H18V5H14M6,19H10V5H6V19Z</Geometry>
         <Geometry x:Key="RuleIcon">M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z</Geometry>
     </Page.Resources>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="2*" MinHeight="160"/>
+            <RowDefinition Height="*" MinHeight="140"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -26,23 +25,38 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0">
-                <TextBlock Text="Automation Rules"
+                <TextBlock Text="{DynamicResource Rules_Title}"
                            Style="{StaticResource HeaderTextStyle}"
                            FontSize="28"/>
                 <TextBlock x:Name="RulesCountText"
-                           Text="Create powerful rules to automate your network management"
+                           Text="{DynamicResource Rules_Subtitle}"
                            Style="{StaticResource BodyTextStyle}"
                            Margin="0,4,0,0"/>
+                <!-- Engine status: running / paused (no Pro) / storage problem -->
+                <DockPanel Margin="0,8,20,0">
+                    <Ellipse x:Name="StatusDot"
+                             DockPanel.Dock="Left"
+                             Width="8" Height="8"
+                             Fill="{StaticResource TextTertiaryBrush}"
+                             VerticalAlignment="Top"
+                             Margin="0,5,8,0"/>
+                    <TextBlock x:Name="StatusText"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12"
+                               TextWrapping="Wrap"/>
+                </DockPanel>
             </StackPanel>
 
-            <Button Grid.Column="1"
+            <Button x:Name="NewRuleButton"
+                    Grid.Column="1"
                     Style="{StaticResource PrimaryButtonStyle}"
+                    VerticalAlignment="Top"
                     Click="AddRule_Click">
                 <StackPanel Orientation="Horizontal">
                     <Path Data="{StaticResource AddIcon}"
                           Fill="White"
                           Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
-                    <TextBlock Text="New Rule" VerticalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource Rules_NewRule}" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
         </Grid>
@@ -87,7 +101,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="110"/>
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Status Icon -->
@@ -108,32 +122,48 @@
                                     <TextBlock Text="{Binding Name}"
                                                Foreground="{StaticResource TextPrimaryBrush}"
                                                FontSize="15"
-                                               FontWeight="SemiBold"/>
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="{Binding Description}"
                                                Foreground="{StaticResource TextSecondaryBrush}"
                                                FontSize="12"
                                                TextTrimming="CharacterEllipsis"
-                                               Margin="0,4,0,0"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                               Margin="0,4,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasDescription}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <WrapPanel Margin="0,6,0,0">
                                         <Border Background="{StaticResource AccentTertiaryBrush}"
                                                 CornerRadius="4"
                                                 Padding="8,3"
-                                                Margin="0,0,8,0">
+                                                Margin="0,0,8,4"
+                                                MaxWidth="320">
                                             <TextBlock Text="{Binding ConditionsText}"
                                                        FontSize="10"
-                                                       Foreground="White"/>
+                                                       Foreground="White"
+                                                       TextTrimming="CharacterEllipsis"/>
                                         </Border>
                                         <Border Background="{StaticResource AuroraPurpleBrush}"
                                                 CornerRadius="4"
-                                                Padding="8,3">
+                                                Padding="8,3"
+                                                Margin="0,0,0,4"
+                                                MaxWidth="320">
                                             <TextBlock Text="{Binding ActionsText}"
                                                        FontSize="10"
-                                                       Foreground="White"/>
+                                                       Foreground="White"
+                                                       TextTrimming="CharacterEllipsis"/>
                                         </Border>
-                                    </StackPanel>
+                                    </WrapPanel>
                                 </StackPanel>
 
-                                <!-- Stats -->
+                                <!-- Stats: how often, when and how the rule last ran -->
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="20,0">
                                     <TextBlock Text="{Binding TriggerCountText}"
                                                Foreground="{StaticResource TextSecondaryBrush}"
@@ -142,13 +172,18 @@
                                                Foreground="{StaticResource TextTertiaryBrush}"
                                                FontSize="10"
                                                Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding LastResultText}"
+                                               Foreground="{Binding LastResultBrush}"
+                                               FontSize="10"
+                                               Margin="0,2,0,0"/>
                                 </StackPanel>
 
                                 <!-- Toggle -->
                                 <ToggleButton Grid.Column="3"
-                                              IsChecked="{Binding IsEnabled}"
+                                              IsChecked="{Binding IsEnabled, Mode=OneWay}"
                                               Click="ToggleRule_Click"
                                               Tag="{Binding Id}"
+                                              ToolTip="{DynamicResource Rules_ToggleTooltip}"
                                               VerticalAlignment="Center"
                                               Margin="10,0">
                                     <ToggleButton.Style>
@@ -188,7 +223,7 @@
                                             Margin="0,0,8,0"
                                             Click="EditRule_Click"
                                             Tag="{Binding Id}"
-                                            ToolTip="Edit Rule">
+                                            ToolTip="{DynamicResource Rules_EditTooltip}">
                                         <Path Data="{StaticResource EditIcon}"
                                               Fill="{StaticResource AccentPrimaryBrush}"
                                               Width="14" Height="14" Stretch="Uniform"/>
@@ -197,7 +232,7 @@
                                             Padding="10,8"
                                             Click="DeleteRule_Click"
                                             Tag="{Binding Id}"
-                                            ToolTip="Delete Rule">
+                                            ToolTip="{DynamicResource Rules_DeleteTooltip}">
                                         <Path Data="{StaticResource DeleteIcon}"
                                               Fill="{StaticResource DangerBrush}"
                                               Width="14" Height="14" Stretch="Uniform"/>
@@ -218,15 +253,18 @@
                           Width="64" Height="64" Stretch="Uniform"
                           HorizontalAlignment="Center"
                           Opacity="0.5"/>
-                    <TextBlock Text="No rules yet"
+                    <TextBlock Text="{DynamicResource Rules_EmptyTitle}"
                                Style="{StaticResource SubHeaderTextStyle}"
                                HorizontalAlignment="Center"
                                Margin="0,16,0,0"/>
-                    <TextBlock Text="Create your first automation rule to get started"
+                    <TextBlock Text="{DynamicResource Rules_EmptyDesc}"
                                Style="{StaticResource BodyTextStyle}"
                                HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
                                Margin="0,8,0,0"/>
-                    <Button Style="{StaticResource PrimaryButtonStyle}"
+                    <Button x:Name="CreateRuleButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
                             Click="AddRule_Click"
                             Margin="0,20,0,0"
                             HorizontalAlignment="Center">
@@ -234,10 +272,67 @@
                             <Path Data="{StaticResource AddIcon}"
                                   Fill="White"
                                   Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
-                            <TextBlock Text="Create Rule"/>
+                            <TextBlock Text="{DynamicResource Rules_CreateRule}"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Activity log: what the rules did in this session -->
+        <Border Grid.Row="2" Style="{StaticResource GlassCardStyle}" Margin="0,16,0,0" Padding="20,16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="{DynamicResource Rules_ActivityTitle}"
+                           Style="{StaticResource SubHeaderTextStyle}"
+                           FontSize="14"
+                           Margin="0,0,0,10"/>
+
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="ActivityList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,6" ToolTip="{Binding Text}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="16"/>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Width="8" Height="8"
+                                             Fill="{Binding DotBrush}"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Top"
+                                             Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Time}"
+                                               FontFamily="{StaticResource MonoFont}"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Margin="0,1,0,0"/>
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding Text}"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <TextBlock x:Name="ActivityEmptyText"
+                           Grid.Row="1"
+                           Text="{DynamicResource Rules_ActivityEmpty}"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           FontSize="12"
+                           FontStyle="Italic"
+                           TextWrapping="Wrap"/>
             </Grid>
         </Border>
     </Grid>

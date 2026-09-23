@@ -44,6 +44,15 @@ public partial class NetworkMonitorView : Page
     // Debounce timer for applying bandwidth limits (1 second delay after slider stops)
     private DispatcherTimer? _bandwidthDebounceTimer;
 
+    // Action results stay on the status line this long before live totals return.
+    private DateTime _statusHoldUntil = DateTime.MinValue;
+
+    private void ShowStatus(string text)
+    {
+        StatusText.Text = text;
+        _statusHoldUntil = DateTime.Now.AddSeconds(6);
+    }
+
     public NetworkMonitorView()
     {
         InitializeComponent();
@@ -224,10 +233,16 @@ public partial class NetworkMonitorView : Page
                 _processMap.Remove(id);
             }
 
+            RefreshLimitBadges();
             ApplyFilters();
 
-            // Show total speed from interface (accurate measurement)
-            StatusText.Text = $"↓ {FormatSpeed(stats.TotalDownloadSpeed)} | ↑ {FormatSpeed(stats.TotalUploadSpeed)} | {stats.ActiveProcessCount} apps, {stats.TotalConnections} connections";
+            // Status line keeps the result of the user's last action visible for
+            // a few seconds before going back to live totals.
+            if (DateTime.Now >= _statusHoldUntil)
+            {
+                StatusText.Text = $"↓ {FormatSpeed(stats.TotalDownloadSpeed)} | ↑ {FormatSpeed(stats.TotalUploadSpeed)} | {stats.ActiveProcessCount} apps, {stats.TotalConnections} connections"
+                    + (_networkMonitor.PerAppSpeedsAreEstimated ? "  " + Loc.T("BW_Estimated", "(per-app speeds are estimates)") : "");
+            }
 
             // Update selected process chart and bandwidth display
             if (_selectedProcessId.HasValue && _processMap.TryGetValue(_selectedProcessId.Value, out var currentStats))
@@ -478,6 +493,7 @@ public partial class NetworkMonitorView : Page
         if (ProcessList.SelectedItem is ProcessDisplayItem item)
         {
             _selectedProcessId = item.ProcessId;
+            _selectedProcessName = item.ProcessName;
             _chartCache.NetworkMonitorSelectedProcessId = item.ProcessId; // Cache for navigation persistence
             SelectedProcessName.Text = item.ProcessName;
             SelectedProcessDetails.Text = $"PID: {item.ProcessId} | Connections: {item.ConnectionCount}";
@@ -509,18 +525,24 @@ public partial class NetworkMonitorView : Page
 
     private void LoadProcessBandwidthLimits(string processName)
     {
-        var existingRule = BandwidthLimiter.Instance.GetLimit(processName);
-        if (existingRule != null)
+        var rule = BandwidthLimiter.Instance.GetAppRule(processName);
+
+        // Moving the sliders in code must not re-apply (or leak the previous
+        // app's pending change onto this one).
+        _bandwidthDebounceTimer?.Stop();
+        _suppressSliderApply = true;
+        try
         {
-            // Set sliders to existing limits
-            DownloadLimitSlider.Value = KBpsToSlider(existingRule.DownloadLimitKBps);
-            UploadLimitSlider.Value = KBpsToSlider(existingRule.UploadLimitKBps);
+            DownloadLimitSlider.Value = BpsToSlider(rule?.DownloadBps ?? RateLimit.Unlimited);
+            UploadLimitSlider.Value = BpsToSlider(rule?.UploadBps ?? RateLimit.Unlimited);
+            _currentDownloadBps = rule?.DownloadBps ?? RateLimit.Unlimited;
+            _currentUploadBps = rule?.UploadBps ?? RateLimit.Unlimited;
+            DownloadLimitText.Text = SpeedFormat.Limit(_currentDownloadBps);
+            UploadLimitText.Text = SpeedFormat.Limit(_currentUploadBps);
         }
-        else
+        finally
         {
-            // Reset to unlimited
-            DownloadLimitSlider.Value = 0;
-            UploadLimitSlider.Value = 0;
+            _suppressSliderApply = false;
         }
     }
 
@@ -534,39 +556,41 @@ public partial class NetworkMonitorView : Page
         }).ToList();
     }
 
-    private long _currentDownloadLimitKBps = 0;
-    private long _currentUploadLimitKBps = 0;
+    // Current slider values in bytes/second (RateLimit.Unlimited / Blocked / rate).
+    private long _currentDownloadBps = RateLimit.Unlimited;
+    private long _currentUploadBps = RateLimit.Unlimited;
+    private bool _suppressSliderApply;
+    private string? _pendingLimitProcess;
+    private string? _selectedProcessName;
 
     private void DownloadLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (DownloadLimitText == null) return;
 
-        var value = e.NewValue;
-        _currentDownloadLimitKBps = SliderToKBps(value);
-        DownloadLimitText.Text = FormatLimitText(_currentDownloadLimitKBps);
-
-        // Debounce - apply after 1 second of no changes
-        ScheduleBandwidthApply();
+        _currentDownloadBps = SliderToBps(e.NewValue);
+        DownloadLimitText.Text = SpeedFormat.Limit(_currentDownloadBps);
+        if (!_suppressSliderApply) ScheduleBandwidthApply();
     }
 
     private void UploadLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (UploadLimitText == null) return;
 
-        var value = e.NewValue;
-        _currentUploadLimitKBps = SliderToKBps(value);
-        UploadLimitText.Text = FormatLimitText(_currentUploadLimitKBps);
-
-        // Debounce - apply after 1 second of no changes
-        ScheduleBandwidthApply();
+        _currentUploadBps = SliderToBps(e.NewValue);
+        UploadLimitText.Text = SpeedFormat.Limit(_currentUploadBps);
+        if (!_suppressSliderApply) ScheduleBandwidthApply();
     }
 
     /// <summary>
-    /// Schedule applying bandwidth limits with 1 second debounce
+    /// Applies the sliders 1 second after the user stops dragging. The target
+    /// app is captured now, so switching selection can't redirect the change.
     /// </summary>
     private void ScheduleBandwidthApply()
     {
-        // Create timer if needed
+        // By name: the app may drop out of the live list (idle) while selected.
+        if (string.IsNullOrEmpty(_selectedProcessName)) return;
+        _pendingLimitProcess = _selectedProcessName;
+
         if (_bandwidthDebounceTimer == null)
         {
             _bandwidthDebounceTimer = new DispatcherTimer
@@ -580,113 +604,138 @@ public partial class NetworkMonitorView : Page
             };
         }
 
-        // Reset the timer (restart the 1 second countdown)
         _bandwidthDebounceTimer.Stop();
         _bandwidthDebounceTimer.Start();
     }
 
-    private long SliderToKBps(double sliderValue)
-    {
-        // 0 = unlimited, 100 = blocked
-        // Exponential scale for better control
-        if (sliderValue <= 0) return -1; // Unlimited
-        if (sliderValue >= 100) return 0; // Blocked
+    // Slider: 0 = unlimited, 100 = blocked, 1..99 = 100 MB/s down to 1 KB/s
+    // on a squared scale (fine control at low speeds).
+    private const double SliderMaxKBps = 102400;
 
-        // Map 1-99 to reasonable speed range (100MB/s down to 1KB/s)
+    private static long SliderToBps(double sliderValue)
+    {
+        if (sliderValue <= 0) return RateLimit.Unlimited;
+        if (sliderValue >= 100) return RateLimit.Blocked;
+
         double ratio = (100 - sliderValue) / 100.0;
-        double maxKBps = 102400; // 100 MB/s
-        double minKBps = 1;
-
-        return (long)(minKBps + (maxKBps - minKBps) * Math.Pow(ratio, 2));
+        double kbps = 1 + (SliderMaxKBps - 1) * ratio * ratio;
+        return (long)(kbps * 1024);
     }
 
-    private string FormatLimitText(long kbps)
+    private static double BpsToSlider(long bps)
     {
-        if (kbps < 0) return "Unlimited";
-        if (kbps == 0) return "Blocked";
-        if (kbps >= 1024) return $"{kbps / 1024.0:F1} MB/s";
-        return $"{kbps} KB/s";
+        if (bps < 0) return 0;
+        if (bps == RateLimit.Blocked) return 100;
+
+        double kbps = Math.Clamp(bps / 1024.0, 1, SliderMaxKBps);
+        double ratio = Math.Sqrt((kbps - 1) / (SliderMaxKBps - 1));
+        return Math.Clamp(100 - ratio * 100, 1, 99);
     }
 
-    private void ApplyBandwidthLimits()
+    private async void ApplyBandwidthLimits()
     {
-        if (!_selectedProcessId.HasValue) return;
-        if (_processMap.TryGetValue(_selectedProcessId.Value, out var process))
+        var name = _pendingLimitProcess;
+        if (string.IsNullOrEmpty(name)) return;
+
+        long down = _currentDownloadBps, up = _currentUploadBps;
+        var result = await BandwidthLimiter.Instance.SetAppLimitAsync(name, down, up);
+
+        if (!result.Success)
         {
-            var downloadLimit = _currentDownloadLimitKBps < 0 ? 0 : _currentDownloadLimitKBps;
-            var uploadLimit = _currentUploadLimitKBps < 0 ? 0 : _currentUploadLimitKBps;
-
-            if (downloadLimit == 0 && uploadLimit == 0)
-            {
-                BandwidthLimiter.Instance.RemoveLimit(process.ProcessName);
-                StatusText.Text = $"Removed limits for {process.ProcessName}";
-            }
-            else
-            {
-                BandwidthLimiter.Instance.SetProcessLimit(process.ProcessName, downloadLimit, uploadLimit);
-                BandwidthLimiter.Instance.IsEnabled = true;
-                StatusText.Text = $"Set limits for {process.ProcessName}: ↓{FormatLimitText(_currentDownloadLimitKBps)} ↑{FormatLimitText(_currentUploadLimitKBps)}";
-            }
-
-            // Update process display
-            process.DownloadLimitText = FormatLimitText(_currentDownloadLimitKBps);
-            process.UploadLimitText_Limit = FormatLimitText(_currentUploadLimitKBps);
+            ShowStatus($"{Loc.T("BW_ActionFailed", "Failed")}: {result.Message}");
+            return;
         }
+
+        ShowStatus(down < 0 && up < 0
+            ? Loc.F("BW_RemovedFor", "Speed limits removed for {0}", name)
+            : Loc.F("BW_SetFor", "{0}: ↓{1}  ↑{2}", name, SpeedFormat.Limit(down), SpeedFormat.Limit(up)));
+        RefreshLimitBadges();
     }
 
     private void SpeedPreset_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string tagStr)
+        if (sender is not Button btn || btn.Tag is not string tagStr) return;
+
+        if (tagStr == "unlimited")
         {
-            if (tagStr == "unlimited")
-            {
-                DownloadLimitSlider.Value = 0;
-                UploadLimitSlider.Value = 0;
-            }
-            else if (long.TryParse(tagStr, out var kbps))
-            {
-                // Convert KBps to slider value
-                var sliderValue = KBpsToSlider(kbps);
-                DownloadLimitSlider.Value = sliderValue;
-                UploadLimitSlider.Value = sliderValue;
-            }
+            DownloadLimitSlider.Value = 0;
+            UploadLimitSlider.Value = 0;
+        }
+        else if (long.TryParse(tagStr, out var kbPerSecond))
+        {
+            // Preset tags are KB/s; "0" = blocked.
+            var sliderValue = BpsToSlider(kbPerSecond * 1024);
+            DownloadLimitSlider.Value = sliderValue;
+            UploadLimitSlider.Value = sliderValue;
         }
     }
 
-    private double KBpsToSlider(long kbps)
+    /// <summary>
+    /// Toggles a full block for the app in this row: live traffic is dropped
+    /// and a Windows Firewall rule stops new connections.
+    /// </summary>
+    private async void BlockProcess_Click(object sender, RoutedEventArgs e)
     {
-        if (kbps <= 0) return 100; // Blocked
-        if (kbps >= 102400) return 0; // Unlimited
+        if (sender is not Button btn || btn.Tag is not int processId) return;
+        if (!_processMap.TryGetValue(processId, out var process)) return;
 
-        double maxKBps = 102400;
-        double minKBps = 1;
-        double ratio = Math.Sqrt((kbps - minKBps) / (maxKBps - minKBps));
-        return 100 - (ratio * 100);
+        var name = process.ProcessName;
+        if (ProcessKiller.IsProtectedProcess(name))
+        {
+            MessageBox.Show($"{name} is a protected system process and cannot be blocked.",
+                "WinXTools", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        bool isBlocked = BandwidthLimiter.Instance.GetAppRule(name)?.Blocked == true;
+        var question = isBlocked
+            ? Loc.F("BW_UnblockConfirm", "Unblock {0}?", name)
+            : Loc.F("BW_BlockConfirm", "Block all internet access for {0}?", name);
+        if (MessageBox.Show(question, "WinXTools", MessageBoxButton.YesNo,
+                isBlocked ? MessageBoxImage.Question : MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        btn.IsEnabled = false;
+        try
+        {
+            if (isBlocked)
+            {
+                var result = await BandwidthLimiter.Instance.UnblockAppAsync(name);
+                ShowStatus(result.Success
+                    ? Loc.F("BW_UnblockedMsg", "{0} is unblocked", name)
+                    : $"{Loc.T("BW_ActionFailed", "Failed")}: {result.Message}");
+            }
+            else
+            {
+                var path = PacketEngine.Instance.GetIdentity(processId)?.Path;
+                var result = await BandwidthLimiter.Instance.BlockAppAsync(name, path);
+                ShowStatus(result.Success
+                    ? Loc.F("BW_BlockedMsg", "{0} is blocked", name) + (result.Message != null ? $" — {result.Message}" : "")
+                    : $"{Loc.T("BW_ActionFailed", "Failed")}: {result.Message}");
+            }
+        }
+        finally
+        {
+            btn.IsEnabled = true;
+        }
+        RefreshLimitBadges();
     }
 
-    private void BlockProcess_Click(object sender, RoutedEventArgs e)
+    /// <summary>Shows each listed app's saved limit/block in the Limit column.</summary>
+    private void RefreshLimitBadges()
     {
-        if (sender is Button btn && btn.Tag is int processId)
+        var rules = BandwidthLimiter.Instance.GetAppRules().ToDictionary(r => r.Key);
+        foreach (var item in _processMap.Values)
         {
-            var result = MessageBox.Show(
-                $"Block all network traffic for process ID {processId}?",
-                "Block Process",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            if (rules.TryGetValue(PacketEngine.NormalizeAppKey(item.ProcessName), out var rule))
             {
-                var connections = ConnectionMonitor.Instance.GetConnectionsByProcess(processId);
-                int blocked = 0;
-                foreach (var conn in connections)
-                {
-                    if (!string.IsNullOrEmpty(conn.RemoteAddress) && conn.RemoteAddress != "*")
-                    {
-                        FirewallManager.Instance.BlockIP(conn.RemoteAddress);
-                        blocked++;
-                    }
-                }
-                StatusText.Text = $"Blocked {blocked} connections for PID {processId}";
+                item.DownloadLimitText = rule.Blocked ? Loc.T("BW_Blocked", "Blocked") : SpeedFormat.Limit(rule.DownloadBps);
+                item.UploadLimitText_Limit = rule.Blocked ? Loc.T("BW_Blocked", "Blocked") : SpeedFormat.Limit(rule.UploadBps);
+            }
+            else if (item.HasLimit)
+            {
+                item.DownloadLimitText = "";
+                item.UploadLimitText_Limit = "";
             }
         }
     }
@@ -823,18 +872,48 @@ public partial class NetworkMonitorView : Page
 
     private void AutoKillToggle_Click(object sender, RoutedEventArgs e)
     {
-        ProcessKiller.Instance.IsAutoKillEnabled = AutoKillToggle.IsChecked == true;
-        StatusText.Text = ProcessKiller.Instance.IsAutoKillEnabled
+        var killer = ProcessKiller.Instance;
+        bool turnOn = AutoKillToggle.IsChecked == true;
+        var rules = killer.GetKillRules();
+
+        // Turning it on closes the listed apps immediately — say which ones.
+        if (turnOn && !killer.IsAutoKillEnabled && rules.Count > 0)
+        {
+            var names = string.Join("\n", rules.Take(10).Select(r => "• " + r.ProcessName));
+            if (rules.Count > 10) names += $"\n… (+{rules.Count - 10})";
+            if (MessageBox.Show(Loc.F("Ram_AutoKillConfirm", "Turn on Auto Kill?\n\nThese apps will be closed now and every time they start:\n{0}", names),
+                    "Auto Kill", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                AutoKillToggle.IsChecked = false;
+                return;
+            }
+        }
+
+        killer.IsAutoKillEnabled = turnOn;
+        ShowStatus(killer.IsAutoKillEnabled
             ? "Kill Auto mode ENABLED - Blocked processes will be killed automatically"
-            : "Kill Auto mode DISABLED";
+            : "Kill Auto mode DISABLED");
     }
 
     private void SmartKillToggle_Click(object sender, RoutedEventArgs e)
     {
-        ProcessKiller.Instance.IsSmartKillEnabled = SmartKillToggle.IsChecked == true;
-        StatusText.Text = ProcessKiller.Instance.IsSmartKillEnabled
-            ? "Smart Kill ENABLED - Frozen/problematic processes will be auto-killed"
-            : "Smart Kill DISABLED";
+        var killer = ProcessKiller.Instance;
+        bool turnOn = SmartKillToggle.IsChecked == true;
+
+        if (turnOn && !killer.IsSmartKillEnabled &&
+            MessageBox.Show(Loc.F("Ram_SmartKillConfirm",
+                    "Turn on Smart Kill?\n\nApps whose window stays \"Not Responding\" for {0} seconds or more will be closed automatically. Unsaved work in them will be lost.",
+                    (int)ProcessKiller.FrozenKillThreshold.TotalSeconds),
+                "Smart Kill", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            SmartKillToggle.IsChecked = false;
+            return;
+        }
+
+        killer.IsSmartKillEnabled = turnOn;
+        ShowStatus(killer.IsSmartKillEnabled
+            ? "Smart Kill ENABLED - apps frozen for 60+ s are closed (you get a notice each time)"
+            : "Smart Kill DISABLED");
     }
 }
 
@@ -918,7 +997,23 @@ public class ProcessDisplayItem : INotifyPropertyChanged
         private set { _hasLimit = value; OnPropertyChanged(nameof(HasLimit)); }
     }
 
-    public string LimitDisplayText => HasLimit ? $"↓{DownloadLimitText} ↑{UploadLimitText_Limit}" : "";
+    public string LimitDisplayText
+    {
+        get
+        {
+            if (!HasLimit) return "";
+            if (_downloadLimitText == _uploadLimitText) return _downloadLimitText == NetX.App.Helpers.Loc.T("BW_Blocked", "Blocked")
+                ? "⛔ " + _downloadLimitText
+                : $"↓↑{_downloadLimitText}";
+
+            // Skip the "Unlimited" side so the narrow column shows what matters.
+            var unlimited = NetX.App.Helpers.Loc.T("BW_Unlimited", "Unlimited");
+            var parts = new List<string>(2);
+            if (_downloadLimitText != unlimited) parts.Add($"↓{_downloadLimitText}");
+            if (_uploadLimitText != unlimited) parts.Add($"↑{_uploadLimitText}");
+            return string.Join(" ", parts);
+        }
+    }
 
     private void UpdateHasLimit()
     {

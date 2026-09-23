@@ -151,12 +151,23 @@
                                      Text="google.com"
                                      KeyDown="Input_KeyDown"/>
 
-                            <Button x:Name="ExecuteBtn" Grid.Column="1"
-                                    Content="{DynamicResource Common_Execute}"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    Padding="24,8"
-                                    Margin="12,0,0,0"
-                                    Click="ExecuteBtn_Click"/>
+                            <!-- Run/Cancel live outside InputHost so tools that need no
+                                 input (My IP, ARP Table, ...) still have a Run button. -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button x:Name="ExecuteBtn"
+                                        Content="{DynamicResource Common_Execute}"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Padding="24,8"
+                                        Margin="12,0,0,0"
+                                        Click="ExecuteBtn_Click"/>
+                                <Button x:Name="CancelBtn"
+                                        Content="{DynamicResource Common_Cancel}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Padding="18,8"
+                                        Margin="8,0,0,0"
+                                        Visibility="Collapsed"
+                                        Click="CancelBtn_Click"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
 

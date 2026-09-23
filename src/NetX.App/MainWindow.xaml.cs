@@ -3,8 +3,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using NetX.App.Helpers;
 using NetX.App.Views;
 using NetX.Core.Network;
+using NetX.Core.Optimization;
 using NetX.Core.System;
 
 namespace NetX.App;
@@ -22,6 +24,13 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Every nav click creates a new page; don't let the frame's back
+        // history keep all of them (and their timers/charts) alive.
+        MainFrame.Navigated += (s, e) =>
+        {
+            while (MainFrame.CanGoBack) MainFrame.RemoveBackEntry();
+        };
 
         // Set initial page
         _activeNavButton = NavDashboard;
@@ -49,9 +58,15 @@ public partial class MainWindow : Window
         _trialTimer.Tick += TrialTimer_Tick;
         _trialTimer.Start();
 
-        // Subscribe to trial and license status changes
-        TrialService.Instance.OnTrialStatusChanged += () => Dispatcher.Invoke(UpdateTrialUI);
-        XmanLicenseService.Instance.OnLicenseValidated += _ => Dispatcher.Invoke(UpdateTrialUI);
+        // Subscribe to trial and license status changes (raised on worker threads)
+        TrialService.Instance.OnTrialStatusChanged += OnTrialStatusChanged;
+        XmanLicenseService.Instance.StatusChanged += OnLicenseStatusChanged;
+
+        // Tell the user whenever Smart Kill / Auto-Kill closes an app on its own.
+        ProcessKiller.Instance.ProcessAutoKilled += (_, args) => Dispatcher.BeginInvoke(() => ShowAutoKillNotice(args));
+
+        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+        _toastTimer.Tick += (s, e) => HideToast();
 
         // Initial UI state
         UpdateTrialUI();
@@ -67,12 +82,17 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnTrialStatusChanged() => Dispatcher.BeginInvoke(UpdateTrialUI);
+    private void OnLicenseStatusChanged(LicenseStatus _) => Dispatcher.BeginInvoke(UpdateTrialUI);
+
     private void UpdateTrialUI()
     {
         if (ProBanner == null) return;
 
         var trial = TrialService.Instance;
         var license = XmanLicenseService.Instance.CachedStatus;
+
+        if (trial.IsTrialActive && !_trialTimer.IsEnabled && !license.IsPremium) _trialTimer.Start();
 
         if (license.IsPremium)
         {
@@ -93,40 +113,103 @@ public partial class MainWindow : Window
         }
         else
         {
-            // Trial expired or free — show upgrade banner
+            // Trial expired or free — show upgrade banner (saying why, when a license stopped counting)
             ProBanner.Visibility = Visibility.Visible;
-            ProBannerTitle.Text = FindResource("Pro_UpgradeTitle") as string ?? "Upgrade to Pro";
             TrialCountdown.Visibility = Visibility.Collapsed;
-            ProBannerDesc.Text = FindResource("Pro_UpgradeDesc") as string ?? "Unlock all premium features";
+            (ProBannerTitle.Text, ProBannerDesc.Text) = license.State switch
+            {
+                LicenseState.Active or LicenseState.Expired =>
+                    (Loc.T("Pro_BannerExpiredTitle", "Pro license expired"), Loc.T("Pro_BannerExpiredDesc", "Renew to unlock the Pro features again")),
+                LicenseState.OtherMachine =>
+                    (Loc.T("Pro_BannerMovedTitle", "License is on another PC"), Loc.T("Pro_BannerMovedDesc", "Open Settings → License to move it back")),
+                LicenseState.Unverified =>
+                    (Loc.T("Pro_BannerUnverifiedTitle", "License not confirmed"), Loc.T("Pro_BannerUnverifiedDesc", "Connect to the internet to confirm your Pro license")),
+                LicenseState.Revoked =>
+                    (Loc.T("Pro_BannerRevokedTitle", "License cancelled"), Loc.T("Pro_UpgradeDesc", "Unlock all premium features")),
+                _ =>
+                    (Loc.T("Pro_UpgradeTitle", "Upgrade to Pro"), Loc.T("Pro_UpgradeDesc", "Unlock all premium features"))
+            };
             UpdateProOverlay();
         }
+
+        if (ProOverlay.Visibility != Visibility.Visible) MainFrame.IsEnabled = true;
     }
 
     private void UpdateProOverlay()
     {
-        if (TrialService.Instance.HasProAccess)
-        {
-            ProOverlay.Visibility = Visibility.Collapsed;
-        }
-        else if (TrialService.IsProOnlyPage(_currentPageTag))
-        {
-            ProOverlay.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            ProOverlay.Visibility = Visibility.Collapsed;
-        }
+        bool locked = !TrialService.Instance.HasProAccess && TrialService.IsProOnlyPage(_currentPageTag);
+        ProOverlay.Visibility = locked ? Visibility.Visible : Visibility.Collapsed;
+
+        // The overlay only blocks the mouse; disabling the page also stops
+        // Tab/keyboard from reaching the locked controls underneath.
+        MainFrame.IsEnabled = !locked;
     }
+
+    #region Notices
+
+    private readonly DispatcherTimer _toastTimer;
+
+    private Action? _toastAction;
+
+    /// <summary>
+    /// Shows a short non-blocking notice in the bottom-right corner. With <paramref name="onClick"/>
+    /// clicking the notice runs it (e.g. "update available — click to install").
+    /// </summary>
+    public void ShowToast(string message, Action? onClick = null)
+    {
+        ToastText.Text = message;
+        _toastAction = onClick;
+        ToastHost.Cursor = onClick != null ? Cursors.Hand : null;
+        ToastHost.Visibility = Visibility.Visible;
+        _toastTimer.Stop();
+        _toastTimer.Interval = TimeSpan.FromSeconds(onClick != null ? 20 : 8);
+        _toastTimer.Start();
+    }
+
+    private void HideToast()
+    {
+        _toastTimer.Stop();
+        _toastAction = null;
+        ToastHost.Visibility = Visibility.Collapsed;
+    }
+
+    private void ToastHost_Click(object sender, MouseButtonEventArgs e)
+    {
+        var action = _toastAction;
+        HideToast();
+        action?.Invoke();
+    }
+
+    private void ShowAutoKillNotice(ProcessAutoKilledEventArgs args)
+    {
+        string reason = args.Reason switch
+        {
+            AutoKillReason.NotResponding => Loc.F("Ram_ReasonNotResponding", "Not responding for {0} s", args.Detail),
+            AutoKillReason.ExcessiveMemory => Loc.F("Ram_ReasonMemory", "Using {0} MB", args.Detail),
+            _ => Loc.T("Ram_ReasonRule", "Kill rule")
+        };
+        var who = string.IsNullOrWhiteSpace(args.WindowTitle) ? args.ProcessName : $"{args.ProcessName} — {args.WindowTitle}";
+        ShowToast(Loc.F("Ram_AutoClosed", "Auto-closed: {0}", who) + "\n" + reason);
+    }
+
+    #endregion
 
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
         _statusTimer.Stop();
         _trialTimer.Stop();
+        _toastTimer.Stop();
+        TrialService.Instance.OnTrialStatusChanged -= OnTrialStatusChanged;
+        XmanLicenseService.Instance.StatusChanged -= OnLicenseStatusChanged;
 
-        // Clean up bandwidth limiter (removes all QoS policies and firewall rules)
+        // Put the user's own proxy settings back if a free proxy is still applied.
+        ProxyService.DisconnectOnExit();
+
+        // Release the packet driver; packets still paced are sent first. App
+        // blocks (firewall rules) intentionally stay until the user unblocks.
         try
         {
-            BandwidthLimiter.Instance.Dispose();
+            BandwidthLimiter.Instance.Shutdown();
         }
         catch { }
     }
@@ -177,36 +260,26 @@ public partial class MainWindow : Window
         try
         {
             var limiter = BandwidthLimiter.Instance;
-            if (!limiter.IsEnabled)
+            var global = limiter.GlobalRule;
+            int appRules = limiter.GetAppRules().Count;
+
+            if (global == null && appRules == 0)
             {
                 BandwidthLimitBadge.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            // Find active interface and get its limit
-            var activeInterface = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
-                .Where(ni => ni.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up
-                          && ni.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
-                .FirstOrDefault();
+            var parts = new List<string>(2);
+            if (global != null)
+                parts.Add($"{FormatLimitShort(global.DownloadBps)}/{FormatLimitShort(global.UploadBps)}");
+            if (appRules > 0)
+                parts.Add($"{appRules} app");
 
-            if (activeInterface == null)
-            {
-                BandwidthLimitBadge.Visibility = Visibility.Collapsed;
-                return;
-            }
+            // Flag limits that are saved but not being enforced.
+            if (limiter.Status is LimiterStatus.DriverUnavailable or LimiterStatus.Error)
+                parts.Add("!");
 
-            var savedRule = limiter.GetLimit($"interface:{activeInterface.Id}");
-            if (savedRule == null || (savedRule.DownloadLimitKBps < 0 && savedRule.UploadLimitKBps < 0))
-            {
-                BandwidthLimitBadge.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            // Format limit text (values are stored as Kbps)
-            string dlText = savedRule.DownloadLimitKBps <= 0 ? "-" : FormatKbps((int)savedRule.DownloadLimitKBps);
-            string ulText = savedRule.UploadLimitKBps <= 0 ? "-" : FormatKbps((int)savedRule.UploadLimitKBps);
-
-            StatusBandwidthLimit.Text = $"{dlText}/{ulText}";
+            StatusBandwidthLimit.Text = string.Join(" · ", parts);
             BandwidthLimitBadge.Visibility = Visibility.Visible;
         }
         catch
@@ -215,13 +288,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string FormatKbps(int kbps)
+    /// <summary>Compact limit for the status bar: "-", "⛔", "10M" (Mbps), "512K" (Kbps).</summary>
+    private static string FormatLimitShort(long bytesPerSecond)
     {
-        if (kbps >= 1024000) // 1 Gbps
-            return $"{kbps / 1024000.0:F1}G";
-        if (kbps >= 1024) // 1 Mbps
-            return $"{kbps / 1024.0:F0}M";
-        return $"{kbps}K";
+        if (bytesPerSecond < 0) return "-";
+        if (bytesPerSecond == RateLimit.Blocked) return "⛔";
+        double kbps = bytesPerSecond / 125.0;
+        if (kbps >= 1_000_000) return $"{kbps / 1_000_000:0.#}G";
+        if (kbps >= 1000) return $"{kbps / 1000:0.#}M";
+        return $"{kbps:0}K";
     }
 
     private static string FormatSpeed(double bytesPerSecond)
@@ -282,16 +357,7 @@ public partial class MainWindow : Window
         // Stop timer immediately
         _statusTimer.Stop();
 
-        // Quick cleanup - don't wait for external processes
-        try
-        {
-            // Just stop enforcement timer, don't run slow PowerShell cleanup
-            // Cleanup will happen on next app startup anyway
-            BandwidthLimiter.Instance.QuickDispose();
-        }
-        catch { }
-
-        // Shutdown properly via WPF
+        // Shutdown properly via WPF (Closed releases the packet driver)
         Application.Current.Shutdown();
     }
 
@@ -329,6 +395,8 @@ public partial class MainWindow : Window
 
         // Navigate to page
         string? tag = button.Tag?.ToString();
+        var installUpdate = _updateForSettings;
+        _updateForSettings = null;
         Page? page = tag switch
         {
             "Dashboard" => new DashboardView(),
@@ -344,7 +412,7 @@ public partial class MainWindow : Window
             "WinOptimizer" => new WindowsOptimizerView(),
             "Rules" => new RulesView(),
             "Tricks" => new WindowsTricksView(),
-            "Settings" => new SettingsView(),
+            "Settings" => new SettingsView(installUpdate),
             _ => null
         };
 
@@ -381,6 +449,18 @@ public partial class MainWindow : Window
         CurrentPageTitle.Text = (string)FindResource(resourceKey);
     }
 
+    private UpdateInfo? _updateForSettings;
+
+    /// <summary>
+    /// Opens Settings; with <paramref name="installUpdate"/> the page starts installing that
+    /// update right away (the user already said yes) and shows the download progress.
+    /// </summary>
+    public void NavigateToSettings(UpdateInfo? installUpdate = null)
+    {
+        _updateForSettings = installUpdate;
+        NavButton_Click(NavSettings, new RoutedEventArgs());
+    }
+
     public void NavigateToRamOptimizer()
     {
         // Find and click the RAM Optimizer nav button
@@ -410,17 +490,12 @@ public partial class MainWindow : Window
         OpenProUpgradeUrl();
     }
 
-    private static void OpenProUpgradeUrl()
+    // Opens the purchase page in the user's own (non-elevated) browser, and Settings → License
+    // so the key can be pasted as soon as it arrives.
+    private void OpenProUpgradeUrl()
     {
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "https://xman4289.com/products/winx-tools",
-                UseShellExecute = true
-            });
-        }
-        catch { }
+        SettingsView.OpenPurchasePage();
+        if (_currentPageTag != "Settings") NavigateToSettings();
     }
 
     #endregion

@@ -1,19 +1,31 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 using WindivertDotnet;
 
 namespace NetX.Core.Network;
 
 /// <summary>
-/// High-performance packet capture and bandwidth control engine using WinDivert.
-/// Captures ALL network packets at kernel level for accurate measurement and real throttling.
+/// Kernel packet engine built on the signed WinDivert driver.
+///
+/// Monitoring only  → the network handle runs in SNIFF mode: the kernel hands us
+///                    copies, so this process never delays traffic (no extra ping).
+/// Any limit active → the handle switches to DIVERT mode: every packet passes the
+///                    shapers (GCRA virtual clock, see <see cref="ShaperBucket"/>)
+///                    and is re-injected at its departure time by a pacer thread
+///                    driven by a high-resolution waitable timer.
+///
+/// Packets are attributed to processes by local port. Ports are learned the
+/// moment a socket binds/connects (WinDivert SOCKET layer, IPv4 and IPv6), with
+/// the TCP/UDP owner tables as a periodic safety net. Loopback traffic is never
+/// captured, so local IPC is unaffected by limits.
 /// </summary>
-public class PacketEngine : IDisposable
+public sealed class PacketEngine : IDisposable
 {
     private static PacketEngine? _instance;
-    private static readonly object _lock = new();
+    private static readonly object _instanceLock = new();
 
     public static PacketEngine Instance
     {
@@ -21,7 +33,7 @@ public class PacketEngine : IDisposable
         {
             if (_instance == null)
             {
-                lock (_lock)
+                lock (_instanceLock)
                 {
                     _instance ??= new PacketEngine();
                 }
@@ -30,63 +42,74 @@ public class PacketEngine : IDisposable
         }
     }
 
-    private WinDivert? _divert;
+    private const string NetworkFilter = "!loopback";
+    private const byte ProtoTcp = 6;
+    private const byte ProtoUdp = 17;
+
+    private readonly object _lifecycle = new();
+    private volatile bool _running;
+    private volatile bool _draining;
+    private volatile WinDivert? _divert;
+    private volatile bool _divertMode;
     private Thread[] _captureThreads = [];
-    private Thread[] _reinjectThreads = [];
-    private volatile bool _isRunning;
+    private Pacer? _pacer;
+
+    // Port → owning PID (index = local port). Plain int writes are atomic, so the
+    // capture threads read these without locks.
+    private readonly int[] _tcpOwner = new int[65536];
+    private readonly int[] _udpOwner = new int[65536];
+    private readonly long[] _tcpSeen = new long[65536];
+    private readonly long[] _udpSeen = new long[65536];
+    private WinDivert? _socketHandle;
+    private Thread? _socketThread;
+    private Thread? _tableThread;
+    private readonly AutoResetEvent _tableSignal = new(false);
+    private long _lastRefreshRequest;
+    private volatile Dictionary<int, int> _connectionCounts = new();
+    private readonly ConcurrentDictionary<int, AppIdentity> _identities = new();
+
+    // Shaping state
+    private readonly ConcurrentDictionary<string, ShaperPair> _appShapers = new(StringComparer.Ordinal);
+    private volatile ShaperPair? _globalShaper;
+    private static readonly long SendNowTicks = Stopwatch.Frequency / 4000; // 0.25 ms
+
+    // Stats
     private readonly ConcurrentDictionary<int, ProcessTrafficStats> _processStats = new();
-    private readonly ConcurrentDictionary<ushort, int> _portToProcessMap = new();
-    private readonly ConcurrentDictionary<string, BandwidthThrottle> _throttleRules = new();
-
-    // Packet queue for multi-thread throttling (capture workers → reinject workers)
-    private readonly ConcurrentQueue<QueuedPacket> _throttledQueue = new();
-    private int _queueCount;
-    private const int MAX_QUEUE_PACKETS = 16384;
-
-    // Aggregate stats
     private long _totalBytesReceived;
     private long _totalBytesSent;
+    private long _droppedPackets;
     private double _currentDownloadSpeed;
     private double _currentUploadSpeed;
-    private DateTime _lastSpeedCalc = DateTime.Now;
-    private long _lastBytesReceived;
-    private long _lastBytesSent;
-
-    // Port-to-process mapping refresh (with thundering-herd prevention)
-    private DateTime _lastPortMapRefresh = DateTime.MinValue;
-    private readonly TimeSpan _portMapRefreshInterval = TimeSpan.FromSeconds(2);
-    private int _portMapRefreshing; // 0 = idle, 1 = refreshing (atomic flag)
+    private Thread? _speedThread;
 
     public event Action<PacketInfo>? OnPacketCaptured;
     public event Action<string>? OnError;
 
-    public bool IsRunning => _isRunning;
+    public bool IsRunning => _running;
     public bool IsDriverLoaded { get; private set; }
 
-    /// <summary>
-    /// Number of capture worker threads (scales with CPU cores)
-    /// </summary>
+    /// <summary>True while packets are diverted through the shapers.</summary>
+    public bool IsShaping => _running && _divertMode;
+
+    /// <summary>Last start/switch failure, shown to the user instead of failing silently.</summary>
+    public string? LastError { get; private set; }
+
     public int CaptureWorkerCount { get; private set; }
 
-    /// <summary>
-    /// Number of reinject worker threads (scales with CPU cores)
-    /// </summary>
-    public int ReinjectWorkerCount { get; private set; }
+    /// <summary>Packets currently waiting in the pacer.</summary>
+    public int QueueDepth => _pacer?.Count ?? 0;
 
-    /// <summary>
-    /// Current throttle queue depth (for monitoring)
-    /// </summary>
-    public int QueueDepth => _queueCount;
+    /// <summary>Packets dropped by limits/blocks since the engine started.</summary>
+    public long DroppedPackets => Interlocked.Read(ref _droppedPackets);
 
-    /// <summary>
-    /// True if any process/global throttle rule is active. Used so the packet
-    /// monitor can stop the engine on close without breaking bandwidth limits.
-    /// </summary>
-    public bool HasThrottleRules => !_throttleRules.IsEmpty;
+    /// <summary>True if any app or whole-PC limit is set.</summary>
+    public bool HasLimits => _globalShaper != null || !_appShapers.IsEmpty;
+
+    /// <summary>Kept for callers written before app/global limits existed.</summary>
+    public bool HasThrottleRules => HasLimits;
 
     private PacketEngine()
     {
-        // Check if WinDivert driver can be loaded
         IsDriverLoaded = CheckDriverAvailable();
     }
 
@@ -94,28 +117,19 @@ public class PacketEngine : IDisposable
     {
         try
         {
-            // Use Reflect layer to verify driver availability without intercepting any network traffic
-            using var testDivert = new WinDivert(Filter.True, WinDivertLayer.Reflect);
-            return true; // Driver loaded successfully
+            // The Reflect layer loads the driver without intercepting any traffic.
+            using var probe = new WinDivert(Filter.True, WinDivertLayer.Reflect);
+            return true;
         }
-        catch
+        catch (Exception ex)
         {
+            LastError = ex.Message;
             return false;
         }
     }
 
-    private static bool IsOutbound(WinDivertAddress addr)
-    {
-        return (addr.Flags & WinDivertAddressFlag.Outbound) != 0;
-    }
+    #region Lifecycle
 
-    /// <summary>
-    /// Start capturing all network packets
-    /// </summary>
-    /// <summary>
-    /// Calculate optimal capture thread count based on CPU cores.
-    /// Scales from 1 thread (2 cores) up to 8 threads (16+ cores).
-    /// </summary>
     private static int CalcCaptureWorkers()
     {
         int cores = Environment.ProcessorCount;
@@ -124,62 +138,94 @@ public class PacketEngine : IDisposable
             <= 2 => 1,
             <= 4 => 2,
             <= 8 => Math.Max(2, cores / 2),
-            <= 16 => Math.Max(4, cores / 2),
-            _ => Math.Min(cores / 2, 16)    // 16 workers max
+            _ => Math.Min(cores / 2, 8)
         };
     }
 
     /// <summary>
-    /// Calculate optimal reinject thread count.
-    /// Fewer needed because they spend most time sleeping (pacing).
+    /// Starts capturing. Sniff mode if no limits are set, divert mode otherwise.
     /// </summary>
-    private static int CalcReinjectWorkers()
-    {
-        int cores = Environment.ProcessorCount;
-        return cores switch
-        {
-            <= 4 => 1,
-            <= 8 => 2,
-            <= 16 => Math.Max(2, cores / 4),
-            _ => Math.Min(cores / 4, 8)     // 8 workers max
-        };
-    }
-
     public bool Start()
     {
-        if (_isRunning) return true;
+        lock (_lifecycle)
+        {
+            if (_running) return true;
 
+            if (!IsDriverLoaded)
+            {
+                IsDriverLoaded = CheckDriverAvailable();
+                if (!IsDriverLoaded)
+                {
+                    OnError?.Invoke($"WinDivert driver unavailable: {LastError}");
+                    return false;
+                }
+            }
+
+            _running = true;
+            StartAttribution();
+
+            if (!OpenNetwork(HasLimits) && !(HasLimits && OpenNetwork(false)))
+            {
+                _running = false;
+                StopAttribution();
+                return false;
+            }
+
+            _speedThread = new Thread(SpeedLoop) { Name = "PacketEngine-Speed", IsBackground = true };
+            _speedThread.Start();
+
+            Debug.WriteLine($"PacketEngine started ({(_divertMode ? "divert" : "sniff")}, {CaptureWorkerCount} workers)");
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Stops capturing. Packets waiting in the pacer are sent first so nothing
+    /// in flight is lost.
+    /// </summary>
+    public void Stop()
+    {
+        lock (_lifecycle)
+        {
+            if (!_running) return;
+            CloseNetwork();
+            _running = false;
+            StopAttribution();
+            _speedThread?.Join(1500);
+            _speedThread = null;
+            Debug.WriteLine("PacketEngine stopped");
+        }
+    }
+
+    private bool OpenNetwork(bool divert)
+    {
         try
         {
-            // Open WinDivert to capture ALL network packets (IP or IPv6)
-            var filter = Filter.True;
-            _divert = new WinDivert(filter, WinDivertLayer.Network);
+            var flags = divert ? WinDivertFlag.None : WinDivertFlag.Sniff | WinDivertFlag.RecvOnly;
+            var handle = new WinDivert(NetworkFilter, WinDivertLayer.Network, 0, flags);
 
-            // Increase WinDivert internal buffer for multi-threaded burst handling
             try
             {
-                _divert.QueueLength = 16384;
-                _divert.QueueTime = TimeSpan.FromMilliseconds(4000);
+                handle.QueueLength = 16384;
+                handle.QueueTime = TimeSpan.FromMilliseconds(2000);
+                handle.QueueSize = 16 * 1024 * 1024;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Could not set WinDivert queue params: {ex.Message}");
+                Debug.WriteLine($"Could not tune WinDivert queue: {ex.Message}");
             }
 
-            _isRunning = true;
+            if (divert) _pacer ??= new Pacer(this);
 
-            // Calculate worker counts based on CPU cores
+            _divertMode = divert;
+            _draining = false;
+            _divert = handle;
+
             CaptureWorkerCount = CalcCaptureWorkers();
-            ReinjectWorkerCount = CalcReinjectWorkers();
-
-            // Start capture worker pool
-            // Each worker independently calls WinDivert.Recv() — the driver distributes
-            // packets across all waiting threads automatically (kernel-level load balancing)
             _captureThreads = new Thread[CaptureWorkerCount];
-            for (int i = 0; i < CaptureWorkerCount; i++)
+            for (int i = 0; i < _captureThreads.Length; i++)
             {
-                int workerId = i;
-                _captureThreads[i] = new Thread(() => CaptureLoop(workerId))
+                _captureThreads[i] = new Thread(() => CaptureLoop(handle, divert))
                 {
                     Name = $"PacketEngine-Capture-{i}",
                     IsBackground = true,
@@ -188,949 +234,1123 @@ public class PacketEngine : IDisposable
                 _captureThreads[i].Start();
             }
 
-            // Start reinject worker pool
-            // Multiple reinject workers drain the throttled queue in parallel
-            _reinjectThreads = new Thread[ReinjectWorkerCount];
-            for (int i = 0; i < ReinjectWorkerCount; i++)
-            {
-                int workerId = i;
-                _reinjectThreads[i] = new Thread(() => ReinjectLoop(workerId))
-                {
-                    Name = $"PacketEngine-Reinject-{i}",
-                    IsBackground = true,
-                    Priority = ThreadPriority.AboveNormal
-                };
-                _reinjectThreads[i].Start();
-            }
-
-            // Start speed calculation in background
-            _ = Task.Run(SpeedCalculationLoop);
-
-            Debug.WriteLine($"PacketEngine started: {CaptureWorkerCount} capture + {ReinjectWorkerCount} reinject workers ({Environment.ProcessorCount} CPU cores)");
+            LastError = null;
             return true;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to start PacketEngine: {ex.Message}");
-            OnError?.Invoke($"Failed to start packet capture: {ex.Message}. Run as Administrator.");
-            _isRunning = false;
+            LastError = ex.Message;
+            Debug.WriteLine($"PacketEngine open failed ({(divert ? "divert" : "sniff")}): {ex.Message}");
+            OnError?.Invoke($"Packet engine failed to start: {ex.Message}. Run WinXTools as Administrator.");
             return false;
         }
     }
 
-    /// <summary>
-    /// Stop packet capture
-    /// </summary>
-    public void Stop()
+    private void CloseNetwork()
     {
-        _isRunning = false;
+        var handle = _divert;
+        if (handle == null) return;
 
-        try
+        _draining = true;
+        if (_divertMode)
         {
-            _divert?.Dispose();
-            _divert = null;
+            // Stop new packets from queueing, let the workers drain what the
+            // driver already holds (they re-inject it), then flush the pacer.
+            try { handle.Shutdown(WinDivertShutdown.Recv); } catch { }
+            JoinCaptureThreads();
+            _pacer?.Stop(flush: true);
+            _pacer?.Dispose();
+            _pacer = null;
         }
-        catch (Exception ex)
+        else
         {
-            Debug.WriteLine($"Error disposing WinDivert: {ex.Message}");
+            try { handle.Dispose(); } catch { }
+            JoinCaptureThreads();
         }
 
-        // Join all capture workers
+        _divert = null;
+        try { handle.Dispose(); } catch { }
+        _draining = false;
+    }
+
+    private void JoinCaptureThreads()
+    {
+        // One shared deadline: a worker stuck in Recv must not multiply the wait.
+        long deadline = Environment.TickCount64 + 3000;
         foreach (var t in _captureThreads)
         {
-            try { if (t.IsAlive) t.Join(2000); } catch { }
+            try
+            {
+                int remaining = (int)Math.Max(0, deadline - Environment.TickCount64);
+                if (t.IsAlive) t.Join(remaining);
+            }
+            catch { }
         }
         _captureThreads = [];
-
-        // Join all reinject workers
-        foreach (var t in _reinjectThreads)
-        {
-            try { if (t.IsAlive) t.Join(2000); } catch { }
-        }
-        _reinjectThreads = [];
-
-        // Drain and dispose queued packets
-        while (_throttledQueue.TryDequeue(out var queued))
-        {
-            queued.Dispose();
-        }
-        _queueCount = 0;
-
-        Debug.WriteLine("PacketEngine stopped");
     }
 
     /// <summary>
-    /// Capture worker: receives packets, processes stats, and classifies.
-    /// Multiple instances run in parallel — WinDivert distributes packets across all workers.
-    /// NEVER sleeps — packets that need throttling are queued for reinject workers.
+    /// Switches between sniff and divert mode to match whether limits exist.
     /// </summary>
-    private void CaptureLoop(int workerId)
+    private void EnsureMode()
+    {
+        lock (_lifecycle)
+        {
+            if (!_running) return;
+            bool want = HasLimits;
+            if (_divert != null && want == _divertMode) return;
+
+            CloseNetwork();
+            if (!OpenNetwork(want) && want)
+            {
+                // Could not divert: keep monitoring at least, and say why.
+                OpenNetwork(false);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Stop();
+        lock (_instanceLock)
+        {
+            if (ReferenceEquals(_instance, this)) _instance = null;
+        }
+    }
+
+    #endregion
+
+    #region Capture + shaping
+
+    private void CaptureLoop(WinDivert handle, bool divertMode)
     {
         using var packet = new WinDivertPacket();
         using var addr = new WinDivertAddress();
+        int consecutiveErrors = 0;
 
-        while (_isRunning && _divert != null)
+        while (true)
         {
             try
             {
-                // Receive packet synchronously (blocking on WinDivert, NOT on our logic)
-                _divert.Recv(packet, addr);
+                handle.Recv(packet, addr);
+                consecutiveErrors = 0;
+            }
+            catch
+            {
+                // Shutdown/close ends the loop; anything else is retried.
+                if (!_running || _draining || !ReferenceEquals(handle, _divert)) break;
+                if (++consecutiveErrors > 50) Thread.Sleep(20);
+                continue;
+            }
 
-                if (packet.Length == 0) continue;
+            if (packet.Length == 0) continue;
 
-                // Process stats (always, regardless of throttle)
-                ProcessPacket(packet, addr);
-
-                // Determine packet direction
-                bool isOutbound = IsOutbound(addr);
-
-                // Check throttling - global first, then per-process
-                BandwidthThrottle? throttle = null;
-
-                if (_throttleRules.TryGetValue("global", out var globalThrottle))
-                {
-                    throttle = globalThrottle;
-                }
-                else
-                {
-                    var throttleKey = GetThrottleKey(packet, addr);
-                    if (throttleKey != null && _throttleRules.TryGetValue(throttleKey, out var processThrottle))
-                    {
-                        throttle = processThrottle;
-                    }
-                }
-
-                // No throttle active → reinject immediately (fast path, zero latency)
-                if (throttle == null)
-                {
-                    _divert.Send(packet, addr);
-                    continue;
-                }
-
-                // Check if direction is BLOCKED → drop immediately (don't waste queue space)
-                if (throttle.ShouldDrop(isOutbound))
-                {
-                    continue; // Packet dropped
-                }
-
-                // Throttle active → try Token Bucket
-                int delayMs = throttle.ConsumeAndGetDelay((uint)packet.Length, isOutbound);
-
-                if (delayMs == 0)
-                {
-                    // Enough tokens → pass through immediately (no queue overhead)
-                    _divert.Send(packet, addr);
-                    continue;
-                }
-
-                if (delayMs < 0)
-                {
-                    // Blocked by token bucket → drop
-                    continue;
-                }
-
-                // Needs delay → clone packet to queue for reinject thread
-                // This way the capture thread NEVER blocks
-                if (_queueCount < MAX_QUEUE_PACKETS)
-                {
-                    var queued = new QueuedPacket(packet, addr, isOutbound, delayMs);
-                    _throttledQueue.Enqueue(queued);
-                    Interlocked.Increment(ref _queueCount);
-                }
-                // else: queue full → drop packet (natural backpressure)
+            try
+            {
+                HandlePacket(handle, packet, addr, divertMode);
             }
             catch (Exception ex)
             {
-                if (_isRunning)
+                Debug.WriteLine($"Packet handling error: {ex.Message}");
+                // Never swallow a diverted packet because of our own bug.
+                if (divertMode)
                 {
-                    Debug.WriteLine($"Packet capture error: {ex.Message}");
+                    try { handle.Send(packet, addr); } catch { }
                 }
             }
         }
     }
 
-    /// <summary>
-    /// Reinject worker: dequeues throttled packets and paces them using Token Bucket delays.
-    /// Multiple instances drain the queue in parallel for higher throughput.
-    /// Only reinject workers sleep — capture workers run at full speed.
-    /// </summary>
-    private void ReinjectLoop(int workerId)
+    private unsafe void HandlePacket(WinDivert handle, WinDivertPacket packet, WinDivertAddress addr, bool divertMode)
     {
-        while (_isRunning)
+        int length = packet.Length;
+        bool outbound = (addr.Flags & WinDivertAddressFlag.Outbound) != 0;
+
+        var parse = packet.GetParseResult();
+        ushort srcPort = 0, dstPort = 0;
+        byte protocol = 0;
+        if (parse.TcpHeader != null)
         {
-            try
-            {
-                if (_throttledQueue.TryDequeue(out var queued))
-                {
-                    Interlocked.Decrement(ref _queueCount);
+            srcPort = parse.TcpHeader->SrcPort;
+            dstPort = parse.TcpHeader->DstPort;
+            protocol = ProtoTcp;
+        }
+        else if (parse.UdpHeader != null)
+        {
+            srcPort = parse.UdpHeader->SrcPort;
+            dstPort = parse.UdpHeader->DstPort;
+            protocol = ProtoUdp;
+        }
 
-                    using (queued)
-                    {
-                        // Apply the delay calculated by capture thread's Token Bucket
-                        if (queued.DelayMs > 0)
-                        {
-                            Thread.Sleep(queued.DelayMs);
-                        }
+        ushort localPort = outbound ? srcPort : dstPort;
+        int pid = protocol switch
+        {
+            ProtoTcp => _tcpOwner[localPort],
+            ProtoUdp => _udpOwner[localPort],
+            _ => 0
+        };
+        if (pid == 0 && protocol != 0) RequestTableRefresh();
 
-                        // Reinject the packet (WinDivert Send is thread-safe)
-                        if (_isRunning && _divert != null)
-                        {
-                            _divert.Send(queued.Packet, queued.Address);
-                        }
-                    }
-                }
-                else
-                {
-                    // No packets waiting → yield to avoid busy-spinning
-                    Thread.Sleep(1);
-                }
-            }
-            catch (Exception ex)
-            {
-                if (_isRunning)
-                {
-                    Debug.WriteLine($"Reinject error: {ex.Message}");
-                }
-            }
+        var handler = OnPacketCaptured;
+        if (handler != null)
+            RaisePacketCaptured(handler, parse, pid, length, outbound, protocol, localPort, outbound ? dstPort : srcPort);
+
+        if (!divertMode)
+        {
+            Account(pid, length, outbound);
+            return;
+        }
+
+        ShaperPair? app = null;
+        if (pid != 0 && !_appShapers.IsEmpty)
+        {
+            var identity = GetIdentity(pid);
+            if (identity != null) _appShapers.TryGetValue(identity.Key, out app);
+        }
+        var global = _globalShaper;
+
+        if (app == null && global == null)
+        {
+            handle.Send(packet, addr);
+            Account(pid, length, outbound);
+            return;
+        }
+
+        long now = Stopwatch.GetTimestamp();
+        long departure = now;
+
+        if (app != null)
+        {
+            departure = app.For(outbound).Schedule(length, now, departure);
+            if (departure < 0) { Interlocked.Increment(ref _droppedPackets); return; }
+        }
+        if (global != null)
+        {
+            departure = global.For(outbound).Schedule(length, now, departure);
+            if (departure < 0) { Interlocked.Increment(ref _droppedPackets); return; }
+        }
+
+        if (departure - now <= SendNowTicks)
+        {
+            handle.Send(packet, addr);
+            Account(pid, length, outbound);
+            return;
+        }
+
+        var pacer = _pacer;
+        var queued = new QueuedPacket(handle, packet, addr, departure, pid, length, outbound);
+        if (pacer == null || !pacer.Enqueue(queued))
+        {
+            queued.Dispose();
+            Interlocked.Increment(ref _droppedPackets);
         }
     }
 
-    private unsafe void ProcessPacket(WinDivertPacket packet, WinDivertAddress addr)
+    private unsafe void RaisePacketCaptured(Action<PacketInfo> handler, WinDivertParseResult parse, int pid,
+        int length, bool outbound, byte protocol, ushort localPort, ushort remotePort)
     {
+        string? srcAddr = null, dstAddr = null, tcpFlags = null;
         try
         {
-            var parseResult = packet.GetParseResult();
-
-            ushort srcPort = 0, dstPort = 0;
-            byte protocol = 0;
-
-            // Get ports from TCP or UDP headers
-            if (parseResult.TcpHeader != null)
+            if (parse.IPV4Header != null)
             {
-                srcPort = parseResult.TcpHeader->SrcPort;
-                dstPort = parseResult.TcpHeader->DstPort;
-                protocol = 6; // TCP
+                srcAddr = parse.IPV4Header->SrcAddr.ToString();
+                dstAddr = parse.IPV4Header->DstAddr.ToString();
             }
-            else if (parseResult.UdpHeader != null)
+            else if (parse.IPV6Header != null)
             {
-                srcPort = parseResult.UdpHeader->SrcPort;
-                dstPort = parseResult.UdpHeader->DstPort;
-                protocol = 17; // UDP
+                srcAddr = parse.IPV6Header->SrcAddr.ToString();
+                dstAddr = parse.IPV6Header->DstAddr.ToString();
             }
 
-            // Find process by port
-            int processId = 0;
-            bool outbound = IsOutbound(addr);
-            ushort localPort = outbound ? srcPort : dstPort;
-
-            if (localPort != 0)
+            if (parse.TcpHeader != null)
             {
-                RefreshPortToProcessMapIfNeeded();
-                _portToProcessMap.TryGetValue(localPort, out processId);
+                var t = parse.TcpHeader;
+                var flags = new List<string>(6);
+                if (t->Syn) flags.Add("SYN");
+                if (t->Ack) flags.Add("ACK");
+                if (t->Psh) flags.Add("PSH");
+                if (t->Fin) flags.Add("FIN");
+                if (t->Rst) flags.Add("RST");
+                if (t->Urg) flags.Add("URG");
+                tcpFlags = string.Join(",", flags);
             }
+        }
+        catch { }
 
-            // Update stats
-            var packetLen = packet.Length;
-
-            if (processId != 0)
+        try
+        {
+            handler(new PacketInfo
             {
-                var stats = _processStats.GetOrAdd(processId, pid =>
-                {
-                    string name = "";
-                    try { using var p = Process.GetProcessById(pid); name = p.ProcessName; } catch { }
-                    return new ProcessTrafficStats { ProcessId = pid, ProcessName = name };
-                });
-
-                if (outbound)
-                {
-                    Interlocked.Add(ref stats._bytesSent, packetLen);
-                    Interlocked.Add(ref _totalBytesSent, packetLen);
-                }
-                else
-                {
-                    Interlocked.Add(ref stats._bytesReceived, packetLen);
-                    Interlocked.Add(ref _totalBytesReceived, packetLen);
-                }
-
-                stats.LastActivity = DateTime.Now;
-            }
-            else
-            {
-                // Unknown process, still count total
-                if (outbound)
-                {
-                    Interlocked.Add(ref _totalBytesSent, packetLen);
-                }
-                else
-                {
-                    Interlocked.Add(ref _totalBytesReceived, packetLen);
-                }
-            }
-
-            // Fire event for interested listeners. IP/flag extraction (which
-            // allocates) only runs when something is actually subscribed — the
-            // throttle-only path stays allocation-free.
-            var handler = OnPacketCaptured;
-            if (handler != null)
-            {
-                string? srcAddr = null, dstAddr = null, tcpFlags = null;
-                try
-                {
-                    if (parseResult.IPV4Header != null)
-                    {
-                        srcAddr = parseResult.IPV4Header->SrcAddr.ToString();
-                        dstAddr = parseResult.IPV4Header->DstAddr.ToString();
-                    }
-                    else if (parseResult.IPV6Header != null)
-                    {
-                        srcAddr = parseResult.IPV6Header->SrcAddr.ToString();
-                        dstAddr = parseResult.IPV6Header->DstAddr.ToString();
-                    }
-
-                    if (parseResult.TcpHeader != null)
-                    {
-                        var t = parseResult.TcpHeader;
-                        var flags = new List<string>(6);
-                        if (t->Syn) flags.Add("SYN");
-                        if (t->Ack) flags.Add("ACK");
-                        if (t->Psh) flags.Add("PSH");
-                        if (t->Fin) flags.Add("FIN");
-                        if (t->Rst) flags.Add("RST");
-                        if (t->Urg) flags.Add("URG");
-                        tcpFlags = string.Join(",", flags);
-                    }
-                }
-                catch { }
-
-                handler(new PacketInfo
-                {
-                    ProcessId = processId,
-                    Length = packetLen,
-                    IsOutbound = outbound,
-                    Protocol = protocol,
-                    LocalPort = localPort,
-                    RemotePort = outbound ? dstPort : srcPort,
-                    SourceAddress = srcAddr,
-                    DestAddress = dstAddr,
-                    TcpFlags = tcpFlags,
-                    Timestamp = DateTime.Now
-                });
-            }
+                ProcessId = pid,
+                Length = length,
+                IsOutbound = outbound,
+                Protocol = protocol,
+                LocalPort = localPort,
+                RemotePort = remotePort,
+                SourceAddress = srcAddr,
+                DestAddress = dstAddr,
+                TcpFlags = tcpFlags,
+                Timestamp = DateTime.Now
+            });
         }
         catch { }
     }
 
-    private unsafe string? GetThrottleKey(WinDivertPacket packet, WinDivertAddress addr)
+    /// <summary>Re-injects a packet the pacer held back. Called on the pacer thread.</summary>
+    private void Deliver(QueuedPacket queued)
     {
         try
         {
-            var parseResult = packet.GetParseResult();
-
-            ushort srcPort = 0, dstPort = 0;
-
-            if (parseResult.TcpHeader != null)
-            {
-                srcPort = parseResult.TcpHeader->SrcPort;
-                dstPort = parseResult.TcpHeader->DstPort;
-            }
-            else if (parseResult.UdpHeader != null)
-            {
-                srcPort = parseResult.UdpHeader->SrcPort;
-                dstPort = parseResult.UdpHeader->DstPort;
-            }
-            else
-            {
-                return null;
-            }
-
-            bool outbound = IsOutbound(addr);
-            ushort localPort = outbound ? srcPort : dstPort;
-
-            RefreshPortToProcessMapIfNeeded();
-
-            if (_portToProcessMap.TryGetValue(localPort, out int processId))
-            {
-                return $"process:{processId}";
-            }
-
-            return null;
+            queued.Handle.Send(queued.Packet, queued.Address);
+            Account(queued.ProcessId, queued.Length, queued.Outbound);
         }
         catch
         {
-            return null;
+            Interlocked.Increment(ref _droppedPackets);
         }
-    }
-
-    private void RefreshPortToProcessMapIfNeeded()
-    {
-        if ((DateTime.Now - _lastPortMapRefresh) < _portMapRefreshInterval)
-            return;
-
-        // Prevent thundering herd: only one worker refreshes at a time
-        if (Interlocked.CompareExchange(ref _portMapRefreshing, 1, 0) != 0)
-            return; // Another worker is already refreshing
-
-        try
-        {
-            _lastPortMapRefresh = DateTime.Now;
-            RefreshPortToProcessMap();
-        }
-        catch { }
         finally
         {
-            Interlocked.Exchange(ref _portMapRefreshing, 0);
+            queued.Dispose();
         }
     }
 
-    private void RefreshPortToProcessMap()
+    private void Account(int pid, int length, bool outbound)
+    {
+        if (outbound) Interlocked.Add(ref _totalBytesSent, length);
+        else Interlocked.Add(ref _totalBytesReceived, length);
+
+        if (pid == 0) return;
+
+        var stats = _processStats.GetOrAdd(pid, static (id, engine) =>
+            new ProcessTrafficStats
+            {
+                ProcessId = id,
+                ProcessName = engine.GetIdentity(id)?.Name ?? ""
+            }, this);
+
+        if (outbound) Interlocked.Add(ref stats._bytesSent, length);
+        else Interlocked.Add(ref stats._bytesReceived, length);
+        stats.Touch();
+    }
+
+    #endregion
+
+    #region Limits API
+
+    /// <summary>
+    /// Lower-case process name without ".exe" — the key every limit uses, so
+    /// all processes of one app share a single limit.
+    /// </summary>
+    public static string NormalizeAppKey(string processName)
+    {
+        var name = processName.Trim();
+        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            name = name[..^4];
+        return name.ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Limits one app (every process with that name). Values are bytes/second,
+    /// <see cref="RateLimit.Unlimited"/> or <see cref="RateLimit.Blocked"/>.
+    /// </summary>
+    public void SetAppLimit(string processName, long downloadBps, long uploadBps)
+    {
+        var key = NormalizeAppKey(processName);
+        if (key.Length == 0) return;
+
+        if (downloadBps < 0 && uploadBps < 0)
+        {
+            RemoveAppLimit(processName);
+            return;
+        }
+
+        _appShapers.AddOrUpdate(key,
+            _ => new ShaperPair(downloadBps, uploadBps),
+            (_, existing) => { existing.Update(downloadBps, uploadBps); return existing; });
+        EnsureMode();
+    }
+
+    public void RemoveAppLimit(string processName)
+    {
+        if (_appShapers.TryRemove(NormalizeAppKey(processName), out _))
+            EnsureMode();
+    }
+
+    public void ClearAppLimits()
+    {
+        _appShapers.Clear();
+        EnsureMode();
+    }
+
+    /// <summary>Limits all traffic of this PC (every app together).</summary>
+    public void SetGlobalLimit(long downloadBps, long uploadBps)
+    {
+        if (downloadBps < 0 && uploadBps < 0)
+        {
+            RemoveGlobalLimit();
+            return;
+        }
+
+        var current = _globalShaper;
+        if (current != null) current.Update(downloadBps, uploadBps);
+        else _globalShaper = new ShaperPair(downloadBps, uploadBps);
+        EnsureMode();
+    }
+
+    public void RemoveGlobalLimit()
+    {
+        if (_globalShaper == null) return;
+        _globalShaper = null;
+        EnsureMode();
+    }
+
+    #endregion
+
+    #region Process attribution
+
+    private void StartAttribution()
     {
         try
         {
-            // Build new map first, then swap atomically — never leave the map empty
-            var newMap = new ConcurrentDictionary<ushort, int>();
-
-            // Get TCP connections
-            var tcpTable = GetTcpConnections();
-            foreach (var conn in tcpTable)
+            // Socket events arrive before the first packet of a connection, so
+            // new downloads are attributed (and limited) from the first byte.
+            _socketHandle = new WinDivert(NetworkFilter, WinDivertLayer.Socket, 0,
+                WinDivertFlag.Sniff | WinDivertFlag.RecvOnly);
+            var handle = _socketHandle;
+            _socketThread = new Thread(() => SocketLoop(handle))
             {
-                newMap[conn.LocalPort] = conn.ProcessId;
-            }
-
-            // Get UDP endpoints
-            var udpTable = GetUdpEndpoints();
-            foreach (var ep in udpTable)
-            {
-                newMap[ep.LocalPort] = ep.ProcessId;
-            }
-
-            // Merge into existing map (don't clear — keep stale entries until overwritten)
-            // This prevents a gap where BitTorrent DHT connections lose their process mapping
-            foreach (var kvp in newMap)
-            {
-                _portToProcessMap[kvp.Key] = kvp.Value;
-            }
-
-            // Remove entries whose port is no longer active (clean up stale mappings)
-            var activeLocalPorts = new HashSet<ushort>(newMap.Keys);
-            foreach (var existingPort in _portToProcessMap.Keys.ToArray())
-            {
-                if (!activeLocalPorts.Contains(existingPort))
-                {
-                    _portToProcessMap.TryRemove(existingPort, out _);
-                }
-            }
+                Name = "PacketEngine-Sockets",
+                IsBackground = true,
+                Priority = ThreadPriority.AboveNormal
+            };
+            _socketThread.Start();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // Older drivers: fall back to the owner tables only.
+            _socketHandle = null;
+            Debug.WriteLine($"Socket layer unavailable, using owner tables only: {ex.Message}");
+        }
+
+        _tableThread = new Thread(TableLoop) { Name = "PacketEngine-Ports", IsBackground = true };
+        _tableThread.Start();
     }
 
-    private async Task SpeedCalculationLoop()
+    private void StopAttribution()
     {
-        while (_isRunning)
+        try { _socketHandle?.Dispose(); } catch { }
+        _socketHandle = null;
+        _tableSignal.Set();
+        try { _socketThread?.Join(1500); } catch { }
+        try { _tableThread?.Join(1500); } catch { }
+        _socketThread = null;
+        _tableThread = null;
+    }
+
+    private unsafe void SocketLoop(WinDivert handle)
+    {
+        using var packet = new WinDivertPacket(64);
+        using var addr = new WinDivertAddress();
+
+        while (_running)
         {
             try
             {
-                await Task.Delay(1000);
+                handle.Recv(packet, addr);
+            }
+            catch
+            {
+                if (!_running || !ReferenceEquals(handle, _socketHandle)) break;
+                Thread.Sleep(20);
+                continue;
+            }
 
-                var now = DateTime.Now;
-                var elapsed = (now - _lastSpeedCalc).TotalSeconds;
+            var ev = addr.Event;
+            if (ev != WinDivertEvent.SocketBind && ev != WinDivertEvent.SocketConnect &&
+                ev != WinDivertEvent.SocketListen && ev != WinDivertEvent.SocketAccept)
+                continue;
+
+            var socket = addr.Socket;
+            int pid = (int)socket->ProcessId;
+            ushort port = socket->LocalPort;
+            int protocol = (int)socket->Protocol;
+            if (pid <= 0 || port == 0) continue;
+
+            long now = Stopwatch.GetTimestamp();
+            if (protocol == ProtoTcp)
+            {
+                _tcpOwner[port] = pid;
+                _tcpSeen[port] = now;
+            }
+            else if (protocol == ProtoUdp)
+            {
+                _udpOwner[port] = pid;
+                _udpSeen[port] = now;
+            }
+            else continue;
+
+            GetIdentity(pid); // warm the cache off the packet path
+        }
+    }
+
+    private void RequestTableRefresh()
+    {
+        long now = Environment.TickCount64;
+        long last = Interlocked.Read(ref _lastRefreshRequest);
+        if (now - last < 200) return;
+        if (Interlocked.CompareExchange(ref _lastRefreshRequest, now, last) == last)
+            _tableSignal.Set();
+    }
+
+    private void TableLoop()
+    {
+        while (_running)
+        {
+            try
+            {
+                RefreshOwnerTables();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Port table refresh failed: {ex.Message}");
+            }
+
+            _tableSignal.WaitOne(5000);
+            if (_running) Thread.Sleep(50); // coalesce bursts of misses
+        }
+    }
+
+    // Scratch for RefreshOwnerTables (only the table thread uses them).
+    private readonly bool[] _tcpInTable = new bool[65536];
+    private readonly bool[] _udpInTable = new bool[65536];
+
+    private void RefreshOwnerTables()
+    {
+        long now = Stopwatch.GetTimestamp();
+        var tcpNow = _tcpInTable;
+        var udpNow = _udpInTable;
+        Array.Clear(tcpNow);
+        Array.Clear(udpNow);
+        var counts = new Dictionary<int, int>();
+
+        foreach (var (port, pid, listening) in OwnerTables.ReadTcp())
+        {
+            tcpNow[port] = true;
+            _tcpOwner[port] = pid;
+            _tcpSeen[port] = now;
+            if (!listening) counts[pid] = counts.GetValueOrDefault(pid) + 1;
+        }
+
+        foreach (var (port, pid) in OwnerTables.ReadUdp())
+        {
+            udpNow[port] = true;
+            _udpOwner[port] = pid;
+            _udpSeen[port] = now;
+            counts[pid] = counts.GetValueOrDefault(pid) + 1;
+        }
+
+        // Forget ports that vanished from the tables and weren't re-announced by
+        // a socket event recently (the socket layer may be ahead of the tables).
+        long staleBefore = now - Stopwatch.Frequency * 10;
+        for (int port = 1; port < 65536; port++)
+        {
+            if (!tcpNow[port] && _tcpOwner[port] != 0 && _tcpSeen[port] < staleBefore) _tcpOwner[port] = 0;
+            if (!udpNow[port] && _udpOwner[port] != 0 && _udpSeen[port] < staleBefore) _udpOwner[port] = 0;
+        }
+
+        _connectionCounts = counts;
+
+        // Drop identities of processes that exited, and of PIDs Windows has
+        // since handed to a different program (creation time changed).
+        foreach (var (pid, identity) in _identities)
+        {
+            if (ProcessInfo.GetCreationTime(pid) != identity.CreationTime)
+                _identities.TryRemove(pid, out _);
+        }
+    }
+
+    /// <summary>Name/path of the process behind a PID (cached).</summary>
+    public AppIdentity? GetIdentity(int pid)
+    {
+        if (pid <= 0) return null;
+        if (_identities.TryGetValue(pid, out var cached)) return cached;
+
+        var resolved = ProcessInfo.Resolve(pid);
+        if (resolved == null) return null;
+        return _identities.GetOrAdd(pid, resolved);
+    }
+
+    /// <summary>
+    /// Full path of a running app's executable, learned from live traffic or
+    /// by asking Windows. Used to create firewall rules for blocked apps.
+    /// </summary>
+    public string? FindExecutablePath(string processName)
+    {
+        var key = NormalizeAppKey(processName);
+        foreach (var identity in _identities.Values)
+        {
+            if (identity.Key == key && !string.IsNullOrEmpty(identity.Path)) return identity.Path;
+        }
+        return ProcessInfo.FindPathByName(processName);
+    }
+
+    #endregion
+
+    #region Stats
+
+    private void SpeedLoop()
+    {
+        long lastTicks = Stopwatch.GetTimestamp();
+        long lastReceived = Interlocked.Read(ref _totalBytesReceived);
+        long lastSent = Interlocked.Read(ref _totalBytesSent);
+
+        while (_running)
+        {
+            Thread.Sleep(1000);
+            try
+            {
+                long nowTicks = Stopwatch.GetTimestamp();
+                double elapsed = (nowTicks - lastTicks) / (double)Stopwatch.Frequency;
                 if (elapsed <= 0) continue;
 
-                // Calculate total speeds
-                var bytesReceivedDelta = _totalBytesReceived - _lastBytesReceived;
-                var bytesSentDelta = _totalBytesSent - _lastBytesSent;
+                long received = Interlocked.Read(ref _totalBytesReceived);
+                long sent = Interlocked.Read(ref _totalBytesSent);
+                _currentDownloadSpeed = (received - lastReceived) / elapsed;
+                _currentUploadSpeed = (sent - lastSent) / elapsed;
+                lastReceived = received;
+                lastSent = sent;
+                lastTicks = nowTicks;
 
-                _currentDownloadSpeed = bytesReceivedDelta / elapsed;
-                _currentUploadSpeed = bytesSentDelta / elapsed;
-
-                _lastBytesReceived = _totalBytesReceived;
-                _lastBytesSent = _totalBytesSent;
-                _lastSpeedCalc = now;
-
-                // Calculate per-process speeds
                 foreach (var stats in _processStats.Values)
-                {
                     stats.CalculateSpeed(elapsed);
-                }
 
-                // Clean up dead processes
-                CleanupDeadProcesses();
+                // Forget processes that have been silent for 30 s.
+                foreach (var (pid, stats) in _processStats)
+                {
+                    if (stats.IdleSeconds > 30) _processStats.TryRemove(pid, out _);
+                }
             }
             catch { }
         }
     }
 
-    private void CleanupDeadProcesses()
-    {
-        var cutoff = DateTime.Now.AddSeconds(-30);
-        var toRemove = _processStats.Where(kv =>
-            kv.Value.LastActivity < cutoff || !IsProcessAlive(kv.Key)).ToList();
-
-        foreach (var kv in toRemove)
-        {
-            _processStats.TryRemove(kv.Key, out _);
-        }
-    }
-
-    private static bool IsProcessAlive(int processId)
-    {
-        try
-        {
-            using var proc = Process.GetProcessById(processId);
-            return !proc.HasExited;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    #region Public API
-
-    /// <summary>
-    /// Get current network stats
-    /// </summary>
     public NetworkStatsSnapshot GetStats()
     {
+        var counts = _connectionCounts;
+        var active = _processStats.Values.Where(s => s.IsActive).ToList();
+
+        // A process can start sending before its name could be read; fill it in now.
+        foreach (var stats in active.Where(s => s.ProcessName.Length == 0))
+            stats.ProcessName = GetIdentity(stats.ProcessId)?.Name ?? "";
+
         return new NetworkStatsSnapshot
         {
             TotalDownloadSpeed = _currentDownloadSpeed,
             TotalUploadSpeed = _currentUploadSpeed,
-            TotalBytesReceived = _totalBytesReceived,
-            TotalBytesSent = _totalBytesSent,
-            ActiveProcessCount = _processStats.Count(kv => kv.Value.IsActive),
-            ProcessStats = _processStats.Values
-                .Where(s => s.IsActive)
-                .Select(s => s.ToSnapshot())
-                .ToList()
+            TotalBytesReceived = Interlocked.Read(ref _totalBytesReceived),
+            TotalBytesSent = Interlocked.Read(ref _totalBytesSent),
+            ActiveProcessCount = active.Count,
+            TotalConnections = counts.Values.Sum(),
+            ProcessStats = active.Select(s =>
+            {
+                var snapshot = s.ToSnapshot();
+                snapshot.ConnectionCount = counts.GetValueOrDefault(s.ProcessId);
+                return snapshot;
+            }).ToList()
         };
     }
 
-    /// <summary>
-    /// Get stats for a specific process
-    /// </summary>
     public ProcessStatsSnapshot? GetProcessStats(int processId)
     {
-        if (_processStats.TryGetValue(processId, out var stats))
-        {
-            return stats.ToSnapshot();
-        }
-        return null;
+        if (!_processStats.TryGetValue(processId, out var stats)) return null;
+        var snapshot = stats.ToSnapshot();
+        snapshot.ConnectionCount = _connectionCounts.GetValueOrDefault(processId);
+        return snapshot;
     }
 
-    /// <summary>
-    /// Get stats for a process by name
-    /// </summary>
     public ProcessStatsSnapshot? GetProcessStats(string processName)
     {
-        var cleanName = processName.Replace(".exe", "").ToLowerInvariant();
-
-        foreach (var kv in _processStats)
+        var key = NormalizeAppKey(processName);
+        foreach (var stats in _processStats.Values)
         {
-            if (kv.Value.ProcessName.ToLowerInvariant() == cleanName)
-            {
-                return kv.Value.ToSnapshot();
-            }
+            if (NormalizeAppKey(stats.ProcessName) == key)
+                return stats.ToSnapshot();
         }
-
         return null;
     }
 
     /// <summary>
-    /// Set bandwidth throttle for a process
+    /// Current combined speed of every process of one app, in bytes/second.
     /// </summary>
-    public void SetThrottle(int processId, long downloadBytesPerSec, long uploadBytesPerSec)
+    public (double Download, double Upload) GetAppSpeed(string processName)
     {
-        var key = $"process:{processId}";
-        _throttleRules[key] = new BandwidthThrottle
+        var key = NormalizeAppKey(processName);
+        double down = 0, up = 0;
+        foreach (var stats in _processStats.Values)
         {
-            ProcessId = processId,
-            DownloadLimitBps = downloadBytesPerSec,
-            UploadLimitBps = uploadBytesPerSec
-        };
-
-        Debug.WriteLine($"Throttle set for PID {processId}: {downloadBytesPerSec / 1024} KB/s down, {uploadBytesPerSec / 1024} KB/s up");
-    }
-
-    /// <summary>
-    /// Set bandwidth throttle for a process by name
-    /// </summary>
-    public void SetThrottle(string processName, long downloadBytesPerSec, long uploadBytesPerSec)
-    {
-        var cleanName = processName.Replace(".exe", "");
-        var processes = Process.GetProcessesByName(cleanName);
-
-        foreach (var proc in processes)
-        {
-            SetThrottle(proc.Id, downloadBytesPerSec, uploadBytesPerSec);
+            if (NormalizeAppKey(stats.ProcessName) != key) continue;
+            down += stats.DownloadSpeed;
+            up += stats.UploadSpeed;
         }
-    }
-
-    /// <summary>
-    /// Remove throttle for a process
-    /// </summary>
-    public void RemoveThrottle(int processId)
-    {
-        var key = $"process:{processId}";
-        _throttleRules.TryRemove(key, out _);
-    }
-
-    /// <summary>
-    /// Block a process completely
-    /// </summary>
-    public void BlockProcess(int processId)
-    {
-        SetThrottle(processId, 1, 1); // 1 B/s ≤ BLOCK_THRESHOLD = drops all packets
-    }
-
-    /// <summary>
-    /// Set global bandwidth throttle for all traffic (0 = no limit)
-    /// </summary>
-    public void SetGlobalThrottle(long downloadBytesPerSec, long uploadBytesPerSec)
-    {
-        if (downloadBytesPerSec == 0 && uploadBytesPerSec == 0)
-        {
-            // Remove global throttle
-            _throttleRules.TryRemove("global", out _);
-            Debug.WriteLine("Global throttle removed");
-        }
-        else
-        {
-            _throttleRules["global"] = new BandwidthThrottle
-            {
-                ProcessId = 0, // 0 = global
-                DownloadLimitBps = downloadBytesPerSec,
-                UploadLimitBps = uploadBytesPerSec
-            };
-            Debug.WriteLine($"Global throttle set: {downloadBytesPerSec / 1024} KB/s down, {uploadBytesPerSec / 1024} KB/s up");
-        }
-    }
-
-    /// <summary>
-    /// Remove global throttle
-    /// </summary>
-    public void RemoveGlobalThrottle()
-    {
-        _throttleRules.TryRemove("global", out _);
+        return (down, up);
     }
 
     #endregion
 
-    #region TCP/UDP Connection Helpers
+    #region Pacer
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MIB_TCPROW_OWNER_PID
+    /// <summary>
+    /// Holds delayed packets in a min-heap ordered by departure time and sends
+    /// each one when it is due. Sleeps on a high-resolution waitable timer
+    /// (≈0.5 ms precision) instead of Thread.Sleep (15.6 ms steps), so the
+    /// delivered rate matches the configured one at every speed.
+    /// </summary>
+    private sealed class Pacer : IDisposable
     {
-        public uint State;
-        public uint LocalAddr;
-        public uint LocalPort;
-        public uint RemoteAddr;
-        public uint RemotePort;
-        public int OwningPid;
+        private const int MaxQueuedPackets = 20000;
+        private const uint CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002;
+        private const uint TIMER_ALL_ACCESS = 0x1F0003;
+
+        private readonly PacketEngine _owner;
+        private readonly PriorityQueue<QueuedPacket, long> _heap = new();
+        private readonly object _lock = new();
+        private readonly AutoResetEvent _wake = new(false);
+        private readonly SafeWaitHandle? _timer;
+        private readonly WaitHandle[] _waitSet;
+        private readonly bool _raisedTimerResolution;
+        private readonly Thread _thread;
+        private volatile bool _running = true;
+        private long _earliest = long.MaxValue;
+
+        public Pacer(PacketEngine owner)
+        {
+            _owner = owner;
+
+            var timer = CreateWaitableTimerExW(IntPtr.Zero, null, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+            if (timer.IsInvalid)
+            {
+                // Pre-1803 Windows: normal timer + 1 ms system timer resolution.
+                timer.Dispose();
+                timer = CreateWaitableTimerExW(IntPtr.Zero, null, 0, TIMER_ALL_ACCESS);
+                _raisedTimerResolution = timeBeginPeriod(1) == 0;
+            }
+
+            if (!timer.IsInvalid)
+            {
+                _timer = timer;
+                _waitSet = [_wake, new TimerWaitHandle(timer)];
+            }
+            else
+            {
+                timer.Dispose();
+                _waitSet = [_wake];
+            }
+
+            _thread = new Thread(Loop) { Name = "PacketEngine-Pacer", IsBackground = true, Priority = ThreadPriority.Highest };
+            _thread.Start();
+        }
+
+        public int Count
+        {
+            get { lock (_lock) return _heap.Count; }
+        }
+
+        public bool Enqueue(QueuedPacket packet)
+        {
+            bool wake;
+            lock (_lock)
+            {
+                if (!_running || _heap.Count >= MaxQueuedPackets) return false;
+                _heap.Enqueue(packet, packet.DueTicks);
+                wake = packet.DueTicks < _earliest;
+                if (wake) _earliest = packet.DueTicks;
+            }
+            if (wake) _wake.Set();
+            return true;
+        }
+
+        private void Loop()
+        {
+            var due = new List<QueuedPacket>(256);
+
+            while (_running)
+            {
+                long now = Stopwatch.GetTimestamp();
+                long next;
+
+                lock (_lock)
+                {
+                    while (_heap.TryPeek(out var packet, out var dueTicks) && dueTicks <= now + SendNowTicks)
+                    {
+                        _heap.Dequeue();
+                        due.Add(packet);
+                    }
+                    next = _heap.TryPeek(out _, out var nextTicks) ? nextTicks : long.MaxValue;
+                    _earliest = next;
+                }
+
+                foreach (var packet in due) _owner.Deliver(packet);
+                due.Clear();
+
+                if (next == long.MaxValue)
+                {
+                    _wake.WaitOne(250);
+                    continue;
+                }
+
+                long wait = next - Stopwatch.GetTimestamp();
+                if (wait > SendNowTicks) WaitTicks(wait);
+            }
+        }
+
+        private void WaitTicks(long ticks)
+        {
+            if (_timer != null)
+            {
+                long dueTime = -Math.Max(1, ticks * 10_000_000 / Stopwatch.Frequency); // relative, 100 ns units
+                if (SetWaitableTimer(_timer, ref dueTime, 0, IntPtr.Zero, IntPtr.Zero, false))
+                {
+                    WaitHandle.WaitAny(_waitSet);
+                    return;
+                }
+            }
+            _wake.WaitOne((int)Math.Max(1, ticks * 1000 / Stopwatch.Frequency));
+        }
+
+        /// <summary>Stops the thread; queued packets are sent now or discarded.</summary>
+        public void Stop(bool flush)
+        {
+            lock (_lock) _running = false;
+            _wake.Set();
+            _thread.Join(2000);
+
+            var rest = new List<QueuedPacket>();
+            lock (_lock)
+            {
+                while (_heap.TryDequeue(out var packet, out _)) rest.Add(packet);
+                _earliest = long.MaxValue;
+            }
+
+            foreach (var packet in rest)
+            {
+                if (flush) _owner.Deliver(packet);
+                else packet.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_running) Stop(flush: false);
+            if (_waitSet.Length > 1) _waitSet[1].Dispose();
+            else _timer?.Dispose();
+            if (_raisedTimerResolution) timeEndPeriod(1);
+            _wake.Dispose();
+        }
+
+        private sealed class TimerWaitHandle : WaitHandle
+        {
+            public TimerWaitHandle(SafeWaitHandle handle) => SafeWaitHandle = handle;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern SafeWaitHandle CreateWaitableTimerExW(IntPtr lpTimerAttributes, string? lpTimerName, uint dwFlags, uint dwDesiredAccess);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetWaitableTimer(SafeWaitHandle hTimer, ref long pDueTime, int lPeriod,
+            IntPtr pfnCompletionRoutine, IntPtr lpArgToCompletionRoutine, [MarshalAs(UnmanagedType.Bool)] bool fResume);
+
+        [DllImport("winmm.dll")]
+        private static extern uint timeBeginPeriod(uint uPeriod);
+
+        [DllImport("winmm.dll")]
+        private static extern uint timeEndPeriod(uint uPeriod);
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MIB_UDPROW_OWNER_PID
+    /// <summary>
+    /// A diverted packet waiting for its departure time. Owns native copies of
+    /// the packet and address so the capture thread can reuse its buffers.
+    /// </summary>
+    private sealed class QueuedPacket : IDisposable
     {
-        public uint LocalAddr;
-        public uint LocalPort;
-        public int OwningPid;
+        public WinDivert Handle { get; }
+        public WinDivertPacket Packet { get; }
+        public WinDivertAddress Address { get; }
+        public long DueTicks { get; }
+        public int ProcessId { get; }
+        public int Length { get; }
+        public bool Outbound { get; }
+
+        public QueuedPacket(WinDivert handle, WinDivertPacket packet, WinDivertAddress addr,
+            long dueTicks, int processId, int length, bool outbound)
+        {
+            Handle = handle;
+            Packet = packet.Clone();
+            Address = addr.Clone();
+            DueTicks = dueTicks;
+            ProcessId = processId;
+            Length = length;
+            Outbound = outbound;
+        }
+
+        public void Dispose()
+        {
+            Packet.Dispose();
+            Address.Dispose();
+        }
     }
+
+    #endregion
+}
+
+/// <summary>Who is behind a PID: display name, limit key, and executable path.</summary>
+public sealed record AppIdentity(string Name, string Key, string? Path, long CreationTime);
+
+/// <summary>Process lookups that work for elevated and protected processes.</summary>
+internal static class ProcessInfo
+{
+    private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+    public static AppIdentity? Resolve(int pid)
+    {
+        if (pid == 4) return new AppIdentity("System", "system", null, 0);
+
+        var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (handle != IntPtr.Zero)
+        {
+            try
+            {
+                var path = QueryImagePath(handle);
+                GetProcessTimes(handle, out long created, out _, out _, out _);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var name = Path.GetFileNameWithoutExtension(path);
+                    return new AppIdentity(name, PacketEngine.NormalizeAppKey(name), path, created);
+                }
+            }
+            finally
+            {
+                CloseHandle(handle);
+            }
+        }
+
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            var name = process.ProcessName;
+            return new AppIdentity(name, PacketEngine.NormalizeAppKey(name), null, GetCreationTime(pid));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Process creation time (FILETIME), or -1 if it no longer exists.</summary>
+    public static long GetCreationTime(int pid)
+    {
+        if (pid == 4) return 0;
+        var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (handle == IntPtr.Zero) return -1;
+        try
+        {
+            return GetProcessTimes(handle, out long created, out _, out _, out _) ? created : -1;
+        }
+        finally
+        {
+            CloseHandle(handle);
+        }
+    }
+
+    public static string? FindPathByName(string processName)
+    {
+        var name = processName.Trim();
+        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name = name[..^4];
+
+        Process[] processes;
+        try { processes = Process.GetProcessesByName(name); } catch { return null; }
+
+        try
+        {
+            foreach (var process in processes)
+            {
+                var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process.Id);
+                if (handle == IntPtr.Zero) continue;
+                try
+                {
+                    var path = QueryImagePath(handle);
+                    if (!string.IsNullOrEmpty(path)) return path;
+                }
+                finally
+                {
+                    CloseHandle(handle);
+                }
+            }
+        }
+        finally
+        {
+            foreach (var process in processes) process.Dispose();
+        }
+        return null;
+    }
+
+    private static string? QueryImagePath(IntPtr handle)
+    {
+        var buffer = new StringBuilder(1024);
+        int size = buffer.Capacity;
+        return QueryFullProcessImageNameW(handle, 0, buffer, ref size) ? buffer.ToString(0, size) : null;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryFullProcessImageNameW(IntPtr hProcess, int dwFlags, StringBuilder lpExeName, ref int lpdwSize);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetProcessTimes(IntPtr hProcess, out long lpCreationTime, out long lpExitTime,
+        out long lpKernelTime, out long lpUserTime);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr hObject);
+}
+
+/// <summary>
+/// Reads the TCP/UDP owner tables for IPv4 and IPv6 (port + owning PID).
+/// </summary>
+internal static class OwnerTables
+{
+    private const int AF_INET = 2;
+    private const int AF_INET6 = 23;
+    private const int TCP_TABLE_OWNER_PID_ALL = 5;
+    private const int UDP_TABLE_OWNER_PID = 1;
+    private const int MIB_TCP_STATE_LISTEN = 2;
+
+    public static List<(ushort Port, int Pid, bool Listening)> ReadTcp()
+    {
+        var rows = new List<(ushort, int, bool)>();
+        // IPv4 row: state, localAddr, localPort, remoteAddr, remotePort, pid (24 bytes)
+        ReadTable(isTcp: true, AF_INET, rowSize: 24, (row) =>
+            rows.Add((Port(row, 8), Marshal.ReadInt32(row, 20), Marshal.ReadInt32(row, 0) == MIB_TCP_STATE_LISTEN)));
+        // IPv6 row: localAddr[16], scope, localPort, remoteAddr[16], scope, remotePort, state, pid (56 bytes)
+        ReadTable(isTcp: true, AF_INET6, rowSize: 56, (row) =>
+            rows.Add((Port(row, 20), Marshal.ReadInt32(row, 52), Marshal.ReadInt32(row, 48) == MIB_TCP_STATE_LISTEN)));
+        return rows;
+    }
+
+    public static List<(ushort Port, int Pid)> ReadUdp()
+    {
+        var rows = new List<(ushort, int)>();
+        // IPv4 row: localAddr, localPort, pid (12 bytes)
+        ReadTable(isTcp: false, AF_INET, rowSize: 12, (row) => rows.Add((Port(row, 4), Marshal.ReadInt32(row, 8))));
+        // IPv6 row: localAddr[16], scope, localPort, pid (28 bytes)
+        ReadTable(isTcp: false, AF_INET6, rowSize: 28, (row) => rows.Add((Port(row, 20), Marshal.ReadInt32(row, 24))));
+        return rows;
+    }
+
+    private static ushort Port(IntPtr row, int offset)
+    {
+        // Stored in network byte order in the low 16 bits of a DWORD.
+        int raw = Marshal.ReadInt32(row, offset);
+        return (ushort)(((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF));
+    }
+
+    private static void ReadTable(bool isTcp, int family, int rowSize, Action<IntPtr> onRow)
+    {
+        int size = 0;
+        int tableClass = isTcp ? TCP_TABLE_OWNER_PID_ALL : UDP_TABLE_OWNER_PID;
+        Call(isTcp, IntPtr.Zero, ref size, family, tableClass);
+        if (size <= 0) return;
+
+        // The table can grow between the two calls; retry with the new size.
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            size += 4096;
+            var buffer = Marshal.AllocHGlobal(size);
+            try
+            {
+                uint result = Call(isTcp, buffer, ref size, family, tableClass);
+                if (result == 122) continue; // ERROR_INSUFFICIENT_BUFFER
+                if (result != 0) return;
+
+                int count = Marshal.ReadInt32(buffer);
+                var row = buffer + 4;
+                for (int i = 0; i < count; i++, row += rowSize)
+                    onRow(row);
+                return;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+    }
+
+    private static uint Call(bool isTcp, IntPtr buffer, ref int size, int family, int tableClass) =>
+        isTcp
+            ? GetExtendedTcpTable(buffer, ref size, false, family, tableClass, 0)
+            : GetExtendedUdpTable(buffer, ref size, false, family, tableClass, 0);
 
     [DllImport("iphlpapi.dll", SetLastError = true)]
     private static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref int dwOutBufLen, bool sort, int ipVersion, int tableClass, int reserved);
 
     [DllImport("iphlpapi.dll", SetLastError = true)]
     private static extern uint GetExtendedUdpTable(IntPtr pUdpTable, ref int dwOutBufLen, bool sort, int ipVersion, int tableClass, int reserved);
-
-    private List<(ushort LocalPort, ushort RemotePort, int ProcessId)> GetTcpConnections()
-    {
-        var result = new List<(ushort, ushort, int)>();
-
-        int bufferSize = 0;
-        GetExtendedTcpTable(IntPtr.Zero, ref bufferSize, false, 2, 5, 0);
-
-        var buffer = Marshal.AllocHGlobal(bufferSize);
-        try
-        {
-            if (GetExtendedTcpTable(buffer, ref bufferSize, false, 2, 5, 0) == 0)
-            {
-                int count = Marshal.ReadInt32(buffer);
-                var rowPtr = buffer + 4;
-
-                for (int i = 0; i < count; i++)
-                {
-                    var row = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
-                    ushort localPort = (ushort)IPAddress.NetworkToHostOrder((short)row.LocalPort);
-                    ushort remotePort = (ushort)IPAddress.NetworkToHostOrder((short)row.RemotePort);
-
-                    result.Add((localPort, remotePort, row.OwningPid));
-                    rowPtr += Marshal.SizeOf<MIB_TCPROW_OWNER_PID>();
-                }
-            }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
-        }
-
-        return result;
-    }
-
-    private List<(ushort LocalPort, int ProcessId)> GetUdpEndpoints()
-    {
-        var result = new List<(ushort, int)>();
-
-        int bufferSize = 0;
-        GetExtendedUdpTable(IntPtr.Zero, ref bufferSize, false, 2, 2, 0);
-
-        var buffer = Marshal.AllocHGlobal(bufferSize);
-        try
-        {
-            if (GetExtendedUdpTable(buffer, ref bufferSize, false, 2, 2, 0) == 0)
-            {
-                int count = Marshal.ReadInt32(buffer);
-                var rowPtr = buffer + 4;
-
-                for (int i = 0; i < count; i++)
-                {
-                    var row = Marshal.PtrToStructure<MIB_UDPROW_OWNER_PID>(rowPtr);
-                    ushort localPort = (ushort)IPAddress.NetworkToHostOrder((short)row.LocalPort);
-
-                    result.Add((localPort, row.OwningPid));
-                    rowPtr += Marshal.SizeOf<MIB_UDPROW_OWNER_PID>();
-                }
-            }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
-        }
-
-        return result;
-    }
-
-    #endregion
-
-    public void Dispose()
-    {
-        Stop();
-        _instance = null;
-    }
-
-    /// <summary>
-    /// Holds a cloned packet + address for the reinject queue.
-    /// Capture thread creates these; reinject thread consumes and disposes them.
-    /// </summary>
-    private sealed class QueuedPacket : IDisposable
-    {
-        public WinDivertPacket Packet { get; }
-        public WinDivertAddress Address { get; }
-        public bool IsOutbound { get; }
-        public int DelayMs { get; }
-
-        public QueuedPacket(WinDivertPacket srcPacket, WinDivertAddress srcAddr, bool isOutbound, int delayMs)
-        {
-            // Clone packet data + address so the capture thread can reuse its buffers
-            Packet = srcPacket.Clone();
-            Address = srcAddr.Clone();
-            IsOutbound = isOutbound;
-            DelayMs = Math.Min(delayMs, 500); // Cap delay per packet
-        }
-
-        public void Dispose()
-        {
-            Packet?.Dispose();
-            Address?.Dispose();
-        }
-    }
 }
 
 /// <summary>
-/// Traffic stats for a single process
+/// Traffic counters for one process. Bytes are counted when a packet is
+/// actually delivered, so a limited app shows its real (limited) speed.
 /// </summary>
 public class ProcessTrafficStats
 {
     public int ProcessId { get; set; }
-    public string ProcessName { get; set; } = "";  // Cached at creation time
+    public string ProcessName { get; set; } = "";
     internal long _bytesReceived;
     internal long _bytesSent;
     public double DownloadSpeed { get; private set; }
     public double UploadSpeed { get; private set; }
 
-    private long _lastActivityTicks = DateTime.Now.Ticks;
-
-    public DateTime LastActivity
-    {
-        get => new DateTime(Interlocked.Read(ref _lastActivityTicks));
-        set => Interlocked.Exchange(ref _lastActivityTicks, value.Ticks);
-    }
-
+    private long _lastActivityTick = Environment.TickCount64;
     private long _lastBytesReceived;
     private long _lastBytesSent;
 
-    public bool IsActive => (DateTime.Now - LastActivity).TotalSeconds < 10;
+    internal void Touch() => Volatile.Write(ref _lastActivityTick, Environment.TickCount64);
+
+    public double IdleSeconds => (Environment.TickCount64 - Volatile.Read(ref _lastActivityTick)) / 1000.0;
+
+    public DateTime LastActivity => DateTime.Now.AddSeconds(-IdleSeconds);
+
+    public bool IsActive => IdleSeconds < 10;
 
     public void CalculateSpeed(double elapsedSeconds)
     {
         if (elapsedSeconds <= 0) return;
 
-        var receivedDelta = _bytesReceived - _lastBytesReceived;
-        var sentDelta = _bytesSent - _lastBytesSent;
+        long received = Interlocked.Read(ref _bytesReceived);
+        long sent = Interlocked.Read(ref _bytesSent);
 
-        DownloadSpeed = receivedDelta / elapsedSeconds;
-        UploadSpeed = sentDelta / elapsedSeconds;
+        DownloadSpeed = (received - _lastBytesReceived) / elapsedSeconds;
+        UploadSpeed = (sent - _lastBytesSent) / elapsedSeconds;
 
-        _lastBytesReceived = _bytesReceived;
-        _lastBytesSent = _bytesSent;
+        _lastBytesReceived = received;
+        _lastBytesSent = sent;
     }
 
-    public ProcessStatsSnapshot ToSnapshot()
+    public ProcessStatsSnapshot ToSnapshot() => new()
     {
-        return new ProcessStatsSnapshot
-        {
-            ProcessId = ProcessId,
-            ProcessName = ProcessName,
-            DownloadSpeed = DownloadSpeed,
-            UploadSpeed = UploadSpeed,
-            TotalBytesReceived = _bytesReceived,
-            TotalBytesSent = _bytesSent,
-            LastActivity = LastActivity
-        };
-    }
-}
-
-/// <summary>
-/// Bandwidth throttle configuration using Token Bucket Algorithm for accurate rate limiting.
-/// Separate buckets for download and upload with smooth packet pacing.
-/// </summary>
-public class BandwidthThrottle
-{
-    public int ProcessId { get; set; }
-    public long DownloadLimitBps { get; set; }  // 0 = no limit, >0 = limit in bytes/sec
-    public long UploadLimitBps { get; set; }    // 0 = no limit, >0 = limit in bytes/sec
-
-    // Token bucket state for download
-    private double _downloadTokens;
-    private long _downloadLastRefill;
-    private readonly object _downloadLock = new();
-
-    // Token bucket state for upload
-    private double _uploadTokens;
-    private long _uploadLastRefill;
-    private readonly object _uploadLock = new();
-
-    // Bucket size = 1 second worth of tokens (allows small bursts)
-    private const double BUCKET_SIZE_MULTIPLIER = 1.0;
-    // Minimum tokens to allow (prevents starvation for small packets)
-    private const double MIN_TOKENS = 1500; // ~1 MTU
-
-    public BandwidthThrottle()
-    {
-        var now = Stopwatch.GetTimestamp();
-        _downloadLastRefill = now;
-        _uploadLastRefill = now;
-        _downloadTokens = 0;
-        _uploadTokens = 0;
-    }
-
-    // Threshold: any limit at or below this value = BLOCK (drop packets)
-    private const long BLOCK_THRESHOLD_BPS = 10;
-
-    /// <summary>
-    /// Try to consume tokens for a packet. Returns:
-    ///   -1 = packet should be DROPPED (blocked direction)
-    ///    0 = proceed immediately (no delay)
-    ///   >0 = delay in ms before reinjecting
-    /// Uses Token Bucket algorithm for accurate rate limiting.
-    /// </summary>
-    public int ConsumeAndGetDelay(uint packetSize, bool isOutbound)
-    {
-        if (isOutbound)
-        {
-            if (UploadLimitBps <= 0) return 0; // No limit
-            if (UploadLimitBps <= BLOCK_THRESHOLD_BPS) return -1; // BLOCKED → drop
-            return ConsumeTokens(ref _uploadTokens, ref _uploadLastRefill, _uploadLock,
-                                  UploadLimitBps, packetSize);
-        }
-        else
-        {
-            if (DownloadLimitBps <= 0) return 0; // No limit
-            if (DownloadLimitBps <= BLOCK_THRESHOLD_BPS) return -1; // BLOCKED → drop
-            return ConsumeTokens(ref _downloadTokens, ref _downloadLastRefill, _downloadLock,
-                                  DownloadLimitBps, packetSize);
-        }
-    }
-
-    private int ConsumeTokens(ref double tokens, ref long lastRefill, object lockObj,
-                               long limitBps, uint packetSize)
-    {
-        lock (lockObj)
-        {
-            var now = Stopwatch.GetTimestamp();
-            var elapsedTicks = now - lastRefill;
-            var elapsedSeconds = (double)elapsedTicks / Stopwatch.Frequency;
-
-            // Refill tokens based on elapsed time
-            var newTokens = elapsedSeconds * limitBps;
-            var maxTokens = Math.Max(MIN_TOKENS, limitBps * BUCKET_SIZE_MULTIPLIER);
-            tokens = Math.Min(maxTokens, tokens + newTokens);
-            lastRefill = now;
-
-            // Try to consume tokens for this packet
-            if (tokens >= packetSize)
-            {
-                tokens -= packetSize;
-                return 0; // No delay needed
-            }
-
-            // Not enough tokens - calculate delay needed
-            double tokensNeeded = packetSize - tokens;
-            double delaySeconds = tokensNeeded / limitBps;
-            int delayMs = (int)(delaySeconds * 1000);
-
-            // Consume whatever tokens we have (packet will be delayed)
-            tokens = 0;
-
-            // Cap delay to prevent extreme waits (max 500ms per packet)
-            return Math.Min(500, Math.Max(1, delayMs));
-        }
-    }
-
-    /// <summary>
-    /// Check if packet should be delayed based on direction (legacy compatibility)
-    /// </summary>
-    public bool ShouldDelay(uint packetSize, bool isOutbound)
-    {
-        return ConsumeAndGetDelay(packetSize, isOutbound) > 0;
-    }
-
-    /// <summary>
-    /// Get delay in milliseconds based on direction (legacy compatibility)
-    /// Note: Call ConsumeAndGetDelay instead for accurate results
-    /// </summary>
-    public int GetDelayMs(uint packetSize, bool isOutbound)
-    {
-        long limit = isOutbound ? UploadLimitBps : DownloadLimitBps;
-        if (limit <= 0) return 0;
-        if (limit <= BLOCK_THRESHOLD_BPS) return -1; // Blocked
-
-        // Calculate delay based on packet size and limit
-        double delaySeconds = (double)packetSize / limit;
-        int delayMs = (int)(delaySeconds * 1000);
-
-        // Cap delay to prevent extreme waits
-        return Math.Min(500, Math.Max(1, delayMs));
-    }
-
-    /// <summary>
-    /// Check if packet should be dropped (blocked direction).
-    /// A direction is blocked when its limit is > 0 but ≤ BLOCK_THRESHOLD_BPS.
-    /// </summary>
-    public bool ShouldDrop(bool isOutbound)
-    {
-        long limit = isOutbound ? UploadLimitBps : DownloadLimitBps;
-        return limit > 0 && limit <= BLOCK_THRESHOLD_BPS;
-    }
+        ProcessId = ProcessId,
+        ProcessName = ProcessName,
+        DownloadSpeed = DownloadSpeed,
+        UploadSpeed = UploadSpeed,
+        TotalBytesReceived = Interlocked.Read(ref _bytesReceived),
+        TotalBytesSent = Interlocked.Read(ref _bytesSent),
+        LastActivity = LastActivity
+    };
 }
 
 /// <summary>
@@ -1160,6 +1380,7 @@ public class NetworkStatsSnapshot
     public long TotalBytesReceived { get; set; }
     public long TotalBytesSent { get; set; }
     public int ActiveProcessCount { get; set; }
+    public int TotalConnections { get; set; }
     public List<ProcessStatsSnapshot> ProcessStats { get; set; } = new();
 }
 
@@ -1174,5 +1395,6 @@ public class ProcessStatsSnapshot
     public double UploadSpeed { get; set; }
     public long TotalBytesReceived { get; set; }
     public long TotalBytesSent { get; set; }
+    public int ConnectionCount { get; set; }
     public DateTime LastActivity { get; set; }
 }

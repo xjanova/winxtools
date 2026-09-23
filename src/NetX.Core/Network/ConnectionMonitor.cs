@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -9,8 +10,18 @@ public class ConnectionMonitor
     private static readonly Lazy<ConnectionMonitor> _instance = new(() => new ConnectionMonitor());
     public static ConnectionMonitor Instance => _instance.Value;
 
-    private readonly Dictionary<string, string> _dnsCache = new();
-    private readonly object _lock = new();
+    // Reverse-DNS cache. A resolved entry holds the hostname; a failed/timed-out
+    // entry holds the IP itself as a sentinel so it is never looked up again.
+    private readonly ConcurrentDictionary<string, string> _dnsCache = new();
+    private readonly ConcurrentDictionary<string, byte> _dnsPending = new();
+    private readonly ConcurrentQueue<string> _dnsQueue = new();
+    private int _dnsWorkerRunning; // 0 = idle, 1 = a worker task is draining the queue
+
+    /// <summary>
+    /// Raised (on a background thread) when a reverse-DNS name arrives for an IP.
+    /// The UI subscribes to update the matching rows without blocking.
+    /// </summary>
+    public event Action<string, string>? HostnameResolved;
 
     public List<ConnectionInfo> GetActiveConnections()
     {
@@ -136,46 +147,73 @@ public class ConnectionMonitor
         return ConnectionDirection.Unknown;
     }
 
+    /// <summary>
+    /// Returns a cached reverse-DNS name for the IP, or an empty string if it is
+    /// not resolved yet. Never blocks the caller: unknown IPs are queued for a
+    /// background lookup, and <see cref="HostnameResolved"/> fires when a name
+    /// arrives. Failures/timeouts are cached so they are not retried every refresh.
+    /// </summary>
     private string ResolveHostname(string ipAddress)
     {
         if (string.IsNullOrEmpty(ipAddress) || ipAddress == "*" || ipAddress == "0.0.0.0" || ipAddress == "::")
-            return ipAddress;
+            return string.Empty;
 
-        lock (_lock)
+        if (_dnsCache.TryGetValue(ipAddress, out var cached))
+            return cached == ipAddress ? string.Empty : cached; // sentinel => no name
+
+        // Not known yet — queue it once and return empty for now.
+        if (_dnsPending.TryAdd(ipAddress, 0))
         {
-            if (_dnsCache.TryGetValue(ipAddress, out var cached))
-                return cached;
+            _dnsQueue.Enqueue(ipAddress);
+            EnsureDnsWorker();
         }
 
+        return string.Empty;
+    }
+
+    private void EnsureDnsWorker()
+    {
+        if (Interlocked.CompareExchange(ref _dnsWorkerRunning, 1, 0) == 0)
+            _ = Task.Run(ProcessDnsQueueAsync);
+    }
+
+    private async Task ProcessDnsQueueAsync()
+    {
         try
         {
-            // Don't block for too long on DNS resolution
-            var task = Task.Run(() =>
+            while (_dnsQueue.TryDequeue(out var ip))
             {
+                string result = ip; // sentinel: assume no name unless a lookup succeeds
                 try
                 {
-                    var entry = Dns.GetHostEntry(ipAddress);
-                    return entry.HostName;
+                    var lookup = Dns.GetHostEntryAsync(ip);
+                    // Cap each lookup so one slow/unreachable IP can't stall the queue.
+                    if (await Task.WhenAny(lookup, Task.Delay(2000)).ConfigureAwait(false) == lookup)
+                    {
+                        var name = (await lookup.ConfigureAwait(false)).HostName;
+                        if (!string.IsNullOrEmpty(name)) result = name;
+                    }
+                    else
+                    {
+                        // Timed out — observe the abandoned task's exception if it ever faults.
+                        _ = lookup.ContinueWith(t => { _ = t.Exception; }, TaskScheduler.Default);
+                    }
                 }
-                catch
-                {
-                    return ipAddress;
-                }
-            });
+                catch { /* failed lookup -> keep sentinel */ }
 
-            if (task.Wait(TimeSpan.FromMilliseconds(100)))
-            {
-                var hostname = task.Result;
-                lock (_lock)
-                {
-                    _dnsCache[ipAddress] = hostname;
-                }
-                return hostname;
+                _dnsCache[ip] = result;
+                _dnsPending.TryRemove(ip, out _);
+                if (result != ip)
+                    HostnameResolved?.Invoke(ip, result);
             }
         }
-        catch { }
-
-        return ipAddress;
+        finally
+        {
+            Interlocked.Exchange(ref _dnsWorkerRunning, 0);
+            // A producer may have enqueued between the empty check and the reset.
+            if (!_dnsQueue.IsEmpty)
+                EnsureDnsWorker();
+        }
     }
 
     private List<TcpConnectionRow> GetExtendedTcpTable()

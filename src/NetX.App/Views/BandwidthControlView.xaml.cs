@@ -10,6 +10,7 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
+using NetX.App.Helpers;
 using NetX.Core.Network;
 
 namespace NetX.App.Views;
@@ -17,152 +18,132 @@ namespace NetX.App.Views;
 public partial class BandwidthControlView : Page
 {
     private readonly DispatcherTimer _updateTimer;
+    private readonly DispatcherTimer _applyDebounce;
     private readonly NetworkMonitor _networkMonitor;
+    private readonly BandwidthLimiter _limiter = BandwidthLimiter.Instance;
     private readonly ObservableCollection<InterfaceControlItem> _interfaces = new();
+    private readonly ObservableCollection<AppRuleItem> _appRules = new();
     private const int MaxDataPoints = 60;
+    private bool _suppressApply;
+    private string? _actionMessage;
+    private DateTime _actionMessageUntil;
 
-    // Debounce timers for applying limits (0.5 second delay after slider stops)
-    private readonly Dictionary<string, DispatcherTimer> _debounceTimers = new();
-    private readonly Dictionary<string, (int download, int upload)> _pendingLimits = new();
+    // Whole-PC presets in kilobits/second, decimal like internet plans
+    // (100 Mbps plan = 100 000 Kbps). Index 0 = blocked, last = unlimited.
+    internal static readonly int[] SpeedPresetsKbps =
+    {
+        0,
+        64, 128, 256, 384, 512, 768,
+        1_000, 1_500, 2_000, 3_000, 4_000, 5_000, 6_000, 8_000,
+        10_000, 15_000, 20_000, 30_000, 50_000, 75_000,
+        100_000, 150_000, 200_000, 300_000, 500_000, 750_000,
+        1_000_000, 1_500_000, 2_000_000,
+        -1
+    };
 
     public BandwidthControlView()
     {
         InitializeComponent();
 
         _networkMonitor = NetworkMonitor.Instance;
-
         InterfacesList.ItemsSource = _interfaces;
+        AppRulesList.ItemsSource = _appRules;
 
-        // Setup timer for real-time updates (2 seconds interval for smooth performance)
         _updateTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(2)
         };
         _updateTimer.Tick += UpdateTimer_Tick;
 
-        // Defer interface initialization to after page is loaded (prevents initial lag)
+        _applyDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        _applyDebounce.Tick += async (s, e) =>
+        {
+            _applyDebounce.Stop();
+            await ApplyWholePcLimitAsync();
+        };
+
         Loaded += (s, e) =>
         {
-            if (_interfaces.Count == 0)
-            {
-                InitializeInterfaces();
-                UpdateEngineStatus();
-                _updateTimer.Start();
-            }
+            if (_interfaces.Count == 0) InitializeInterfaces();
+            _limiter.RulesChanged += Limiter_RulesChanged;
+            RefreshAppRules();
+            UpdateEngineStatus();
+            _updateTimer.Start();
         };
 
         Unloaded += (s, e) =>
         {
+            // Pages are recreated on every navigation; unsubscribe so the
+            // singleton limiter doesn't keep old pages alive.
+            _limiter.RulesChanged -= Limiter_RulesChanged;
             _updateTimer.Stop();
-            // Stop all debounce timers
-            foreach (var timer in _debounceTimers.Values)
+            if (_applyDebounce.IsEnabled)
             {
-                timer.Stop();
+                _applyDebounce.Stop();
+                _ = ApplyWholePcLimitAsync();
             }
         };
     }
+
+    private void Limiter_RulesChanged() =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            RefreshAppRules();
+            UpdateEngineStatus();
+        });
+
+    #region Whole-PC limit
 
     private void InitializeInterfaces()
     {
         try
         {
-            // Get all physical adapters that are UP
-            var allInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+            var candidates = NetworkInterface.GetAllNetworkInterfaces()
                 .Where(ni => ni.OperationalStatus == OperationalStatus.Up
                           && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback
                           && IsPhysicalAdapter(ni))
+                .Select(ni =>
+                {
+                    long total = 0;
+                    try { var s = ni.GetIPStatistics(); total = s.BytesReceived + s.BytesSent; } catch { }
+                    return (ni, total);
+                })
+                .OrderByDescending(x => x.total)
                 .ToList();
 
-            // If only one interface exists, show it
-            // If multiple interfaces exist, filter to only those with actual traffic
-            var interfaces = allInterfaces;
-            if (allInterfaces.Count > 1)
+            // The limit is for the whole PC; the card shows the busiest adapter's
+            // live traffic, or all adapters when no physical one is up.
+            var ni = candidates.FirstOrDefault().ni;
+            var item = new InterfaceControlItem
             {
-                // Check which interfaces have traffic
-                var activeInterfaces = allInterfaces.Where(ni =>
-                {
-                    try
-                    {
-                        var stats = ni.GetIPStatistics();
-                        // Consider active if has any bytes sent/received
-                        return stats.BytesReceived > 0 || stats.BytesSent > 0;
-                    }
-                    catch { return false; }
-                }).ToList();
+                InterfaceId = ni?.Id,
+                Name = ni?.Name ?? "All network adapters",
+                InterfaceType = ni != null ? GetInterfaceTypeName(ni.NetworkInterfaceType) : "",
+                IsWiFi = ni?.NetworkInterfaceType == NetworkInterfaceType.Wireless80211,
+                SliderMaximum = SpeedPresetsKbps.Length - 1
+            };
+            item.UpdateIcon();
+            item.InitializeChart(MaxDataPoints);
 
-                // Use active interfaces if any found, otherwise use all
-                if (activeInterfaces.Count > 0)
-                {
-                    interfaces = activeInterfaces;
-                }
+            var rule = _limiter.GlobalRule;
+            _suppressApply = true;
+            try
+            {
+                int dlKbps = BpsToKbps(rule?.DownloadBps ?? RateLimit.Unlimited);
+                int ulKbps = BpsToKbps(rule?.UploadBps ?? RateLimit.Unlimited);
+                item.DownloadSliderValue = KbpsToSlider(dlKbps);
+                item.UploadSliderValue = KbpsToSlider(ulKbps);
+                item.UpdateLimitText(SliderToKbps(item.DownloadSliderValue), SliderToKbps(item.UploadSliderValue));
+            }
+            finally
+            {
+                _suppressApply = false;
             }
 
-            // If still multiple interfaces with traffic, pick the one with most traffic
-            if (interfaces.Count > 1)
-            {
-                interfaces = interfaces
-                    .Select(ni => {
-                        try
-                        {
-                            var stats = ni.GetIPStatistics();
-                            return (ni, total: stats.BytesReceived + stats.BytesSent);
-                        }
-                        catch { return (ni, total: 0L); }
-                    })
-                    .OrderByDescending(x => x.total)
-                    .Take(1) // Only show the most active interface
-                    .Select(x => x.ni)
-                    .ToList();
-            }
+            item.PropertyChanged += InterfaceItem_PropertyChanged;
+            _interfaces.Add(item);
 
-            foreach (var ni in interfaces)
-            {
-                var item = new InterfaceControlItem
-                {
-                    InterfaceId = ni.Id,
-                    Name = ni.Name,
-                    Description = ni.Description,
-                    InterfaceType = GetInterfaceTypeName(ni.NetworkInterfaceType),
-                    IsWiFi = ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211,
-                    DownloadSliderValue = 30, // Rightmost = Unlimited
-                    UploadSliderValue = 30,   // Rightmost = Unlimited
-                    DownloadLimitText = "Unlimited",
-                    UploadLimitText = "Unlimited"
-                };
-
-                // Set icon based on type
-                item.UpdateIcon();
-
-                // Initialize chart for this interface
-                item.InitializeChart(MaxDataPoints);
-
-                // Load existing limits (stored as Kbps)
-                var existingRule = BandwidthLimiter.Instance.GetLimit($"interface:{ni.Id}");
-                if (existingRule != null)
-                {
-                    // DownloadLimitKBps/UploadLimitKBps store Kbps values
-                    int dlKbps = (int)existingRule.DownloadLimitKBps;
-                    int ulKbps = (int)existingRule.UploadLimitKBps;
-
-                    item.DownloadSliderValue = KbpsToSlider(dlKbps);
-                    item.UploadSliderValue = KbpsToSlider(ulKbps);
-                    item.UpdateLimitText(dlKbps, ulKbps);
-
-                    // Re-apply the saved limits immediately on startup
-                    ApplyInterfaceLimit(ni.Id, dlKbps, ulKbps);
-                }
-
-                // Subscribe to slider changes
-                item.PropertyChanged += InterfaceItem_PropertyChanged;
-
-                _interfaces.Add(item);
-            }
-
-            // Select this interface in NetworkMonitor for accurate stats
-            if (interfaces.Count == 1)
-            {
-                _networkMonitor.SelectInterface(interfaces[0].Id);
-            }
+            if (ni != null) _networkMonitor.SelectInterface(ni.Id);
         }
         catch (Exception ex)
         {
@@ -170,16 +151,11 @@ public partial class BandwidthControlView : Page
         }
     }
 
-    /// <summary>
-    /// Filter to only show physical hardware adapters (WiFi and Ethernet)
-    /// </summary>
-    private bool IsPhysicalAdapter(NetworkInterface ni)
+    private static bool IsPhysicalAdapter(NetworkInterface ni)
     {
-        // Skip virtual adapters
         var desc = ni.Description.ToLowerInvariant();
         var name = ni.Name.ToLowerInvariant();
 
-        // Skip virtual and software adapters
         if (desc.Contains("virtual") || desc.Contains("vmware") || desc.Contains("virtualbox") ||
             desc.Contains("hyper-v") || desc.Contains("vpn") || desc.Contains("tap-") ||
             desc.Contains("tunnel") || desc.Contains("pseudo") || desc.Contains("miniport") ||
@@ -190,393 +166,252 @@ public partial class BandwidthControlView : Page
             return false;
         }
 
-        // Only include Ethernet and WiFi
         return ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet ||
                ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ||
                ni.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet;
     }
 
-    private string GetInterfaceTypeName(NetworkInterfaceType type)
+    private static string GetInterfaceTypeName(NetworkInterfaceType type) => type switch
     {
-        return type switch
-        {
-            NetworkInterfaceType.Wireless80211 => "Wi-Fi",
-            NetworkInterfaceType.Ethernet => "Ethernet",
-            NetworkInterfaceType.GigabitEthernet => "Gigabit Ethernet",
-            _ => type.ToString()
-        };
-    }
+        NetworkInterfaceType.Wireless80211 => "Wi-Fi",
+        NetworkInterfaceType.Ethernet => "Ethernet",
+        NetworkInterfaceType.GigabitEthernet => "Gigabit Ethernet",
+        _ => type.ToString()
+    };
 
     private void InterfaceItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (sender is not InterfaceControlItem item) return;
+        if (e.PropertyName != nameof(InterfaceControlItem.DownloadSliderValue) &&
+            e.PropertyName != nameof(InterfaceControlItem.UploadSliderValue))
+            return;
 
-        // Handle Download slider change - slider value is now direct index (0-30)
-        if (e.PropertyName == nameof(InterfaceControlItem.DownloadSliderValue))
-        {
-            var downloadKbps = SliderToKbps(item.DownloadSliderValue);
+        item.UpdateLimitText(SliderToKbps(item.DownloadSliderValue), SliderToKbps(item.UploadSliderValue));
+        if (_suppressApply) return;
 
-            // Update download limit text
-            item.UpdateDownloadLimitText(downloadKbps);
-
-            // Get current upload value and store pending limits
-            var uploadKbps = SliderToKbps(item.UploadSliderValue);
-
-            _pendingLimits[item.InterfaceId] = (downloadKbps, uploadKbps);
-            ScheduleApplyLimit(item.InterfaceId);
-        }
-        // Handle Upload slider change - slider value is now direct index (0-30)
-        else if (e.PropertyName == nameof(InterfaceControlItem.UploadSliderValue))
-        {
-            var uploadKbps = SliderToKbps(item.UploadSliderValue);
-
-            // Update upload limit text
-            item.UpdateUploadLimitText(uploadKbps);
-
-            // Get current download value and store pending limits
-            var downloadKbps = SliderToKbps(item.DownloadSliderValue);
-
-            _pendingLimits[item.InterfaceId] = (downloadKbps, uploadKbps);
-            ScheduleApplyLimit(item.InterfaceId);
-        }
+        _applyDebounce.Stop();
+        _applyDebounce.Start();
     }
 
-    /// <summary>
-    /// Schedule applying the limit with 0.5 second debounce for quick response
-    /// </summary>
-    private void ScheduleApplyLimit(string interfaceId)
+    private async Task ApplyWholePcLimitAsync()
     {
-        // Create or reset the debounce timer for this interface
-        if (!_debounceTimers.TryGetValue(interfaceId, out var timer))
+        var item = _interfaces.FirstOrDefault();
+        if (item == null) return;
+
+        int dlKbps = SliderToKbps(item.DownloadSliderValue);
+        int ulKbps = SliderToKbps(item.UploadSliderValue);
+
+        var result = await _limiter.SetGlobalLimitAsync(KbpsToBps(dlKbps), KbpsToBps(ulKbps));
+        if (!result.Success)
         {
-            timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(500)
-            };
-            timer.Tick += (s, e) =>
-            {
-                timer.Stop();
-
-                // Apply the pending limit
-                if (_pendingLimits.TryGetValue(interfaceId, out var limits))
-                {
-                    ApplyInterfaceLimit(interfaceId, limits.download, limits.upload);
-                    Debug.WriteLine($"Applied limit for {interfaceId}: DL={limits.download} KB/s, UL={limits.upload} KB/s");
-                }
-            };
-            _debounceTimers[interfaceId] = timer;
+            _actionMessage = result.Message;
+            _actionMessageUntil = DateTime.Now.AddSeconds(15);
         }
-
-        // Reset the timer (restart the 1 second countdown)
-        timer.Stop();
-        timer.Start();
+        UpdateEngineStatus();
     }
+
+    private static int SliderToKbps(double sliderValue)
+    {
+        int index = Math.Clamp((int)Math.Round(sliderValue), 0, SpeedPresetsKbps.Length - 1);
+        return SpeedPresetsKbps[index];
+    }
+
+    private static int KbpsToSlider(int kbps)
+    {
+        if (kbps < 0) return SpeedPresetsKbps.Length - 1;
+        if (kbps == 0) return 0;
+
+        int best = 1;
+        for (int i = 1; i < SpeedPresetsKbps.Length - 1; i++)
+        {
+            if (Math.Abs(SpeedPresetsKbps[i] - kbps) < Math.Abs(SpeedPresetsKbps[best] - kbps))
+                best = i;
+        }
+        return best;
+    }
+
+    // 1 Kbps = 1000 bits/s = 125 bytes/s.
+    private static long KbpsToBps(int kbps) => kbps < 0 ? RateLimit.Unlimited : kbps == 0 ? RateLimit.Blocked : kbps * 125L;
+
+    private static int BpsToKbps(long bps) => bps < 0 ? -1 : bps == 0 ? 0 : (int)Math.Min(int.MaxValue, bps / 125);
+
+    #endregion
+
+    #region Status + app rules
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
         try
         {
-            var interfaceBandwidth = _networkMonitor.GetInterfaceBandwidth();
-
-            foreach (var item in _interfaces)
+            var item = _interfaces.FirstOrDefault();
+            if (item != null)
             {
-                if (interfaceBandwidth.TryGetValue(item.InterfaceId, out var bandwidth))
+                double down, up;
+                if (item.InterfaceId != null && _networkMonitor.GetInterfaceBandwidth().TryGetValue(item.InterfaceId, out var bw))
                 {
-                    item.CurrentDownloadSpeed = FormatSpeed(bandwidth.download);
-                    item.CurrentUploadSpeed = FormatSpeed(bandwidth.upload);
-
-                    // Update chart data
-                    item.UpdateChartData(bandwidth.download, bandwidth.upload);
+                    down = bw.download;
+                    up = bw.upload;
                 }
+                else
+                {
+                    var stats = _networkMonitor.GetCurrentStats();
+                    down = stats.TotalDownloadSpeed;
+                    up = stats.TotalUploadSpeed;
+                }
+                item.CurrentDownloadSpeed = SpeedFormat.Speed(down);
+                item.CurrentUploadSpeed = SpeedFormat.Speed(up);
+                item.UpdateChartData(down, up);
             }
 
-            // Update PacketEngine status periodically
+            RefreshAppRuleSpeeds();
             UpdateEngineStatus();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Bandwidth page update failed: {ex.Message}");
+        }
     }
 
     private void UpdateEngineStatus()
     {
         try
         {
-            var isActive = _networkMonitor.IsPacketEngineActive;
+            string text;
+            Brush dot;
+            switch (_limiter.Status)
+            {
+                case LimiterStatus.Active:
+                    text = Loc.T("BW_Status_Active", "Limits active");
+                    dot = (Brush)FindResource("SuccessBrush");
+                    break;
+                case LimiterStatus.DriverUnavailable:
+                    text = Loc.T("BW_Status_NoDriver", "Driver unavailable — limits saved but NOT active");
+                    dot = (Brush)FindResource("DangerBrush");
+                    break;
+                case LimiterStatus.Error:
+                    text = Loc.F("BW_Status_Error", "Limits not active: {0}", _limiter.EngineError ?? "?");
+                    dot = (Brush)FindResource("DangerBrush");
+                    break;
+                default:
+                    text = Loc.T("BW_Status_Idle", "Ready — no limits set");
+                    dot = (Brush)FindResource("TextTertiaryBrush");
+                    break;
+            }
 
-            if (isActive)
+            if (_actionMessage != null && DateTime.Now < _actionMessageUntil)
             {
-                EngineStatusDot.Fill = (Brush)FindResource("SuccessBrush");
-                EngineStatusText.Text = "Packet Control Active";
+                text = _actionMessage;
+                dot = (Brush)FindResource("DangerBrush");
             }
-            else
-            {
-                EngineStatusDot.Fill = (Brush)FindResource("WarningBrush");
-                EngineStatusText.Text = "Run as Admin for best control";
-            }
+
+            EngineStatusText.Text = text;
+            EngineStatusDot.Fill = dot;
         }
         catch { }
     }
 
-    private void ApplyInterfaceLimit(string interfaceId, int downloadKbps, int uploadKbps)
+    private void RefreshAppRules()
     {
-        try
+        var rules = _limiter.GetAppRules();
+        _appRules.Clear();
+        foreach (var rule in rules)
         {
-            var ruleName = $"interface:{interfaceId}";
-
-            // Convert Kbps to bytes per second for PacketEngine
-            // -1 (unlimited) becomes 0 (no limit)
-            // 0 (blocked) becomes 1 byte/sec (effectively blocks by extreme throttling)
-            long dlBytesPerSec;
-            long ulBytesPerSec;
-
-            if (downloadKbps == 0)
-                dlBytesPerSec = 1; // Block = 1 byte/sec (extremely slow = blocked)
-            else if (downloadKbps < 0)
-                dlBytesPerSec = 0;  // Unlimited (no limit)
-            else
-                dlBytesPerSec = KbpsToBytesPerSec(downloadKbps);
-
-            if (uploadKbps == 0)
-                ulBytesPerSec = 1; // Block = 1 byte/sec (extremely slow = blocked)
-            else if (uploadKbps < 0)
-                ulBytesPerSec = 0;  // Unlimited (no limit)
-            else
-                ulBytesPerSec = KbpsToBytesPerSec(uploadKbps);
-
-            // Use PacketEngine for throttling and blocking
-            var packetEngine = PacketEngine.Instance;
-            if (packetEngine.IsRunning)
+            _appRules.Add(new AppRuleItem
             {
-                // If both are unlimited (-1 Kbps), remove throttle entirely
-                if (downloadKbps < 0 && uploadKbps < 0)
-                {
-                    packetEngine.SetGlobalThrottle(0, 0); // Remove throttle
-                    Debug.WriteLine("PacketEngine: All limits removed");
-                }
-                else
-                {
-                    // Apply limits (1 = blocked/extremely slow, 0 = unlimited, >1 = limit in B/s)
-                    packetEngine.SetGlobalThrottle(dlBytesPerSec, ulBytesPerSec);
-                    Debug.WriteLine($"PacketEngine: DL={downloadKbps} Kbps ({dlBytesPerSec} B/s), UL={uploadKbps} Kbps ({ulBytesPerSec} B/s)");
-                }
-            }
-            else
-            {
-                Debug.WriteLine("PacketEngine not running - limits will not be applied");
-            }
-
-            // Store in BandwidthLimiter for persistence (store as Kbps)
-            if (downloadKbps < 0 && uploadKbps < 0)
-            {
-                BandwidthLimiter.Instance.RemoveLimit(ruleName);
-            }
-            else
-            {
-                // Store Kbps values
-                BandwidthLimiter.Instance.SetProcessLimit(ruleName, downloadKbps, uploadKbps);
-                BandwidthLimiter.Instance.IsEnabled = true;
-            }
+                Name = rule.ProcessName,
+                IsBlocked = rule.Blocked,
+                LimitText = rule.HasSpeedLimit
+                    ? $"↓{SpeedFormat.Limit(rule.DownloadBps)}  ↑{SpeedFormat.Limit(rule.UploadBps)}"
+                    : ""
+            });
         }
-        catch (Exception ex)
+        AppRulesEmptyText.Visibility = _appRules.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ResetAllButton.IsEnabled = _appRules.Count > 0 || _limiter.GlobalRule != null;
+        RefreshAppRuleSpeeds();
+    }
+
+    private void RefreshAppRuleSpeeds()
+    {
+        var engine = PacketEngine.Instance;
+        foreach (var item in _appRules)
         {
-            Debug.WriteLine($"Error applying interface limit: {ex.Message}");
+            var (down, up) = engine.GetAppSpeed(item.Name);
+            item.NowText = Loc.F("BW_NowSpeed", "now ↓{0}  ↑{1}", SpeedFormat.Speed(down), SpeedFormat.Speed(up));
         }
     }
 
-    private void BlockInterface(string interfaceId, bool blockDownload, bool blockUpload)
+    private async void UnblockApp_Click(object sender, RoutedEventArgs e)
     {
-        try
+        if (sender is not Button { Tag: string name } button) return;
+        if (MessageBox.Show(Loc.F("BW_UnblockConfirm", "Unblock {0}?", name), "WinXTools",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        button.IsEnabled = false;
+        var result = await _limiter.UnblockAppAsync(name);
+        if (!result.Success)
         {
-            // Find the interface to get its name for the firewall rule
-            var ni = NetworkInterface.GetAllNetworkInterfaces()
-                .FirstOrDefault(n => n.Id == interfaceId);
+            MessageBox.Show(result.Message, "WinXTools", MessageBoxButton.OK, MessageBoxImage.Warning);
+            button.IsEnabled = true;
+        }
+    }
 
-            if (ni == null) return;
+    private async void RemoveAppRule_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string name } button) return;
+        if (MessageBox.Show($"{Loc.T("BW_Remove", "Remove")}: {name}?", "WinXTools",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
 
-            var ruleName = $"NetX_Block_{ni.Name.Replace(" ", "_")}";
+        button.IsEnabled = false;
+        await _limiter.RemoveAppRuleAsync(name);
+    }
 
-            // Remove existing rules first
-            UnblockInterface(interfaceId);
+    private async void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(Loc.T("BW_ResetAllConfirm", "Remove every limit and block?"), "WinXTools",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
 
-            // Create a firewall rule to block traffic on this interface
-            if (blockDownload)
+        ResetAllButton.IsEnabled = false;
+        _applyDebounce.Stop();
+        await _limiter.ResetAllAsync();
+
+        var item = _interfaces.FirstOrDefault();
+        if (item != null)
+        {
+            _suppressApply = true;
+            try
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "netsh",
-                    Arguments = $"advfirewall firewall add rule name=\"{ruleName}_In\" dir=in action=block interface=\"{ni.Name}\" enable=yes",
-                    UseShellExecute = true,
-                    CreateNoWindow = true,
-                    Verb = "runas",
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-                Process.Start(psi)?.WaitForExit(5000);
-                Debug.WriteLine($"Created inbound block rule for {ni.Name}");
+                item.DownloadSliderValue = SpeedPresetsKbps.Length - 1;
+                item.UploadSliderValue = SpeedPresetsKbps.Length - 1;
+                item.UpdateLimitText(-1, -1);
             }
-
-            if (blockUpload)
+            finally
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "netsh",
-                    Arguments = $"advfirewall firewall add rule name=\"{ruleName}_Out\" dir=out action=block interface=\"{ni.Name}\" enable=yes",
-                    UseShellExecute = true,
-                    CreateNoWindow = true,
-                    Verb = "runas",
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-                Process.Start(psi)?.WaitForExit(5000);
-                Debug.WriteLine($"Created outbound block rule for {ni.Name}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error blocking interface: {ex.Message}");
-            MessageBox.Show(
-                $"Failed to block interface: {ex.Message}\n\nPlease run the application as Administrator.",
-                "Administrator Required",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-    }
-
-    private void UnblockInterface(string interfaceId)
-    {
-        try
-        {
-            var ni = NetworkInterface.GetAllNetworkInterfaces()
-                .FirstOrDefault(n => n.Id == interfaceId);
-
-            if (ni == null) return;
-
-            var ruleName = $"NetX_Block_{ni.Name.Replace(" ", "_")}";
-
-            // Remove firewall rules - use UseShellExecute=true for elevation
-            var psi = new ProcessStartInfo
-            {
-                FileName = "netsh",
-                Arguments = $"advfirewall firewall delete rule name=\"{ruleName}_In\"",
-                UseShellExecute = true,
-                CreateNoWindow = true,
-                Verb = "runas",
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-            Process.Start(psi)?.WaitForExit(3000);
-
-            psi.Arguments = $"advfirewall firewall delete rule name=\"{ruleName}_Out\"";
-            Process.Start(psi)?.WaitForExit(3000);
-
-            Debug.WriteLine($"Removed block rules for {ni.Name}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error unblocking interface: {ex.Message}");
-        }
-    }
-
-    // Predefined speed limits in Kbps (kilobits per second)
-    // Index 0 = Blocked (left), Last index = Unlimited (right)
-    // More granular at low speeds (Kbps range), then Mbps range up to 2048 Mbps
-    private static readonly int[] SpeedPresetsKbps =
-    {
-        0,          // 0: Blocked (leftmost)
-        64,         // 1: 64 Kbps
-        128,        // 2: 128 Kbps
-        256,        // 3: 256 Kbps
-        384,        // 4: 384 Kbps
-        512,        // 5: 512 Kbps
-        768,        // 6: 768 Kbps
-        1024,       // 7: 1 Mbps
-        1536,       // 8: 1.5 Mbps
-        2048,       // 9: 2 Mbps
-        3072,       // 10: 3 Mbps
-        4096,       // 11: 4 Mbps
-        5120,       // 12: 5 Mbps
-        6144,       // 13: 6 Mbps
-        8192,       // 14: 8 Mbps
-        10240,      // 15: 10 Mbps
-        15360,      // 16: 15 Mbps
-        20480,      // 17: 20 Mbps
-        30720,      // 18: 30 Mbps
-        51200,      // 19: 50 Mbps
-        76800,      // 20: 75 Mbps
-        102400,     // 21: 100 Mbps
-        153600,     // 22: 150 Mbps
-        204800,     // 23: 200 Mbps
-        307200,     // 24: 300 Mbps
-        512000,     // 25: 500 Mbps
-        768000,     // 26: 750 Mbps
-        1024000,    // 27: 1000 Mbps (1 Gbps)
-        1536000,    // 28: 1500 Mbps
-        2097152,    // 29: 2048 Mbps (max)
-        -1          // 30: Unlimited (rightmost)
-    };
-
-    /// <summary>
-    /// Convert slider index (0-30) to Kbps - slider value IS the index
-    /// </summary>
-    private static int SliderToKbps(double sliderValue)
-    {
-        int index = (int)Math.Round(sliderValue);
-        index = Math.Clamp(index, 0, SpeedPresetsKbps.Length - 1);
-        return SpeedPresetsKbps[index];
-    }
-
-    /// <summary>
-    /// Convert Kbps to slider index (0-30)
-    /// 0 = Blocked (left), 30 = Unlimited (right)
-    /// </summary>
-    private static int KbpsToSlider(int kbps)
-    {
-        if (kbps < 0) return 30; // Unlimited = last index (rightmost)
-        if (kbps == 0) return 0; // Blocked = index 0 (leftmost)
-
-        // Find exact preset index
-        for (int i = 0; i < SpeedPresetsKbps.Length; i++)
-        {
-            if (SpeedPresetsKbps[i] == kbps)
-            {
-                return i;
+                _suppressApply = false;
             }
         }
-
-        // If not exact match, find closest (skip blocked=0 and unlimited=-1)
-        int closestIndex = 1;
-        int closestDiff = int.MaxValue;
-
-        for (int i = 1; i < SpeedPresetsKbps.Length - 1; i++)
-        {
-            int preset = SpeedPresetsKbps[i];
-            int diff = Math.Abs(preset - kbps);
-            if (diff < closestDiff)
-            {
-                closestDiff = diff;
-                closestIndex = i;
-            }
-        }
-
-        return closestIndex;
     }
 
-    /// <summary>
-    /// Convert Kbps to bytes per second for PacketEngine
-    /// Kbps = kilobits per second, so multiply by 1000 / 8 = 125
-    /// </summary>
-    private static long KbpsToBytesPerSec(int kbps)
+    #endregion
+}
+
+public class AppRuleItem : INotifyPropertyChanged
+{
+    public string Name { get; set; } = "";
+    public bool IsBlocked { get; set; }
+    public string LimitText { get; set; } = "";
+    public Visibility BlockedVisibility => IsBlocked ? Visibility.Visible : Visibility.Collapsed;
+
+    private string _nowText = "";
+    public string NowText
     {
-        if (kbps <= 0) return kbps; // -1 (unlimited) or 0 (blocked)
-        return (long)kbps * 125; // Kbps -> bytes/sec (1 Kbps = 125 bytes/sec)
+        get => _nowText;
+        set { _nowText = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NowText))); }
     }
 
-    private static string FormatSpeed(double bytesPerSecond)
-    {
-        if (bytesPerSecond >= 1_073_741_824)
-            return $"{bytesPerSecond / 1_073_741_824:F2} GB/s";
-        if (bytesPerSecond >= 1_048_576)
-            return $"{bytesPerSecond / 1_048_576:F2} MB/s";
-        if (bytesPerSecond >= 1024)
-            return $"{bytesPerSecond / 1024:F2} KB/s";
-        return $"{bytesPerSecond:F0} B/s";
-    }
+    public event PropertyChangedEventHandler? PropertyChanged;
 }
 
 public class InterfaceControlItem : INotifyPropertyChanged
@@ -586,11 +421,11 @@ public class InterfaceControlItem : INotifyPropertyChanged
     private static readonly Brush DangerBrush = (Brush)Application.Current.FindResource("DangerBrush");
     private static readonly Brush BgTertiary = (Brush)Application.Current.FindResource("BgTertiaryBrush");
 
-    public string InterfaceId { get; set; } = "";
+    public string? InterfaceId { get; set; }
     public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
     public string InterfaceType { get; set; } = "";
     public bool IsWiFi { get; set; }
+    public int SliderMaximum { get; set; } = 30;
 
     public Brush IconBrush { get; set; } = Brushes.Gray;
     public string IconPath { get; set; } = "";
@@ -641,24 +476,26 @@ public class InterfaceControlItem : INotifyPropertyChanged
         }
     }
 
-    private string _downloadLimitText = "Unlimited";
+    private string _downloadLimitText = "";
     public string DownloadLimitText
     {
         get => _downloadLimitText;
         set { _downloadLimitText = value; OnPropertyChanged(nameof(DownloadLimitText)); }
     }
 
-    private string _uploadLimitText = "Unlimited";
+    private string _uploadLimitText = "";
     public string UploadLimitText
     {
         get => _uploadLimitText;
         set { _uploadLimitText = value; OnPropertyChanged(nameof(UploadLimitText)); }
     }
 
-    public Brush DownloadLimitBackground => _downloadLimitText == "Blocked" ? DangerBrush : BgTertiary;
-    public Brush DownloadLimitForeground => _downloadLimitText == "Blocked" ? Brushes.White : AccentBrush;
-    public Brush UploadLimitBackground => _uploadLimitText == "Blocked" ? DangerBrush : BgTertiary;
-    public Brush UploadLimitForeground => _uploadLimitText == "Blocked" ? Brushes.White : SuccessBrush;
+    private bool _downloadBlocked;
+    private bool _uploadBlocked;
+    public Brush DownloadLimitBackground => _downloadBlocked ? DangerBrush : BgTertiary;
+    public Brush DownloadLimitForeground => _downloadBlocked ? Brushes.White : AccentBrush;
+    public Brush UploadLimitBackground => _uploadBlocked ? DangerBrush : BgTertiary;
+    public Brush UploadLimitForeground => _uploadBlocked ? Brushes.White : SuccessBrush;
 
     public ISeries[]? ChartSeries { get; private set; }
     public Axis[]? XAxes { get; private set; }
@@ -681,7 +518,7 @@ public class InterfaceControlItem : INotifyPropertyChanged
     public void InitializeChart(int maxDataPoints)
     {
         // Get cached chart data for this interface (persists across page navigation)
-        var cachedData = Helpers.ChartDataCache.Instance.GetInterfaceChartData(InterfaceId, maxDataPoints);
+        var cachedData = Helpers.ChartDataCache.Instance.GetInterfaceChartData(InterfaceId ?? "all", maxDataPoints);
         _downloadHistory = cachedData.download;
         _uploadHistory = cachedData.upload;
 
@@ -744,31 +581,14 @@ public class InterfaceControlItem : INotifyPropertyChanged
 
     public void UpdateLimitText(int downloadKbps, int uploadKbps)
     {
-        UpdateDownloadLimitText(downloadKbps);
-        UpdateUploadLimitText(uploadKbps);
-    }
-
-    public void UpdateDownloadLimitText(int downloadKbps)
-    {
-        DownloadLimitText = FormatLimitText(downloadKbps);
+        DownloadLimitText = SpeedFormat.Kbps(downloadKbps);
+        UploadLimitText = SpeedFormat.Kbps(uploadKbps);
+        _downloadBlocked = downloadKbps == 0;
+        _uploadBlocked = uploadKbps == 0;
         OnPropertyChanged(nameof(DownloadLimitBackground));
         OnPropertyChanged(nameof(DownloadLimitForeground));
-    }
-
-    public void UpdateUploadLimitText(int uploadKbps)
-    {
-        UploadLimitText = FormatLimitText(uploadKbps);
         OnPropertyChanged(nameof(UploadLimitBackground));
         OnPropertyChanged(nameof(UploadLimitForeground));
-    }
-
-    private static string FormatLimitText(int kbps)
-    {
-        if (kbps < 0) return "Unlimited";
-        if (kbps == 0) return "Blocked";
-        if (kbps >= 1024)
-            return $"{kbps / 1024.0:F1} Mbps".Replace(".0 ", " ");
-        return $"{kbps} Kbps";
     }
 
     private static string FormatSpeedShort(double bytesPerSecond)

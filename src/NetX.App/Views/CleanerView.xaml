@@ -12,7 +12,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,24">
+        <Grid Grid.Row="0" Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -22,16 +22,23 @@
                 <TextBlock Text="{DynamicResource Cleaner_Title}"
                            Style="{StaticResource HeaderTextStyle}"
                            FontSize="28"/>
-                <TextBlock Text="Clean up junk files and free disk space"
+                <TextBlock Text="{DynamicResource Cleaner_Subtitle}"
                            Style="{StaticResource BodyTextStyle}"
+                           TextWrapping="Wrap"
                            Margin="0,4,0,0"/>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="ScanButton"
                         Content="{DynamicResource Cleaner_Scan}"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Click="Scan_Click"
+                        Margin="0,0,12,0"/>
+                <Button x:Name="CancelButton"
+                        Content="{DynamicResource Cleaner_Cancel}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="Cancel_Click"
+                        Visibility="Collapsed"
                         Margin="0,0,12,0"/>
                 <Button x:Name="CleanButton"
                         Content="{DynamicResource Cleaner_Clean}"
@@ -41,378 +48,120 @@
             </StackPanel>
         </Grid>
 
-        <!-- Category List -->
+        <!-- Categories + summary -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="350"/>
+                    <ColumnDefinition Width="*" MinWidth="380"/>
                     <ColumnDefinition Width="16"/>
                     <ColumnDefinition Width="300" MinWidth="280"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Categories Panel -->
-                <StackPanel Grid.Column="0">
-                    <!-- Temporary Files -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                <ItemsControl Grid.Column="0" x:Name="CategoryList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,10" Padding="14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                            <CheckBox Grid.Column="0"
-                                      x:Name="TempFilesCheck"
-                                      IsChecked="True"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsEnabled="{Binding CanToggle}"
+                                              Style="{StaticResource ToggleSwitchStyle}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,14,0"/>
 
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_TempFiles}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="%TEMP%, Windows\Temp"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}"
+                                                   Style="{StaticResource SubHeaderTextStyle}"
+                                                   FontSize="15"/>
+                                        <TextBlock Text="{Binding Description}"
+                                                   Style="{StaticResource BodyTextStyle}"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding Detail}"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   FontSize="11"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding DetailVisibility}"/>
+                                        <TextBlock Text="{Binding Note}"
+                                                   Foreground="{StaticResource WarningBrush}"
+                                                   FontSize="11"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,2,0,0"
+                                                   Visibility="{Binding NoteVisibility}"/>
+                                    </StackPanel>
 
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource SuccessBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Safe" FontSize="11" FontWeight="SemiBold" Foreground="Black"/>
+                                    <Border Grid.Column="2"
+                                            Background="{Binding RiskBrush}"
+                                            CornerRadius="4"
+                                            Padding="8,4"
+                                            VerticalAlignment="Center"
+                                            Margin="12,0,16,0">
+                                        <TextBlock Text="{Binding RiskText}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding RiskForeground}"/>
+                                    </Border>
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding SizeText}"
+                                               FontFamily="{StaticResource MonoFont}"
+                                               Foreground="{StaticResource AccentPrimaryBrush}"
+                                               FontWeight="Bold"
+                                               FontSize="16"
+                                               MinWidth="96"
+                                               TextAlignment="Right"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
                             </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="TempFilesSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Browser Cache -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <CheckBox Grid.Column="0"
-                                      x:Name="BrowserCacheCheck"
-                                      IsChecked="True"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_BrowserCache}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="Chrome, Firefox, Edge cache"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
-
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource SuccessBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Safe" FontSize="11" FontWeight="SemiBold" Foreground="Black"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="BrowserCacheSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Windows Update Cache -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <CheckBox Grid.Column="0"
-                                      x:Name="WindowsUpdateCheck"
-                                      IsChecked="False"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_WindowsUpdate}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="SoftwareDistribution folder"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
-
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource WarningBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Medium" FontSize="11" FontWeight="SemiBold" Foreground="Black"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="WindowsUpdateSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Recycle Bin -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <CheckBox Grid.Column="0"
-                                      x:Name="RecycleBinCheck"
-                                      IsChecked="True"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_RecycleBin}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="All drives"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
-
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource SuccessBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Safe" FontSize="11" FontWeight="SemiBold" Foreground="Black"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="RecycleBinSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Thumbnail Cache -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <CheckBox Grid.Column="0"
-                                      x:Name="ThumbnailCheck"
-                                      IsChecked="True"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_Thumbnails}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="Thumbnail database"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
-
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource SuccessBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Safe" FontSize="11" FontWeight="SemiBold" Foreground="Black"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="ThumbnailSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Log Files -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <CheckBox Grid.Column="0"
-                                      x:Name="LogFilesCheck"
-                                      IsChecked="True"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_Logs}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="Windows and application logs"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
-
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource SuccessBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Safe" FontSize="11" FontWeight="SemiBold" Foreground="Black"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="LogFilesSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Old Windows -->
-                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12" Padding="16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <CheckBox Grid.Column="0"
-                                      x:Name="OldWindowsCheck"
-                                      IsChecked="False"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Margin="0,0,16,0"/>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Cleaner_OldWindows}"
-                                           Style="{StaticResource SubHeaderTextStyle}"
-                                           FontSize="15"/>
-                                <TextBlock Text="Windows.old folder"
-                                           Style="{StaticResource BodyTextStyle}"
-                                           FontSize="12"/>
-                            </StackPanel>
-
-                            <Border Grid.Column="2"
-                                    Background="{StaticResource DangerBrush}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,16,0">
-                                <TextBlock Text="Caution" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3"
-                                       x:Name="OldWindowsSize"
-                                       Text="--"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-                </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
                 <!-- Summary Panel -->
-                <Border Grid.Column="2" Style="{StaticResource GlassCardStyle}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0"
-                                   Text="Summary"
+                <Border Grid.Column="2" Style="{StaticResource GlassCardStyle}" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource Cleaner_Summary}"
                                    Style="{StaticResource SubHeaderTextStyle}"
-                                   Margin="0,0,0,24"/>
+                                   Margin="0,0,0,16"/>
 
-                        <!-- Total Size -->
-                        <StackPanel Grid.Row="1">
-                            <TextBlock Text="{DynamicResource Cleaner_TotalSize}"
-                                       Style="{StaticResource BodyTextStyle}"/>
-                            <TextBlock x:Name="TotalSizeText"
-                                       Text="0 B"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       FontSize="36"
-                                       FontWeight="Bold"
-                                       Foreground="{StaticResource AccentPrimaryBrush}"
-                                       Margin="0,8,0,0"/>
-                            <TextBlock x:Name="FilesCountText"
-                                       Text="0 files"
-                                       Style="{StaticResource BodyTextStyle}"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
+                        <TextBlock Text="{DynamicResource Cleaner_Selected}"
+                                   Style="{StaticResource BodyTextStyle}"/>
+                        <TextBlock x:Name="TotalSizeText"
+                                   Text="--"
+                                   FontFamily="{StaticResource MonoFont}"
+                                   FontSize="36"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource AccentPrimaryBrush}"
+                                   Margin="0,8,0,0"/>
+                        <TextBlock x:Name="FilesCountText"
+                                   Style="{StaticResource BodyTextStyle}"
+                                   Margin="0,4,0,0"/>
+                        <TextBlock x:Name="SkippedText"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"/>
 
-                        <!-- Progress -->
-                        <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
-                            <ProgressBar x:Name="CleanProgress"
-                                         Height="8"
-                                         Foreground="{StaticResource AccentPrimaryBrush}"
-                                         Background="{StaticResource BgTertiaryBrush}"
-                                         Visibility="Collapsed"
-                                         Margin="0,0,0,8"/>
-                            <TextBlock x:Name="StatusText"
-                                       Text="Click 'Scan' to analyze junk files"
-                                       Style="{StaticResource BodyTextStyle}"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
+                        <ProgressBar x:Name="CleanProgress"
+                                     Height="8"
+                                     Foreground="{StaticResource AccentPrimaryBrush}"
+                                     Background="{StaticResource BgTertiaryBrush}"
+                                     Visibility="Collapsed"
+                                     Margin="0,24,0,8"/>
+                        <TextBlock x:Name="StatusText"
+                                   Text="{DynamicResource Cleaner_Hint}"
+                                   Style="{StaticResource BodyTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,16,0,0"/>
+                    </StackPanel>
                 </Border>
             </Grid>
         </ScrollViewer>
@@ -425,8 +174,9 @@
                       Width="16" Height="16"
                       Stretch="Uniform"
                       Margin="0,0,8,0"/>
-                <TextBlock Text="Cleaning is safe and will not affect your personal files or installed programs."
-                           Style="{StaticResource BodyTextStyle}"/>
+                <TextBlock Text="{DynamicResource Cleaner_Footer}"
+                           Style="{StaticResource BodyTextStyle}"
+                           TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
     </Grid>

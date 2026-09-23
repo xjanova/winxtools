@@ -332,11 +332,14 @@
                                            Foreground="{StaticResource SuccessBrush}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="0" Grid.Row="1">
+                            <!-- Catalogue guess, not measured on this PC: say so on hover -->
+                            <StackPanel Grid.Column="0" Grid.Row="1"
+                                        Background="Transparent"
+                                        ToolTip="{DynamicResource WinOpt_RamEstimateTooltip}">
                                 <TextBlock Text="{DynamicResource WinOptimizer_EstimatedRAM}"
                                            Foreground="{StaticResource TextTertiaryBrush}"
                                            FontSize="11"/>
-                                <TextBlock x:Name="EstimatedRamText" Text="0 MB"
+                                <TextBlock x:Name="EstimatedRamText" Text="~0 MB"
                                            FontSize="20" FontWeight="Bold"
                                            Foreground="{StaticResource WarningBrush}"/>
                             </StackPanel>
@@ -412,6 +415,15 @@
                                            FontSize="12"/>
                             </StackPanel>
                         </Button>
+
+                        <!-- Shown while a change runs in the background (restore point, services) -->
+                        <TextBlock x:Name="BusyText"
+                                   Text="{DynamicResource WinOpt_Busy}"
+                                   Foreground="{StaticResource AccentPrimaryBrush}"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,0"
+                                   Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
 

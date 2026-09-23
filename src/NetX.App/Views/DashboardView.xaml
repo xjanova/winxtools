@@ -64,7 +64,7 @@
 
                         <!-- Label -->
                         <TextBlock Grid.Row="2"
-                                   Text="{DynamicResource Dashboard_TotalDownload}"
+                                   Text="{DynamicResource Dashboard_DownloadSpeed}"
                                    Style="{StaticResource StatLabelStyle}"/>
                     </Grid>
                 </Border>
@@ -101,7 +101,7 @@
 
                         <!-- Label -->
                         <TextBlock Grid.Row="2"
-                                   Text="{DynamicResource Dashboard_TotalUpload}"
+                                   Text="{DynamicResource Dashboard_UploadSpeed}"
                                    Style="{StaticResource StatLabelStyle}"/>
                     </Grid>
                 </Border>

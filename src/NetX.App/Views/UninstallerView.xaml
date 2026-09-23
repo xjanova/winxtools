@@ -4,6 +4,159 @@
       Title="Uninstaller"
       Background="Transparent">
 
+    <Page.Resources>
+        <!-- Modal "please wait" card while an uninstaller runs or leftovers are searched/moved.
+             Hosted in a borderless window from code-behind; DataContext = BusyDialogModel. -->
+        <DataTemplate x:Key="UninstallBusyTemplate">
+            <Border Background="{StaticResource BgSecondaryBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24"
+                    Margin="16"
+                    Effect="{StaticResource CardShadow}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}"
+                               Style="{StaticResource SubHeaderTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+                    <TextBlock Text="{Binding Message}"
+                               Style="{StaticResource BodyTextStyle}"
+                               TextWrapping="Wrap"/>
+                    <ProgressBar Value="{Binding Progress, Mode=OneWay}"
+                                 Maximum="100"
+                                 Margin="0,16,0,0"
+                                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Button Content="{Binding CancelText}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="16,8"
+                            Margin="0,20,0,0"
+                            HorizontalAlignment="Right"
+                            IsCancel="True"
+                            IsEnabled="{Binding CanCancel}"
+                            Visibility="{Binding HasCancel, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Click="BusyCancel_Click"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Leftover picker: every folder found, with real sizes. Nothing is pre-selected;
+             DataContext = LeftoverPickerModel. -->
+        <DataTemplate x:Key="UninstallLeftoverTemplate">
+            <Border Background="{StaticResource BgSecondaryBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24"
+                    Margin="16"
+                    Effect="{StaticResource CardShadow}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding Title}"
+                               Style="{StaticResource SubHeaderTextStyle}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding Message}"
+                               Style="{StaticResource BodyTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,16"/>
+
+                    <CheckBox Grid.Row="2"
+                              IsChecked="{Binding AllSelected, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"
+                              Margin="12,0,0,8">
+                        <TextBlock Text="{DynamicResource Uninstall_SelectAll}"
+                                   Style="{StaticResource BodyTextStyle}"
+                                   Margin="4,0,0,0"/>
+                    </CheckBox>
+
+                    <ScrollViewer Grid.Row="3"
+                                  MaxHeight="340"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Items}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource BgTertiaryBrush}"
+                                            CornerRadius="8"
+                                            Padding="12,10"
+                                            Margin="0,0,0,6">
+                                        <!-- Whole row toggles the checkbox -->
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  HorizontalContentAlignment="Stretch"
+                                                  VerticalContentAlignment="Center">
+                                            <Grid Margin="8,0,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding Path}"
+                                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                                               FontSize="13"
+                                                               TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding KindText}"
+                                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                                               FontSize="11"
+                                                               Margin="0,2,0,0"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1"
+                                                            Margin="16,0,0,0"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding SizeText}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource AccentPrimaryBrush}"
+                                                               HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="{Binding FilesText}"
+                                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                                               FontSize="11"
+                                                               HorizontalAlignment="Right"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </CheckBox>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock Grid.Row="4"
+                               Text="{Binding SelectionSummary}"
+                               Style="{StaticResource BodyTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"/>
+
+                    <StackPanel Grid.Row="5"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,20,0,0">
+                        <Button Content="{DynamicResource Uninstall_KeepAll}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="16,8"
+                                IsCancel="True"
+                                Click="LeftoverKeep_Click"/>
+                        <Button Content="{DynamicResource Uninstall_MoveToRecycleBin}"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Padding="16,8"
+                                Margin="8,0,0,0"
+                                IsEnabled="{Binding HasSelection}"
+                                Click="LeftoverRemove_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Page.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -17,6 +170,9 @@
             <TextBlock Text="{DynamicResource Uninstall_Title}"
                        Style="{StaticResource HeaderTextStyle}"
                        FontSize="28"/>
+            <TextBlock x:Name="CountText"
+                       Style="{StaticResource BodyTextStyle}"
+                       Margin="0,6,0,0"/>
         </StackPanel>
 
         <!-- Toolbar -->
@@ -33,6 +189,7 @@
                         Background="{StaticResource BgTertiaryBrush}"
                         CornerRadius="8"
                         Padding="12,8"
+                        MinWidth="280"
                         MaxWidth="400"
                         HorizontalAlignment="Left">
                     <Grid>
@@ -46,6 +203,14 @@
                               Width="16" Height="16"
                               Stretch="Uniform"
                               Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="1"
+                                   x:Name="SearchPlaceholder"
+                                   Text="{DynamicResource Uninstall_Search}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontSize="13"
+                                   VerticalAlignment="Center"
+                                   Margin="14,0,0,0"
+                                   IsHitTestVisible="False"/>
                         <TextBox Grid.Column="1"
                                  x:Name="SearchBox"
                                  Background="Transparent"
@@ -70,11 +235,13 @@
 
                 <!-- Actions -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="{DynamicResource Uninstall_Refresh}"
+                    <Button x:Name="RefreshButton"
+                            Content="{DynamicResource Uninstall_Refresh}"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Click="Refresh_Click"
                             Margin="0,0,8,0"/>
-                    <Button Content="{DynamicResource Uninstall_Scan}"
+                    <Button x:Name="ScanButton"
+                            Content="{DynamicResource Uninstall_Scan}"
                             Style="{StaticResource PrimaryButtonStyle}"
                             Click="Scan_Click"/>
                 </StackPanel>
@@ -96,12 +263,12 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="240"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Text="{DynamicResource Network_ProcessName}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="1" Text="{DynamicResource Uninstall_ColProgram}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" Margin="8,0,0,0"/>
                     <TextBlock Grid.Column="2" Text="{DynamicResource Uninstall_Size}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
                     <TextBlock Grid.Column="3" Text="{DynamicResource Uninstall_InstallDate}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Text="Actions" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Grid.Column="4" Text="{DynamicResource Uninstall_Actions}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                 </Grid>
 
                 <!-- Programs ListView -->
@@ -145,7 +312,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="100"/>
                                     <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition Width="200"/>
+                                    <!-- Wide enough for the Thai button labels -->
+                                    <ColumnDefinition Width="240"/>
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Icon -->
@@ -159,14 +327,17 @@
                                           Stretch="Uniform"/>
                                 </Border>
 
-                                <!-- Name & Publisher -->
+                                <!-- Name & Publisher · version · scope -->
                                 <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                     <TextBlock Text="{Binding Name}"
+                                               ToolTip="{Binding Name}"
                                                Foreground="{StaticResource TextPrimaryBrush}"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding Publisher}"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Details}"
                                                Foreground="{StaticResource TextTertiaryBrush}"
-                                               FontSize="11"/>
+                                               FontSize="11"
+                                               TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
 
                                 <!-- Size -->
@@ -198,6 +369,16 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+
+                <!-- Loading / empty / no-match / error state -->
+                <TextBlock Grid.Row="1"
+                           x:Name="ListStateText"
+                           Style="{StaticResource BodyTextStyle}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Margin="0,24"
+                           Visibility="Collapsed"/>
             </Grid>
         </Border>
     </Grid>

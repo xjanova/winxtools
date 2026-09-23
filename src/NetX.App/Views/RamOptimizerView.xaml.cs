@@ -32,7 +32,7 @@ public partial class RamOptimizerView : Page
         _ramOptimizer.OnOptimizationComplete += OnOptimizationComplete;
 
         _processKiller = ProcessKiller.Instance;
-        _processKiller.OnProcessAutoKilled += OnProcessAutoKilled;
+        _processKiller.ProcessAutoKilled += OnProcessAutoKilled;
 
         // Use cached chart data for continuity across page navigation
         _memoryHistory = _chartCache.RamOptimizerHistory;
@@ -61,8 +61,17 @@ public partial class RamOptimizerView : Page
         {
             _updateTimer.Stop();
             _ramOptimizer.OnOptimizationComplete -= OnOptimizationComplete;
-            _processKiller.OnProcessAutoKilled -= OnProcessAutoKilled;
+            _processKiller.ProcessAutoKilled -= OnProcessAutoKilled;
         };
+    }
+
+    private static string T(string key, string fallback) =>
+        Application.Current?.TryFindResource(key) as string ?? fallback;
+
+    private static string F(string key, string fallback, params object[] args)
+    {
+        try { return string.Format(T(key, fallback), args); }
+        catch (FormatException) { return string.Format(fallback, args); }
     }
 
     private void InitializeChart()
@@ -198,7 +207,7 @@ public partial class RamOptimizerView : Page
     private void OptimizeNowBtn_Click(object sender, RoutedEventArgs e)
     {
         OptimizeNowBtn.IsEnabled = false;
-        OptimizeNowBtn.Content = "Optimizing...";
+        OptimizeNowBtn.Content = T("Common_Processing", "Processing...");
 
         // Run optimization on background thread
         Task.Run(() =>
@@ -238,17 +247,19 @@ public partial class RamOptimizerView : Page
 
     private void OnOptimizationComplete(OptimizeResult result)
     {
-        Dispatcher.Invoke(() =>
+        // Raised on a worker/timer thread — queue the UI update instead of blocking it.
+        Dispatcher.InvokeAsync(() =>
         {
             // Update last optimize text
-            LastOptimizeText.Text = $"Last: {result.EndTime:HH:mm:ss} - Freed {FormatMemory(Math.Max(0, result.MemoryFreedMB))}";
+            LastOptimizeText.Text = F("Ram_LastOptimized", "Last: {0} – freed {1}",
+                result.EndTime.ToString("HH:mm:ss"), FormatMemory(Math.Max(0, result.MemoryFreedMB)));
 
             // Add to history
             _history.Insert(0, new OptimizationHistoryItem
             {
                 TimeText = result.EndTime.ToString("HH:mm:ss"),
-                ResultText = $"{result.ProcessesOptimized} processes optimized" +
-                             (result.StandbyCleared ? " • standby cache cleared" : ""),
+                ResultText = F("Ram_ProcessesTrimmed", "{0} processes trimmed", result.ProcessesOptimized) +
+                             (result.StandbyCleared ? " • " + T("Ram_StandbyCleared", "standby cache cleared") : ""),
                 FreedText = result.MemoryFreedMB > 0 ? $"+{FormatMemory(result.MemoryFreedMB)}" : "0 MB"
             });
 
@@ -276,35 +287,56 @@ public partial class RamOptimizerView : Page
         }
     }
 
-    private void KillProcess_Click(object sender, RoutedEventArgs e)
+    private async void KillProcess_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is int processId)
+        if (sender is not Button btn || btn.Tag is not int processId)
+            return;
+
+        var name = (btn.DataContext as ProcessMemoryDisplayItem)?.ProcessName ?? $"PID {processId}";
+        var title = T("Ram_EndProcessTitle", "End Process");
+
+        // This list is "top memory users" — it routinely contains dwm, svchost,
+        // explorer… Ending those crashes or destabilises Windows (the old code
+        // didn't check at all).
+        if (ProcessKiller.IsProtectedProcess(name))
         {
-            try
-            {
-                var process = System.Diagnostics.Process.GetProcessById(processId);
-                var name = process.ProcessName;
+            MessageBox.Show(
+                F("Ram_ProtectedProcess", "{0} is a protected Windows process and cannot be ended here.", name),
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
 
-                var result = MessageBox.Show(
-                    $"End process {name} (PID: {processId})?\n\nThis will immediately terminate the process.",
-                    "End Process",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
+        var result = MessageBox.Show(
+            F("Ram_ConfirmEndProcess",
+                "End {0} (PID {1})?\n\nOnly this process is closed, not the processes it started. Any unsaved work in it will be lost.",
+                name, processId),
+            title,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes)
+            return;
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    process.Kill();
-                    UpdateProcessList();
-                }
-            }
-            catch (Exception ex)
+        btn.IsEnabled = false;
+        try
+        {
+            // Kill + wait for exit off the UI thread; the result is the real outcome.
+            var ended = await Task.Run(() => _processKiller.KillProcess(processId));
+            if (!ended)
             {
                 MessageBox.Show(
-                    $"Failed to end process: {ex.Message}",
-                    "Error",
+                    F("Ram_EndProcessFailed",
+                        "Could not end {0}. Windows may be protecting it, or it is still shutting down.", name),
+                    T("Common_Error", "Error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+        }
+        finally
+        {
+            btn.IsEnabled = true;
+            UpdateProcessList();
         }
     }
 
@@ -357,15 +389,23 @@ public partial class RamOptimizerView : Page
         }
     }
 
-    private void OnProcessAutoKilled(string processName, string reason)
+    private void OnProcessAutoKilled(object? sender, ProcessAutoKilledEventArgs e)
     {
-        Dispatcher.Invoke(() =>
+        // Raised on the watchdog thread — queue the UI update instead of blocking it.
+        Dispatcher.InvokeAsync(() =>
         {
-            // Add to history
+            var reason = e.Reason switch
+            {
+                AutoKillReason.NotResponding => F("Ram_ReasonNotResponding", "Not responding for {0} s", e.Detail),
+                AutoKillReason.ExcessiveMemory => F("Ram_ReasonMemory", "Using {0} MB", e.Detail),
+                _ => T("Ram_ReasonRule", "Kill rule")
+            };
+
+            // Add to history: what was closed and why
             _history.Insert(0, new OptimizationHistoryItem
             {
-                TimeText = DateTime.Now.ToString("HH:mm:ss"),
-                ResultText = $"Auto-killed: {processName}",
+                TimeText = e.Time.ToString("HH:mm:ss"),
+                ResultText = F("Ram_AutoClosed", "Auto-closed: {0}", e.ProcessName),
                 FreedText = reason
             });
 
@@ -381,38 +421,109 @@ public partial class RamOptimizerView : Page
 
     private void SmartKillToggle_Click(object sender, RoutedEventArgs e)
     {
-        _processKiller.IsSmartKillEnabled = SmartKillToggle.IsChecked == true;
+        bool turnOn = SmartKillToggle.IsChecked == true;
+
+        // Closing apps loses unsaved work — make the user opt in knowingly.
+        if (turnOn && !_processKiller.IsSmartKillEnabled)
+        {
+            var confirm = MessageBox.Show(
+                F("Ram_SmartKillConfirm",
+                    "Turn on Smart Kill?\n\nApps whose window stays \"Not Responding\" for {0} seconds or more will be closed automatically. Unsaved work in them will be lost.\n\nNever closed: the app you are using right now, Windows and Explorer processes, WebView2 (used by Outlook and Teams) and WinXTools itself. Every app that gets closed is listed in the history.",
+                    (int)ProcessKiller.FrozenKillThreshold.TotalSeconds),
+                T("RamOptimizer_SmartKill", "Smart Kill"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                SmartKillToggle.IsChecked = false;
+                return;
+            }
+        }
+
+        _processKiller.IsSmartKillEnabled = turnOn;
     }
 
     private void AutoKillToggle_Click(object sender, RoutedEventArgs e)
     {
-        _processKiller.IsAutoKillEnabled = AutoKillToggle.IsChecked == true;
-    }
+        bool turnOn = AutoKillToggle.IsChecked == true;
 
-    private void AddKillRule_Click(object sender, RoutedEventArgs e)
-    {
-        // Show input dialog for process name
-        var dialog = new Dialogs.InputDialog(
-            (string)FindResource("RamOptimizer_AddKillRuleTitle") ?? "Add Kill Rule",
-            (string)FindResource("RamOptimizer_AddKillRuleMessage") ?? "Enter process name to auto-kill (without .exe):");
-
-        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ResponseText))
+        // Turning it on immediately closes every running app that matches a rule.
+        var rules = _processKiller.GetKillRules();
+        if (turnOn && !_processKiller.IsAutoKillEnabled && rules.Count > 0)
         {
-            var processName = dialog.ResponseText.Trim().Replace(".exe", "");
+            var names = string.Join("\n", rules.Take(10).Select(r => "• " + r.ProcessName));
+            if (rules.Count > 10)
+                names += $"\n… (+{rules.Count - 10})";
 
-            if (ProcessKiller.IsProtectedProcess(processName))
+            var confirm = MessageBox.Show(
+                F("Ram_AutoKillConfirm",
+                    "Turn on Auto Kill?\n\nThese apps will be closed now and every time they start. Unsaved work in them will be lost:\n{0}",
+                    names),
+                T("RamOptimizer_AutoKill", "Auto Kill Rules"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
             {
-                MessageBox.Show(
-                    $"Cannot add '{processName}' - it is a protected system process.",
-                    "Protected Process",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                AutoKillToggle.IsChecked = false;
                 return;
             }
-
-            _processKiller.AddKillRule(processName, "User requested");
-            UpdateKillRulesList();
         }
+
+        _processKiller.IsAutoKillEnabled = turnOn;
+    }
+
+    private async void AddKillRule_Click(object sender, RoutedEventArgs e)
+    {
+        var title = T("RamOptimizer_AddKillRuleTitle", "Add Kill Rule");
+
+        // Show input dialog for process name
+        var dialog = new Dialogs.InputDialog(
+            title,
+            T("RamOptimizer_AddKillRuleMessage", "Enter process name to auto-kill (without .exe):"));
+
+        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.ResponseText))
+            return;
+
+        var entered = dialog.ResponseText.Trim();
+        var bareName = entered.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? entered[..^4] : entered;
+
+        if (ProcessKiller.IsAutoKillExcluded(bareName))
+        {
+            MessageBox.Show(
+                F("Ram_ProtectedRule", "Cannot add \"{0}\": it is a protected Windows process.", bareName),
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var processName = ProcessKiller.NormalizeRuleName(entered);
+        if (processName == null)
+        {
+            MessageBox.Show(
+                F("Ram_InvalidProcessName", "\"{0}\" is not a valid program name. Type the name without .exe, for example: notepad", entered),
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        // Adding a rule closes running copies right away — say so first.
+        var confirm = MessageBox.Show(
+            F("Ram_AddRuleConfirm",
+                "Add \"{0}\" to the kill rules?\n\nIf it is running it will be closed now (unsaved work will be lost), and it will be closed automatically whenever it starts while Auto Kill is on.",
+                processName),
+            title,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        await Task.Run(() => _processKiller.AddKillRule(processName, "User requested"));
+        UpdateKillRulesList();
+        UpdateProcessList();
     }
 
     private void RemoveKillRule_Click(object sender, RoutedEventArgs e)
