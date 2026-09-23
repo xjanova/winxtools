@@ -132,25 +132,24 @@
 
     <!-- RAM Optimizer -->
     <system:String x:Key="RamOptimizer_Title">RAM Optimizer</system:String>
-    <system:String x:Key="RamOptimizer_Subtitle">Monitor and optimize system memory usage</system:String>
+    <system:String x:Key="RamOptimizer_Subtitle">See where your memory goes and free it up safely</system:String>
     <system:String x:Key="RamOptimizer_TotalMemory">Total Memory</system:String>
     <system:String x:Key="RamOptimizer_UsedMemory">Used Memory</system:String>
     <system:String x:Key="RamOptimizer_AvailableMemory">Available</system:String>
     <system:String x:Key="RamOptimizer_Usage">Usage</system:String>
     <system:String x:Key="RamOptimizer_MemoryHistory">Memory Usage History</system:String>
     <system:String x:Key="RamOptimizer_TopConsumers">Top Memory Consumers</system:String>
-    <system:String x:Key="RamOptimizer_OptimizeNow">Optimize Now</system:String>
-    <system:String x:Key="RamOptimizer_NeverOptimized">Not optimized yet</system:String>
-    <system:String x:Key="RamOptimizer_Settings">Auto-Optimization Settings</system:String>
-    <system:String x:Key="RamOptimizer_AutoOptimize">Auto-Optimize</system:String>
-    <system:String x:Key="RamOptimizer_Threshold">Memory Threshold</system:String>
-    <system:String x:Key="RamOptimizer_Interval">Check Interval</system:String>
-    <system:String x:Key="RamOptimizer_History">Optimization History</system:String>
+    <system:String x:Key="RamOptimizer_OptimizeNow">Clean memory now</system:String>
+    <system:String x:Key="RamOptimizer_NeverOptimized">No cleanup yet in this session</system:String>
+    <system:String x:Key="RamOptimizer_Settings">Automatic cleanup</system:String>
+    <system:String x:Key="RamOptimizer_AutoOptimize">Clean automatically</system:String>
+    <system:String x:Key="RamOptimizer_Threshold">When memory use reaches</system:String>
+    <system:String x:Key="RamOptimizer_History">Activity</system:String>
     <system:String x:Key="RamOptimizer_ProcessProtection">Process Protection</system:String>
     <system:String x:Key="RamOptimizer_SmartKill">Smart Kill</system:String>
     <system:String x:Key="RamOptimizer_SmartKillDesc">Automatically detect and kill frozen processes</system:String>
     <system:String x:Key="RamOptimizer_AutoKill">Auto Kill Rules</system:String>
-    <system:String x:Key="RamOptimizer_AutoKillDesc">Automatically kill processes matching rules</system:String>
+    <system:String x:Key="RamOptimizer_AutoKillDesc">Closes the apps listed below whenever they run in your Windows session</system:String>
     <system:String x:Key="RamOptimizer_KillRules">Kill Rules</system:String>
     <system:String x:Key="RamOptimizer_AddKillRuleTitle">Add Kill Rule</system:String>
     <system:String x:Key="RamOptimizer_AddKillRuleMessage">Enter process name to auto-kill (without .exe):</system:String>
@@ -398,7 +397,6 @@
     <system:String x:Key="Dash_QuickCleanConfirm" xml:space="preserve">Remove temporary files, browser cache, thumbnail cache and crash reports?&#x0a;&#x0a;(Safe categories only; files in use are skipped.)</system:String>
     <system:String x:Key="Dash_QuickCleanDone">Freed {0} ({1:N0} files).</system:String>
     <system:String x:Key="Dash_Ram">RAM Optimization</system:String>
-    <system:String x:Key="Dash_RamDone" xml:space="preserve">RAM optimization complete.&#x0a;&#x0a;Before: {0}% used&#x0a;Processes optimized: {1}&#x0a;Memory freed: {2}</system:String>
     <system:String x:Key="Dash_DnsDone">DNS cache has been flushed.</system:String>
     <system:String x:Key="Dash_DnsFailed">Flushing the DNS cache failed (exit code {0}).</system:String>
     <system:String x:Key="Dash_Reset">Reset Network Adapter</system:String>
@@ -501,9 +499,6 @@
     <system:String x:Key="WinOpt_RestorePointFailed">No restore point was created. Make sure System Protection is turned on for your system drive.</system:String>
     <system:String x:Key="WinOpt_ConfirmCreateRestore" xml:space="preserve">Create a System Restore point now?&#10;&#10;It lets you undo changes if something goes wrong. Windows allows only one every 24 hours, and creating it can take a minute.</system:String>
     <system:String x:Key="WinOpt_UnexpectedError" xml:space="preserve">Windows settings could not be changed:&#10;{0}</system:String>
-    <system:String x:Key="Ram_LastOptimized">Last: {0} – freed {1}</system:String>
-    <system:String x:Key="Ram_ProcessesTrimmed">{0} processes trimmed</system:String>
-    <system:String x:Key="Ram_StandbyCleared">standby cache cleared</system:String>
     <system:String x:Key="Ram_EndProcessTitle">End Process</system:String>
     <system:String x:Key="Ram_ProtectedProcess">{0} is a protected Windows process and cannot be ended here.</system:String>
     <system:String x:Key="Ram_ConfirmEndProcess" xml:space="preserve">End {0} (PID {1})?&#10;&#10;Only this process is closed, not the processes it started. Any unsaved work in it will be lost.</system:String>
@@ -517,6 +512,101 @@
     <system:String x:Key="Ram_ReasonNotResponding">Not responding for {0} s</system:String>
     <system:String x:Key="Ram_ReasonMemory">Using {0} MB</system:String>
     <system:String x:Key="Ram_ReasonRule">Kill rule</system:String>
+    <system:String x:Key="Ram_InstalledCaption">of {0} installed</system:String>
+    <system:String x:Key="Ram_CommitCaption">Committed {0}</system:String>
+    <system:String x:Key="Ram_CommitTip">Memory that programs have reserved (RAM plus page file), out of the most Windows allows before it has to grow the page file.</system:String>
+    <system:String x:Key="Ram_FreeCaption">Free {0}</system:String>
+    <system:String x:Key="Ram_CacheCaption">Cache {0}</system:String>
+    <system:String x:Key="Ram_BreakdownTitle">Where your RAM is</system:String>
+    <system:String x:Key="Ram_SegInUse">In use</system:String>
+    <system:String x:Key="Ram_SegModified">Waiting to be written</system:String>
+    <system:String x:Key="Ram_SegStandby">Cache (standby)</system:String>
+    <system:String x:Key="Ram_SegFree">Free</system:String>
+    <system:String x:Key="Ram_LowPriorityPart">(low priority {0})</system:String>
+    <system:String x:Key="Ram_CompressedValue">Compressed: {0}</system:String>
+    <system:String x:Key="Ram_CompressedTip">RAM that Windows uses to keep memory compressed. It is already counted in In use.</system:String>
+    <system:String x:Key="Ram_BreakdownNote">Available = cache + free. Windows hands cache to apps instantly, so a big cache is normal — it isn't wasted RAM.</system:String>
+    <system:String x:Key="Ram_DetailUnavailable">A detailed breakdown isn't available on this PC.</system:String>
+    <system:String x:Key="Ram_ColProcess">Process</system:String>
+    <system:String x:Key="Ram_ColMemory">Memory</system:String>
+    <system:String x:Key="Ram_ColMemoryTip">RAM used by this process alone — the same number as the Memory column in Task Manager.</system:String>
+    <system:String x:Key="Ram_ColCommit">Committed</system:String>
+    <system:String x:Key="Ram_ColCommitTip">Private memory the process has reserved, including what Windows moved to the page file.</system:String>
+    <system:String x:Key="Ram_TrimTip">Trim: move this app's memory out of RAM (it loads back what it needs)</system:String>
+    <system:String x:Key="Ram_EndTip">End this process</system:String>
+    <system:String x:Key="Ram_RowProtectedTip">Windows process or WinXTools itself — not available here</system:String>
+    <system:String x:Key="Ram_ListLoading">Loading…</system:String>
+    <system:String x:Key="Ram_ListEmpty">Couldn't read the list of processes.</system:String>
+    <system:String x:Key="Ram_TrimDone">{0}: RAM in use {1} → {2}. It loads back what it needs.</system:String>
+    <system:String x:Key="Ram_TrimProtected">{0} is a Windows process, so it isn't trimmed.</system:String>
+    <system:String x:Key="Ram_TrimSelf">WinXTools doesn't trim itself — that would make this window stutter.</system:String>
+    <system:String x:Key="Ram_TrimDenied">Windows didn't allow trimming {0}.</system:String>
+    <system:String x:Key="Ram_TrimFailed">Couldn't trim {0}.</system:String>
+    <system:String x:Key="Ram_ProcessGone">{0} had already closed — nothing was done.</system:String>
+    <system:String x:Key="Ram_EndDone">{0} was ended.</system:String>
+    <system:String x:Key="Ram_Cleaning">Cleaning…</system:String>
+    <system:String x:Key="Ram_GaugeUsed">used</system:String>
+    <system:String x:Key="Ram_NotAdmin">WinXTools isn't running as administrator, so it can show memory but can't clean it.</system:String>
+    <system:String x:Key="Ram_LastRun">Last cleanup: {0} ({1})</system:String>
+    <system:String x:Key="Ram_TriggerManual">by you</system:String>
+    <system:String x:Key="Ram_TriggerAutoLoad">automatic – memory at {0}%</system:String>
+    <system:String x:Key="Ram_TriggerAutoFree">automatic – free memory low</system:String>
+    <system:String x:Key="Ram_JoinedRun">A cleanup was already running, so this is its result.</system:String>
+    <system:String x:Key="Ram_ResultSummary">Available {0} · free {1} → {2}</system:String>
+    <system:String x:Key="Ram_ResultSummaryBasic">Available {0}</system:String>
+    <system:String x:Key="Ram_NoGain">no increase</system:String>
+    <system:String x:Key="Ram_NothingCleaned">Nothing was cleaned.</system:String>
+    <system:String x:Key="Ram_NothingSelected">Choose at least one item under “What to clean”.</system:String>
+    <system:String x:Key="Ram_CleanFailed">The cleanup couldn't run. Nothing was changed.</system:String>
+    <system:String x:Key="Ram_ResCombine">{0}: {1} merged</system:String>
+    <system:String x:Key="Ram_ResTrim">{0}: {1} apps trimmed, {2} left alone · available +{3}</system:String>
+    <system:String x:Key="Ram_ResAvailable">{0}: available +{1}</system:String>
+    <system:String x:Key="Ram_ResWritten">{0}: {1} written to disk</system:String>
+    <system:String x:Key="Ram_ResReleased">{0}: {1} of cache released</system:String>
+    <system:String x:Key="Ram_ResSkipped">{0}: not run – {1}</system:String>
+    <system:String x:Key="Ram_ResFailed">{0}: failed – {1}</system:String>
+    <system:String x:Key="Ram_ErrPrivilege">Windows didn't grant the permission this needs (run WinXTools as administrator)</system:String>
+    <system:String x:Key="Ram_ErrAccessDenied">Windows refused access</system:String>
+    <system:String x:Key="Ram_ErrNotSupported">not supported on this version of Windows</system:String>
+    <system:String x:Key="Ram_ErrCancelled">stopped because WinXTools is closing</system:String>
+    <system:String x:Key="Ram_ErrCode">Windows reported error 0x{0}</system:String>
+    <system:String x:Key="Ram_WhatToClean">What to clean</system:String>
+    <system:String x:Key="Ram_UseSafeDefaults">Safe defaults</system:String>
+    <system:String x:Key="Ram_ConfirmSafeDefaults" xml:space="preserve">Switch back to the safe defaults?&#10;&#10;Only “Write pending changes to disk” and “Low-priority cache” stay on. Your list of programs that are never trimmed is kept.</system:String>
+    <system:String x:Key="Ram_RiskSafe">Safe</system:String>
+    <system:String x:Key="Ram_RiskCaution">Caution</system:String>
+    <system:String x:Key="Ram_RiskAggressive">Aggressive</system:String>
+    <system:String x:Key="Ram_OpFlushModified">Write pending changes to disk</system:String>
+    <system:String x:Key="Ram_OpFlushModifiedDesc">Writes the modified list to disk so that memory becomes available again. On a hard disk (HDD) the disk may be busy for a moment.</system:String>
+    <system:String x:Key="Ram_OpLowStandby">Low-priority cache</system:String>
+    <system:String x:Key="Ram_OpLowStandbyDesc">Releases the cache Windows itself rates least useful (priority 0).</system:String>
+    <system:String x:Key="Ram_OpStandby">Entire cache (standby list)</system:String>
+    <system:String x:Key="Ram_OpStandbyDesc">Releases all cached files and programs, like ISLC. Right afterwards apps and games read from disk again, so they may load a little slower.</system:String>
+    <system:String x:Key="Ram_OpCombine">Combine identical pages</system:String>
+    <system:String x:Key="Ram_OpCombineDesc">Windows keeps identical memory pages only once (Windows 10 and later). Uses the CPU heavily for a few seconds.</system:String>
+    <system:String x:Key="Ram_OpFileCache">System file cache</system:String>
+    <system:String x:Key="Ram_OpFileCacheDesc">Moves Windows' own file cache out of active memory. Windows may have to read some files from disk again.</system:String>
+    <system:String x:Key="Ram_OpTrim">Trim background apps</system:String>
+    <system:String x:Key="Ram_OpTrimDesc">Moves the memory of idle background apps out of RAM. They may stutter for a moment when you switch back. Never touches the app you're using, WinXTools, Windows processes or services.</system:String>
+    <system:String x:Key="Ram_IncludedInEntireCache">Already included in “Entire cache”</system:String>
+    <system:String x:Key="Ram_NeverTrim">Never trim these programs (separate with commas):</system:String>
+    <system:String x:Key="Ram_NeverTrimInvalid">Not saved – not a valid program name: {0}</system:String>
+    <system:String x:Key="Ram_NeverTrimTooMany">Only the first {0} names are kept.</system:String>
+    <system:String x:Key="Ram_NeverTrimSaved">Saved – {0} program(s) will never be trimmed.</system:String>
+    <system:String x:Key="Ram_AutoDesc">Checks memory every 5 seconds and cleans only when a condition below holds.</system:String>
+    <system:String x:Key="Ram_AutoOnLoadDesc">Runs the items chosen under “What to clean”.</system:String>
+    <system:String x:Key="Ram_AutoOnLowFree">When free memory runs low (ISLC style)</system:String>
+    <system:String x:Key="Ram_AutoOnLowFreeDesc">Releases the entire cache when free memory is below the first value while the cache is at least the second.</system:String>
+    <system:String x:Key="Ram_FreeBelow">Free memory below</system:String>
+    <system:String x:Key="Ram_CacheAtLeast">Cache at least</system:String>
+    <system:String x:Key="Ram_AutoCooldown">Wait after the last cleanup at least</system:String>
+    <system:String x:Key="Ram_Minutes">{0} min</system:String>
+    <system:String x:Key="Ram_AutoNoTrigger">Turn on at least one condition, otherwise nothing is cleaned automatically.</system:String>
+    <system:String x:Key="Ram_KillRulesEmpty">No rules yet — click Add.</system:String>
+    <system:String x:Key="Ram_HistoryEmpty">Nothing yet. Cleanups, and apps closed by Smart Kill or Auto Kill, appear here.</system:String>
+    <system:String x:Key="Ram_HistoryClean">Cleanup ({0}) – {1} of {2} steps done</system:String>
+    <system:String x:Key="Ram_HistoryFreeGain">free +{0}</system:String>
+    <system:String x:Key="Ram_HistoryFailed">failed</system:String>
 
     <!-- Network Tools / Packet Monitor / Connections -->
     <system:String x:Key="NetTools_Running">Running...</system:String>

@@ -467,18 +467,17 @@ public partial class DashboardView : Page
         try
         {
             var ramOptimizer = RamOptimizer.Instance;
-            var beforeInfo = ramOptimizer.GetMemoryInfo();
 
-            // Trimming walks every process — never on the UI thread.
+            // The same cleanup (the page's safe default) and the same wording as the RAM page:
+            // what really came back, and a line per step. Never on the UI thread.
             var result = await Task.Run(() => ramOptimizer.OptimizeNow());
 
-            var freedMB = Math.Max(0, result.MemoryFreedMB);
+            var details = string.Join("\n", result.Operations.Select(RamOptimizerView.DescribeOperation));
             MessageBox.Show(
-                Loc.F("Dash_RamDone", "RAM optimization complete.\n\nBefore: {0}% used\nProcesses optimized: {1}\nMemory freed: {2}",
-                    beforeInfo.UsagePercent, result.ProcessesOptimized, FormatBytes(freedMB * 1024 * 1024)),
+                RamOptimizerView.SummaryText(result) + (details.Length > 0 ? "\n\n" + details : ""),
                 Loc.T("Dash_Ram", "RAM Optimization"),
                 MessageBoxButton.OK,
-                MessageBoxImage.Information);
+                result.AnyOperationSucceeded ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {

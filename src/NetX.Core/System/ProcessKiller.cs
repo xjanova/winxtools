@@ -13,7 +13,11 @@ namespace NetX.Core.Optimization;
 /// and (opt-in) closes apps that stay frozen for a long time.
 ///
 /// Safety rules for everything killed automatically:
-///  * only the process itself is terminated — never its whole process tree;
+///  * only the process itself is terminated — never its whole process tree —
+///    and only the exact instance that was seen (PID + creation time), never a
+///    program that happened to reuse its PID;
+///  * only processes in the user's own Windows session: never services or
+///    other users' apps;
 ///  * Windows/shell processes, WebView2, WinXTools itself and the app in the
 ///    foreground (the one the user is looking at) are never touched;
 ///  * a window must be "Not Responding" continuously for <see cref="FrozenKillThreshold"/>;
@@ -32,14 +36,16 @@ public class ProcessKiller : IDisposable
 
     private const int WatchdogIntervalMs = 2000;
     private const int HealthCheckIntervalMs = 5000;
-    private const long BloatwareMemoryLimitMB = 2048;
     private const int MaxRules = 200;
+    private const int MaxRecentAutoKills = 20;
     private const string SettingsFileName = "process_killer.json";
     private static readonly TimeSpan RuleKillNoticeInterval = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan KillCountSaveInterval = TimeSpan.FromMinutes(1);
 
     private readonly ConcurrentDictionary<string, KillRule> _killRules = new();
     private readonly ConcurrentDictionary<int, ProcessHealthInfo> _processHealth = new();
     private readonly ConcurrentDictionary<string, DateTime> _lastRuleKillNotice = new();
+    private readonly List<ProcessAutoKilledEventArgs> _recentAutoKills = new();
     private readonly Timer _watchdogTimer;
     private readonly Timer _healthCheckTimer;
     private readonly object _settingsLock = new();
@@ -49,11 +55,11 @@ public class ProcessKiller : IDisposable
     private volatile bool _isSmartKillEnabled;
     private int _watchdogRunning;
     private int _healthCheckRunning;
+    private DateTime _lastKillCountSaveUtc = DateTime.MinValue;
 
-    // Known background bloat that Smart Kill may close when it runs away with
-    // memory (exact process names). Shell components (Start, Search, touch
-    // keyboard, lock screen) and msedgewebview2 (Outlook/Teams/Widgets) were
-    // removed — killing them breaks visible parts of Windows and Office.
+    // Known background bloat. Informational only (GetBloatwareRunning): nothing
+    // is closed for being on this list. Smart Kill used to close these above
+    // 2 GB without saying so — including updaters in the middle of an update.
     private static readonly HashSet<string> KnownBloatware = new(StringComparer.OrdinalIgnoreCase)
     {
         "yourphone", "gamebar", "gamebarpresencewriter", "cortana",
@@ -68,7 +74,9 @@ public class ProcessKiller : IDisposable
         "svchost", "dwm", "explorer", "winlogon", "taskmgr",
         "sihost", "fontdrvhost", "conhost", "ctfmon", "dllhost",
         "msiexec", "trustedinstaller", "tiworker", "wudfhost",
-        "spoolsv", "lsm", "audiodg", "systemsettings", "registry"
+        "spoolsv", "lsm", "audiodg", "systemsettings", "registry",
+        "idle", "memory compression", "secure system", "lsaiso",
+        "msmpeng", "nissrv", "mpdefendercoreservice", "securityhealthservice", "sgrmbroker"
     };
 
     // On top of ProtectedProcesses: never closed AUTOMATICALLY (a user may still
@@ -205,36 +213,50 @@ public class ProcessKiller : IDisposable
 
         try
         {
-            foreach (var process in Process.GetProcesses())
+            // One handle-free system call instead of Process.GetProcesses() every
+            // 2 s (which built a Process object per process and per thread).
+            var snapshot = MemoryNative.SnapshotProcesses();
+            if (snapshot == null)
+                return;
+
+            bool killedAny = false;
+            foreach (var process in snapshot)
             {
-                using (process)
+                try
                 {
-                    try
+                    var name = process.Name.ToLowerInvariant();
+                    if (process.Pid == _ownProcessId || process.Pid <= 4 || !_killRules.TryGetValue(name, out var rule))
+                        continue;
+                    // Rules are for the user's apps: never services or other users' sessions.
+                    if (process.SessionId != _ownSessionId)
+                        continue;
+                    if (IsAutoKillExcluded(name))
+                        continue; // defence in depth — such rules are rejected on add/load
+
+                    if (MemoryNative.TerminateVerified(process.Pid, process.CreateTime, 0) != MemoryNative.NativeOutcome.Done)
+                        continue; // exited meanwhile, PID reused or access denied
+
+                    rule.KillCount++;
+                    rule.LastKilled = DateTime.Now;
+                    killedAny = true;
+
+                    // A rule can fire every 2 s for an app that keeps respawning;
+                    // tell the UI at most once a minute per process name.
+                    var now = DateTime.UtcNow;
+                    if (!_lastRuleKillNotice.TryGetValue(name, out var last) || now - last >= RuleKillNoticeInterval)
                     {
-                        var pid = process.Id;
-                        var processName = process.ProcessName;
-                        var name = processName.ToLowerInvariant();
-
-                        if (pid == _ownProcessId || !_killRules.TryGetValue(name, out var rule))
-                            continue;
-                        if (IsAutoKillExcluded(name))
-                            continue; // defence in depth — such rules are rejected on add/load
-
-                        process.Kill(entireProcessTree: false);
-                        rule.KillCount++;
-                        rule.LastKilled = DateTime.Now;
-
-                        // A rule can fire every 2 s for an app that keeps respawning;
-                        // tell the UI at most once a minute per process name.
-                        var now = DateTime.UtcNow;
-                        if (!_lastRuleKillNotice.TryGetValue(name, out var last) || now - last >= RuleKillNoticeInterval)
-                        {
-                            _lastRuleKillNotice[name] = now;
-                            RaiseAutoKilled(pid, processName, "", AutoKillReason.MatchedKillRule, 0);
-                        }
+                        _lastRuleKillNotice[name] = now;
+                        RaiseAutoKilled(process.Pid, process.Name, "", AutoKillReason.MatchedKillRule, 0);
                     }
-                    catch { /* exited meanwhile or access denied */ }
                 }
+                catch { /* one process must not stop the pass */ }
+            }
+
+            // Keep the "×N" counters across restarts without writing on every kill.
+            if (killedAny && DateTime.UtcNow - _lastKillCountSaveUtc >= KillCountSaveInterval)
+            {
+                _lastKillCountSaveUtc = DateTime.UtcNow;
+                SaveSettings();
             }
         }
         catch { }
@@ -260,80 +282,70 @@ public class ProcessKiller : IDisposable
             var windows = GetTopLevelWindowStates();
             var tracked = new HashSet<int>();
 
-            foreach (var process in Process.GetProcesses())
+            var snapshot = MemoryNative.SnapshotProcesses();
+            if (snapshot == null)
+                return;
+
+            foreach (var process in snapshot)
             {
-                using (process)
+                try
                 {
-                    try
+                    var pid = process.Pid;
+                    var name = process.Name;
+
+                    // Never touch: WinXTools, the app the user is looking at,
+                    // other users' sessions / services, system and shell processes.
+                    if (pid == _ownProcessId || pid == foregroundPid || pid <= 4)
+                        continue;
+                    if (process.SessionId != _ownSessionId)
+                        continue;
+                    if (name.Length == 0 || IsAutoKillExcluded(name))
+                        continue;
+
+                    // Only a frozen window counts, hung continuously for FrozenKillThreshold.
+                    if (!windows.TryGetValue(pid, out var window))
+                        continue;
+
+                    tracked.Add(pid);
+                    var health = _processHealth.GetOrAdd(pid, _ => new ProcessHealthInfo
                     {
-                        var pid = process.Id;
-                        var name = process.ProcessName;
+                        ProcessId = pid,
+                        ProcessName = name,
+                        CreateTime = process.CreateTime,
+                        StartTime = DateTime.Now
+                    });
 
-                        // Never touch: WinXTools, the app the user is looking at,
-                        // other users' sessions / services, system and shell processes.
-                        if (pid == _ownProcessId || pid == foregroundPid)
-                            continue;
-                        if (process.SessionId != _ownSessionId)
-                            continue;
-                        if (IsAutoKillExcluded(name))
-                            continue;
-
-                        // 1. Frozen window: must be hung continuously for FrozenKillThreshold.
-                        if (windows.TryGetValue(pid, out var window))
-                        {
-                            tracked.Add(pid);
-                            var health = _processHealth.GetOrAdd(pid, _ => new ProcessHealthInfo
-                            {
-                                ProcessId = pid,
-                                ProcessName = name,
-                                StartTime = DateTime.Now
-                            });
-
-                            if (!string.Equals(health.ProcessName, name, StringComparison.OrdinalIgnoreCase))
-                            {
-                                // PID was reused by a different program — start over.
-                                health.ProcessName = name;
-                                health.StartTime = DateTime.Now;
-                                health.NotRespondingSince = null;
-                                health.NotRespondingCount = 0;
-                            }
-
-                            if (window.IsFrozen)
-                            {
-                                health.NotRespondingSince ??= now;
-                                health.NotRespondingCount++;
-
-                                var hungFor = now - health.NotRespondingSince.Value;
-                                if (hungFor >= FrozenKillThreshold)
-                                {
-                                    process.Kill(entireProcessTree: false);
-                                    _processHealth.TryRemove(pid, out _);
-                                    RaiseAutoKilled(pid, name, window.Title, AutoKillReason.NotResponding,
-                                        (long)hungFor.TotalSeconds);
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                health.NotRespondingSince = null;
-                                health.NotRespondingCount = 0;
-                            }
-                        }
-
-                        // 2. Known background bloat that runs away with memory.
-                        if (IsBloatware(name))
-                        {
-                            var memoryMB = process.WorkingSet64 / (1024 * 1024);
-                            if (memoryMB > BloatwareMemoryLimitMB)
-                            {
-                                process.Kill(entireProcessTree: false);
-                                _processHealth.TryRemove(pid, out _);
-                                RaiseAutoKilled(pid, name, "", AutoKillReason.ExcessiveMemory, memoryMB);
-                            }
-                        }
+                    if (health.CreateTime != process.CreateTime)
+                    {
+                        // PID was reused by a different process — start over.
+                        health.ProcessName = name;
+                        health.CreateTime = process.CreateTime;
+                        health.StartTime = DateTime.Now;
+                        health.NotRespondingSince = null;
+                        health.NotRespondingCount = 0;
                     }
-                    catch { /* exited meanwhile or access denied */ }
+
+                    if (!window.IsFrozen)
+                    {
+                        health.NotRespondingSince = null;
+                        health.NotRespondingCount = 0;
+                        continue;
+                    }
+
+                    health.NotRespondingSince ??= now;
+                    health.NotRespondingCount++;
+
+                    var hungFor = now - health.NotRespondingSince.Value;
+                    if (hungFor < FrozenKillThreshold)
+                        continue;
+
+                    if (MemoryNative.TerminateVerified(pid, process.CreateTime, 0) == MemoryNative.NativeOutcome.Done)
+                    {
+                        _processHealth.TryRemove(pid, out _);
+                        RaiseAutoKilled(pid, name, window.Title, AutoKillReason.NotResponding, (long)hungFor.TotalSeconds);
+                    }
                 }
+                catch { /* one process must not stop the pass */ }
             }
 
             // Forget processes that exited, lost their window, moved to the
@@ -355,8 +367,9 @@ public class ProcessKiller : IDisposable
     /// <summary>
     /// PID owning the foreground window. A frozen window in front is swapped for
     /// a system "ghost" window, so map it back to the hung app it stands for.
+    /// Also used by the RAM cleaner to leave the app in front alone.
     /// </summary>
-    private static int GetForegroundProcessId()
+    internal static int GetForegroundProcessId()
     {
         try
         {
@@ -506,35 +519,53 @@ public class ProcessKiller : IDisposable
     #region Manual Kill
 
     /// <summary>
-    /// Ends every running instance of <paramref name="processName"/> — each
-    /// process only, never its child processes. Returns true if any was ended.
+    /// Ends every running instance of <paramref name="processName"/> in the
+    /// user's own Windows session — each process only, never its child processes,
+    /// never services or other users' apps. Returns true if any was ended.
     /// </summary>
     public bool KillProcess(string processName)
     {
-        if (IsProtectedProcess(processName))
+        var name = processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? processName[..^4] : processName;
+        if (name.Length == 0 || IsProtectedProcess(name))
+            return false;
+
+        var snapshot = MemoryNative.SnapshotProcesses();
+        if (snapshot == null)
             return false;
 
         var killed = false;
-        try
+        foreach (var process in snapshot)
         {
-            foreach (var process in Process.GetProcessesByName(processName))
-            {
-                using (process)
-                {
-                    try
-                    {
-                        if (process.Id == _ownProcessId)
-                            continue;
-                        process.Kill(entireProcessTree: false);
-                        killed = true;
-                    }
-                    catch { }
-                }
-            }
+            if (process.Pid == _ownProcessId || process.Pid <= 4 || process.SessionId != _ownSessionId)
+                continue;
+            if (!process.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (MemoryNative.TerminateVerified(process.Pid, process.CreateTime, 0) == MemoryNative.NativeOutcome.Done)
+                killed = true;
         }
-        catch { }
 
         return killed;
+    }
+
+    /// <summary>
+    /// Ends one process the user picked from a list, but only if that exact
+    /// instance is still running: a PID reused since the list was taken is left
+    /// alone (reported as <see cref="ProcessEndResult.AlreadyGone"/>). Only that
+    /// process is closed, never its children. Waits up to 3 s for it to exit.
+    /// </summary>
+    public ProcessEndResult EndProcess(int processId, string expectedName, long expectedCreateTime)
+    {
+        if (processId == _ownProcessId || processId <= 4 || IsProtectedProcess(expectedName))
+            return ProcessEndResult.Protected;
+
+        return MemoryNative.TerminateVerified(processId, expectedCreateTime, 3000) switch
+        {
+            MemoryNative.NativeOutcome.Done => ProcessEndResult.Ended,
+            MemoryNative.NativeOutcome.Gone => ProcessEndResult.AlreadyGone,
+            MemoryNative.NativeOutcome.AccessDenied => ProcessEndResult.AccessDenied,
+            MemoryNative.NativeOutcome.StillRunning => ProcessEndResult.StillRunning,
+            _ => ProcessEndResult.Failed
+        };
     }
 
     /// <summary>
@@ -698,8 +729,22 @@ public class ProcessKiller : IDisposable
 
         Debug.WriteLine($"[ProcessKiller] Auto-killed {name} ({pid}): {args.ReasonText}");
 
+        lock (_recentAutoKills)
+        {
+            _recentAutoKills.Insert(0, args);
+            if (_recentAutoKills.Count > MaxRecentAutoKills)
+                _recentAutoKills.RemoveAt(_recentAutoKills.Count - 1);
+        }
+
         try { ProcessAutoKilled?.Invoke(this, args); } catch { /* a UI handler must not stop the watchdog */ }
         try { OnProcessAutoKilled?.Invoke(name, args.ReasonText); } catch { }
+    }
+
+    /// <summary>Apps closed automatically during this app session, newest first (for pages opened later).</summary>
+    public IReadOnlyList<ProcessAutoKilledEventArgs> GetRecentAutoKills()
+    {
+        lock (_recentAutoKills)
+            return _recentAutoKills.ToArray();
     }
 
     /// <summary>
@@ -810,8 +855,22 @@ public enum AutoKillReason
     MatchedKillRule,
     /// <summary>Window was "Not Responding" for at least the Smart Kill threshold.</summary>
     NotResponding,
-    /// <summary>Known background bloatware exceeded the memory limit.</summary>
+    /// <summary>No longer raised (kept so existing handlers still compile): bloatware is never closed for its memory use.</summary>
     ExcessiveMemory
+}
+
+/// <summary>Outcome of <see cref="ProcessKiller.EndProcess"/>.</summary>
+public enum ProcessEndResult
+{
+    Ended,
+    /// <summary>It had exited, or its PID now belongs to a different process (which was left alone).</summary>
+    AlreadyGone,
+    /// <summary>Windows core process or WinXTools itself — not ended.</summary>
+    Protected,
+    AccessDenied,
+    /// <summary>Terminate was accepted but the process hadn't exited after 3 s.</summary>
+    StillRunning,
+    Failed
 }
 
 public sealed class ProcessAutoKilledEventArgs : EventArgs
@@ -848,6 +907,10 @@ public class ProcessHealthInfo
 {
     public int ProcessId { get; set; }
     public string ProcessName { get; set; } = "";
+
+    /// <summary>Creation time (FILETIME) of the watched instance; a different value means the PID was reused.</summary>
+    public long CreateTime { get; set; }
+
     public DateTime StartTime { get; set; }
     public int NotRespondingCount { get; set; }
 

@@ -132,25 +132,24 @@
 
     <!-- RAM Optimizer -->
     <system:String x:Key="RamOptimizer_Title">เพิ่มประสิทธิภาพ RAM</system:String>
-    <system:String x:Key="RamOptimizer_Subtitle">ตรวจสอบและเพิ่มประสิทธิภาพการใช้หน่วยความจำ</system:String>
+    <system:String x:Key="RamOptimizer_Subtitle">ดูว่า RAM ถูกใช้ไปกับอะไร และคืนหน่วยความจำอย่างปลอดภัย</system:String>
     <system:String x:Key="RamOptimizer_TotalMemory">หน่วยความจำทั้งหมด</system:String>
     <system:String x:Key="RamOptimizer_UsedMemory">ใช้งานอยู่</system:String>
-    <system:String x:Key="RamOptimizer_AvailableMemory">ว่าง</system:String>
+    <system:String x:Key="RamOptimizer_AvailableMemory">พร้อมใช้งาน</system:String>
     <system:String x:Key="RamOptimizer_Usage">การใช้งาน</system:String>
     <system:String x:Key="RamOptimizer_MemoryHistory">ประวัติการใช้หน่วยความจำ</system:String>
     <system:String x:Key="RamOptimizer_TopConsumers">โปรแกรมที่ใช้หน่วยความจำสูงสุด</system:String>
-    <system:String x:Key="RamOptimizer_OptimizeNow">เพิ่มประสิทธิภาพเดี๋ยวนี้</system:String>
-    <system:String x:Key="RamOptimizer_NeverOptimized">ยังไม่ได้เพิ่มประสิทธิภาพ</system:String>
-    <system:String x:Key="RamOptimizer_Settings">ตั้งค่าการเพิ่มประสิทธิภาพอัตโนมัติ</system:String>
-    <system:String x:Key="RamOptimizer_AutoOptimize">เพิ่มประสิทธิภาพอัตโนมัติ</system:String>
-    <system:String x:Key="RamOptimizer_Threshold">เกณฑ์หน่วยความจำ</system:String>
-    <system:String x:Key="RamOptimizer_Interval">ช่วงเวลาตรวจสอบ</system:String>
-    <system:String x:Key="RamOptimizer_History">ประวัติการเพิ่มประสิทธิภาพ</system:String>
+    <system:String x:Key="RamOptimizer_OptimizeNow">ล้างหน่วยความจำตอนนี้</system:String>
+    <system:String x:Key="RamOptimizer_NeverOptimized">ยังไม่ได้ล้างตั้งแต่เปิดโปรแกรม</system:String>
+    <system:String x:Key="RamOptimizer_Settings">ล้างอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_AutoOptimize">เปิดการล้างอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_Threshold">เมื่อใช้หน่วยความจำถึง</system:String>
+    <system:String x:Key="RamOptimizer_History">ประวัติการทำงาน</system:String>
     <system:String x:Key="RamOptimizer_ProcessProtection">การป้องกันโปรเซส</system:String>
     <system:String x:Key="RamOptimizer_SmartKill">Smart Kill</system:String>
     <system:String x:Key="RamOptimizer_SmartKillDesc">ตรวจจับและปิดโปรเซสที่ค้างอัตโนมัติ</system:String>
     <system:String x:Key="RamOptimizer_AutoKill">กฎ Auto Kill</system:String>
-    <system:String x:Key="RamOptimizer_AutoKillDesc">ปิดโปรเซสที่ตรงกับกฎอัตโนมัติ</system:String>
+    <system:String x:Key="RamOptimizer_AutoKillDesc">ปิดโปรแกรมในรายการด้านล่างทุกครั้งที่เปิดขึ้นในบัญชีผู้ใช้ของคุณ</system:String>
     <system:String x:Key="RamOptimizer_KillRules">กฎการปิดโปรเซส</system:String>
     <system:String x:Key="RamOptimizer_AddKillRuleTitle">เพิ่มกฎ Kill</system:String>
     <system:String x:Key="RamOptimizer_AddKillRuleMessage">ใส่ชื่อโปรเซสที่จะปิดอัตโนมัติ (ไม่ต้องใส่ .exe):</system:String>
@@ -398,7 +397,6 @@
     <system:String x:Key="Dash_QuickCleanConfirm" xml:space="preserve">ลบไฟล์ชั่วคราว แคชเบราว์เซอร์ แคชรูปตัวอย่าง และรายงานข้อผิดพลาด?&#x0a;&#x0a;(เฉพาะหมวดที่ปลอดภัย ไฟล์ที่กำลังใช้งานจะถูกข้าม)</system:String>
     <system:String x:Key="Dash_QuickCleanDone">ได้พื้นที่คืน {0} ({1:N0} ไฟล์)</system:String>
     <system:String x:Key="Dash_Ram">ปรับแต่ง RAM</system:String>
-    <system:String x:Key="Dash_RamDone" xml:space="preserve">ปรับแต่ง RAM เสร็จแล้ว&#x0a;&#x0a;ก่อนหน้า: ใช้อยู่ {0}%&#x0a;จำนวนโปรเซสที่ปรับ: {1}&#x0a;RAM ที่ว่างเพิ่ม: {2}</system:String>
     <system:String x:Key="Dash_DnsDone">ล้าง DNS cache เรียบร้อยแล้ว</system:String>
     <system:String x:Key="Dash_DnsFailed">ล้าง DNS cache ไม่สำเร็จ (exit code {0})</system:String>
     <system:String x:Key="Dash_Reset">รีเซ็ตการ์ดเครือข่าย</system:String>
@@ -501,9 +499,6 @@
     <system:String x:Key="WinOpt_RestorePointFailed">ไม่ได้สร้าง Restore Point กรุณาตรวจสอบว่าเปิด System Protection ของไดรฟ์ระบบไว้แล้ว</system:String>
     <system:String x:Key="WinOpt_ConfirmCreateRestore" xml:space="preserve">สร้าง System Restore Point ตอนนี้หรือไม่?&#10;&#10;ใช้ย้อนกลับการเปลี่ยนแปลงได้หากเกิดปัญหา Windows อนุญาตให้สร้างได้ครั้งเดียวในทุก 24 ชั่วโมง และอาจใช้เวลาประมาณหนึ่งนาที</system:String>
     <system:String x:Key="WinOpt_UnexpectedError" xml:space="preserve">เปลี่ยนการตั้งค่า Windows ไม่สำเร็จ:&#10;{0}</system:String>
-    <system:String x:Key="Ram_LastOptimized">ล่าสุด: {0} – คืนหน่วยความจำ {1}</system:String>
-    <system:String x:Key="Ram_ProcessesTrimmed">ลดหน่วยความจำ {0} โปรเซส</system:String>
-    <system:String x:Key="Ram_StandbyCleared">ล้างแคช Standby แล้ว</system:String>
     <system:String x:Key="Ram_EndProcessTitle">ปิดโปรเซส</system:String>
     <system:String x:Key="Ram_ProtectedProcess">{0} เป็นโปรเซสสำคัญของ Windows จึงปิดจากหน้านี้ไม่ได้</system:String>
     <system:String x:Key="Ram_ConfirmEndProcess" xml:space="preserve">ปิด {0} (PID {1}) หรือไม่?&#10;&#10;จะปิดเฉพาะโปรเซสนี้ ไม่รวมโปรเซสที่มันเปิดไว้ งานที่ยังไม่ได้บันทึกในโปรแกรมนี้จะหายไป</system:String>
@@ -517,6 +512,101 @@
     <system:String x:Key="Ram_ReasonNotResponding">ไม่ตอบสนองนาน {0} วินาที</system:String>
     <system:String x:Key="Ram_ReasonMemory">ใช้หน่วยความจำ {0} MB</system:String>
     <system:String x:Key="Ram_ReasonRule">ตามกฎการปิด</system:String>
+    <system:String x:Key="Ram_InstalledCaption">จากที่ติดตั้ง {0}</system:String>
+    <system:String x:Key="Ram_CommitCaption">จองแล้ว {0}</system:String>
+    <system:String x:Key="Ram_CommitTip">หน่วยความจำที่โปรแกรมจองไว้ (RAM รวมไฟล์เพจ) เทียบกับจำนวนสูงสุดที่ Windows ให้จองได้ก่อนต้องขยายไฟล์เพจ</system:String>
+    <system:String x:Key="Ram_FreeCaption">ว่าง {0}</system:String>
+    <system:String x:Key="Ram_CacheCaption">แคช {0}</system:String>
+    <system:String x:Key="Ram_BreakdownTitle">RAM ถูกใช้ไปกับอะไรบ้าง</system:String>
+    <system:String x:Key="Ram_SegInUse">กำลังใช้งาน</system:String>
+    <system:String x:Key="Ram_SegModified">รอเขียนลงดิสก์</system:String>
+    <system:String x:Key="Ram_SegStandby">แคช (Standby)</system:String>
+    <system:String x:Key="Ram_SegFree">ว่าง</system:String>
+    <system:String x:Key="Ram_LowPriorityPart">(สำคัญน้อย {0})</system:String>
+    <system:String x:Key="Ram_CompressedValue">บีบอัดไว้: {0}</system:String>
+    <system:String x:Key="Ram_CompressedTip">RAM ที่ Windows ใช้เก็บข้อมูลแบบบีบอัด นับรวมอยู่ใน “กำลังใช้งาน” แล้ว</system:String>
+    <system:String x:Key="Ram_BreakdownNote">พร้อมใช้งาน = แคช + ว่าง — Windows ยกแคชให้โปรแกรมใช้ได้ทันที แคชเยอะจึงเป็นเรื่องปกติ ไม่ใช่ RAM ที่เสียเปล่า</system:String>
+    <system:String x:Key="Ram_DetailUnavailable">เครื่องนี้อ่านรายละเอียดหน่วยความจำไม่ได้</system:String>
+    <system:String x:Key="Ram_ColProcess">โปรเซส</system:String>
+    <system:String x:Key="Ram_ColMemory">RAM ที่ใช้</system:String>
+    <system:String x:Key="Ram_ColMemoryTip">RAM ที่โปรเซสนี้ใช้เองเท่านั้น — ตัวเลขเดียวกับคอลัมน์ “หน่วยความจำ” ใน Task Manager</system:String>
+    <system:String x:Key="Ram_ColCommit">จองไว้</system:String>
+    <system:String x:Key="Ram_ColCommitTip">หน่วยความจำส่วนตัวที่โปรเซสจองไว้ รวมส่วนที่ Windows ย้ายไปเก็บในไฟล์เพจแล้ว</system:String>
+    <system:String x:Key="Ram_TrimTip">ลด RAM: ย้ายหน่วยความจำของโปรแกรมนี้ออกจาก RAM (โปรแกรมจะโหลดส่วนที่ต้องใช้กลับมาเอง)</system:String>
+    <system:String x:Key="Ram_EndTip">ปิดโปรเซสนี้</system:String>
+    <system:String x:Key="Ram_RowProtectedTip">โปรเซสของ Windows หรือ WinXTools เอง — ใช้ปุ่มนี้ไม่ได้</system:String>
+    <system:String x:Key="Ram_ListLoading">กำลังโหลด…</system:String>
+    <system:String x:Key="Ram_ListEmpty">อ่านรายการโปรเซสไม่ได้</system:String>
+    <system:String x:Key="Ram_TrimDone">{0}: ใช้ RAM {1} → {2} โปรแกรมจะโหลดส่วนที่ต้องใช้กลับมาเอง</system:String>
+    <system:String x:Key="Ram_TrimProtected">{0} เป็นโปรเซสของ Windows จึงไม่ลด RAM ให้</system:String>
+    <system:String x:Key="Ram_TrimSelf">WinXTools ไม่ลด RAM ของตัวเอง เพราะจะทำให้หน้าต่างนี้กระตุก</system:String>
+    <system:String x:Key="Ram_TrimDenied">Windows ไม่อนุญาตให้ลด RAM ของ {0}</system:String>
+    <system:String x:Key="Ram_TrimFailed">ลด RAM ของ {0} ไม่สำเร็จ</system:String>
+    <system:String x:Key="Ram_ProcessGone">{0} ปิดไปก่อนแล้ว — ไม่ได้ทำอะไร</system:String>
+    <system:String x:Key="Ram_EndDone">ปิด {0} แล้ว</system:String>
+    <system:String x:Key="Ram_Cleaning">กำลังล้าง…</system:String>
+    <system:String x:Key="Ram_GaugeUsed">ใช้อยู่</system:String>
+    <system:String x:Key="Ram_NotAdmin">WinXTools ไม่ได้รันแบบผู้ดูแลระบบ จึงดูข้อมูลได้แต่ล้างหน่วยความจำไม่ได้</system:String>
+    <system:String x:Key="Ram_LastRun">ล้างล่าสุด: {0} ({1})</system:String>
+    <system:String x:Key="Ram_TriggerManual">สั่งเอง</system:String>
+    <system:String x:Key="Ram_TriggerAutoLoad">อัตโนมัติ – ใช้หน่วยความจำ {0}%</system:String>
+    <system:String x:Key="Ram_TriggerAutoFree">อัตโนมัติ – หน่วยความจำว่างเหลือน้อย</system:String>
+    <system:String x:Key="Ram_JoinedRun">มีการล้างที่ทำงานอยู่ก่อนแล้ว จึงแสดงผลของรอบนั้น</system:String>
+    <system:String x:Key="Ram_ResultSummary">พร้อมใช้งาน {0} · ว่าง {1} → {2}</system:String>
+    <system:String x:Key="Ram_ResultSummaryBasic">พร้อมใช้งาน {0}</system:String>
+    <system:String x:Key="Ram_NoGain">ไม่เพิ่มขึ้น</system:String>
+    <system:String x:Key="Ram_NothingCleaned">ไม่ได้ล้างอะไรเลย</system:String>
+    <system:String x:Key="Ram_NothingSelected">เลือกอย่างน้อย 1 รายการในส่วน “สิ่งที่จะล้าง”</system:String>
+    <system:String x:Key="Ram_CleanFailed">เริ่มการล้างไม่ได้ ไม่มีอะไรถูกเปลี่ยน</system:String>
+    <system:String x:Key="Ram_ResCombine">{0}: รวมได้ {1}</system:String>
+    <system:String x:Key="Ram_ResTrim">{0}: ลดแล้ว {1} โปรแกรม ข้าม {2} · พร้อมใช้งาน +{3}</system:String>
+    <system:String x:Key="Ram_ResAvailable">{0}: พร้อมใช้งาน +{1}</system:String>
+    <system:String x:Key="Ram_ResWritten">{0}: เขียนลงดิสก์ {1}</system:String>
+    <system:String x:Key="Ram_ResReleased">{0}: คืนแคช {1}</system:String>
+    <system:String x:Key="Ram_ResSkipped">{0}: ไม่ได้ทำ – {1}</system:String>
+    <system:String x:Key="Ram_ResFailed">{0}: ไม่สำเร็จ – {1}</system:String>
+    <system:String x:Key="Ram_ErrPrivilege">Windows ไม่ให้สิทธิ์ที่จำเป็น (ต้องรัน WinXTools แบบผู้ดูแลระบบ)</system:String>
+    <system:String x:Key="Ram_ErrAccessDenied">Windows ไม่อนุญาตให้เข้าถึง</system:String>
+    <system:String x:Key="Ram_ErrNotSupported">Windows เวอร์ชันนี้ไม่รองรับ</system:String>
+    <system:String x:Key="Ram_ErrCancelled">หยุดเพราะกำลังปิด WinXTools</system:String>
+    <system:String x:Key="Ram_ErrCode">Windows แจ้งข้อผิดพลาด 0x{0}</system:String>
+    <system:String x:Key="Ram_WhatToClean">สิ่งที่จะล้าง</system:String>
+    <system:String x:Key="Ram_UseSafeDefaults">ใช้ค่าปลอดภัย</system:String>
+    <system:String x:Key="Ram_ConfirmSafeDefaults" xml:space="preserve">กลับไปใช้ค่าปลอดภัยหรือไม่?&#10;&#10;จะเปิดไว้เฉพาะ “เขียนข้อมูลที่ค้างอยู่ลงดิสก์” และ “แคชที่สำคัญน้อย” ส่วนรายชื่อโปรแกรมที่ห้ามลด RAM ยังอยู่เหมือนเดิม</system:String>
+    <system:String x:Key="Ram_RiskSafe">ปลอดภัย</system:String>
+    <system:String x:Key="Ram_RiskCaution">ควรระวัง</system:String>
+    <system:String x:Key="Ram_RiskAggressive">แรง</system:String>
+    <system:String x:Key="Ram_OpFlushModified">เขียนข้อมูลที่ค้างอยู่ลงดิสก์</system:String>
+    <system:String x:Key="Ram_OpFlushModifiedDesc">เขียนหน่วยความจำที่รอบันทึก (Modified) ลงดิสก์ เพื่อให้กลับมาพร้อมใช้งาน ถ้าเป็นฮาร์ดดิสก์ (HDD) ดิสก์อาจทำงานหนักชั่วครู่</system:String>
+    <system:String x:Key="Ram_OpLowStandby">แคชที่สำคัญน้อย</system:String>
+    <system:String x:Key="Ram_OpLowStandbyDesc">คืนแคชส่วนที่ Windows เองจัดว่าสำคัญน้อยที่สุด (priority 0)</system:String>
+    <system:String x:Key="Ram_OpStandby">แคชทั้งหมด (Standby)</system:String>
+    <system:String x:Key="Ram_OpStandbyDesc">คืนแคชไฟล์และโปรแกรมทั้งหมดแบบ ISLC หลังล้าง โปรแกรมและเกมต้องอ่านจากดิสก์ใหม่ จึงอาจโหลดช้าลงเล็กน้อย</system:String>
+    <system:String x:Key="Ram_OpCombine">รวมหน้าหน่วยความจำที่ซ้ำกัน</system:String>
+    <system:String x:Key="Ram_OpCombineDesc">ให้ Windows เก็บหน้าหน่วยความจำที่เหมือนกันไว้ชุดเดียว (Windows 10 ขึ้นไป) ใช้ CPU หนักสักครู่</system:String>
+    <system:String x:Key="Ram_OpFileCache">แคชไฟล์ของระบบ</system:String>
+    <system:String x:Key="Ram_OpFileCacheDesc">ย้ายแคชไฟล์ของ Windows ออกจากหน่วยความจำที่ใช้งานอยู่ Windows อาจต้องอ่านบางไฟล์จากดิสก์ใหม่</system:String>
+    <system:String x:Key="Ram_OpTrim">ลด RAM ของโปรแกรมเบื้องหลัง</system:String>
+    <system:String x:Key="Ram_OpTrimDesc">ย้ายหน่วยความจำของโปรแกรมเบื้องหลังที่ว่างอยู่ออกจาก RAM ตอนสลับกลับไปใช้ โปรแกรมเหล่านั้นอาจกระตุกชั่วครู่ ไม่แตะโปรแกรมที่คุณกำลังใช้, WinXTools, โปรเซสและบริการของ Windows</system:String>
+    <system:String x:Key="Ram_IncludedInEntireCache">รวมอยู่ใน “แคชทั้งหมด” แล้ว</system:String>
+    <system:String x:Key="Ram_NeverTrim">ห้ามลด RAM ของโปรแกรมเหล่านี้ (คั่นด้วยจุลภาค):</system:String>
+    <system:String x:Key="Ram_NeverTrimInvalid">ไม่ได้บันทึก — ชื่อโปรแกรมไม่ถูกต้อง: {0}</system:String>
+    <system:String x:Key="Ram_NeverTrimTooMany">เก็บไว้เฉพาะ {0} ชื่อแรก</system:String>
+    <system:String x:Key="Ram_NeverTrimSaved">บันทึกแล้ว — จะไม่ลด RAM ของโปรแกรมเหล่านี้ ({0} รายการ)</system:String>
+    <system:String x:Key="Ram_AutoDesc">ตรวจหน่วยความจำทุก 5 วินาที และล้างเฉพาะตอนที่เข้าเงื่อนไขด้านล่าง</system:String>
+    <system:String x:Key="Ram_AutoOnLoadDesc">ล้างตามรายการที่เลือกไว้ใน “สิ่งที่จะล้าง”</system:String>
+    <system:String x:Key="Ram_AutoOnLowFree">เมื่อหน่วยความจำว่างเหลือน้อย (แบบ ISLC)</system:String>
+    <system:String x:Key="Ram_AutoOnLowFreeDesc">คืนแคชทั้งหมด เมื่อหน่วยความจำว่างต่ำกว่าค่าแรก และแคชมีอย่างน้อยเท่าค่าที่สอง</system:String>
+    <system:String x:Key="Ram_FreeBelow">หน่วยความจำว่างต่ำกว่า</system:String>
+    <system:String x:Key="Ram_CacheAtLeast">แคชอย่างน้อย</system:String>
+    <system:String x:Key="Ram_AutoCooldown">รอหลังการล้างครั้งล่าสุดอย่างน้อย</system:String>
+    <system:String x:Key="Ram_Minutes">{0} นาที</system:String>
+    <system:String x:Key="Ram_AutoNoTrigger">เปิดอย่างน้อย 1 เงื่อนไข ไม่เช่นนั้นจะไม่มีการล้างอัตโนมัติ</system:String>
+    <system:String x:Key="Ram_KillRulesEmpty">ยังไม่มีกฎ — กด เพิ่ม</system:String>
+    <system:String x:Key="Ram_HistoryEmpty">ยังไม่มีรายการ การล้างหน่วยความจำและโปรแกรมที่ถูก Smart Kill หรือ Auto Kill ปิด จะแสดงที่นี่</system:String>
+    <system:String x:Key="Ram_HistoryClean">ล้างหน่วยความจำ ({0}) – สำเร็จ {1} จาก {2} ขั้นตอน</system:String>
+    <system:String x:Key="Ram_HistoryFreeGain">ว่าง +{0}</system:String>
+    <system:String x:Key="Ram_HistoryFailed">ไม่สำเร็จ</system:String>
 
     <!-- Network Tools / Packet Monitor / Connections -->
     <system:String x:Key="NetTools_Running">กำลังทำงาน...</system:String>

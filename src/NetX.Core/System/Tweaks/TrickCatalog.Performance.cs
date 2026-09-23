@@ -52,14 +52,16 @@ public static partial class TrickCatalog
             Icon = "SpeedIcon",
             Name = L("Free cached (standby) memory now", "ล้างหน่วยความจำแคช (Standby) ตอนนี้"),
             Description = L(
-                "Empties Windows' file cache in RAM and trims apps' working memory right now. Useful just before starting a big game on a PC " +
-                "with little RAM. Windows refills the cache over time — that is normal.",
-                "ล้างแคชไฟล์ใน RAM และลดหน่วยความจำที่แอปจองไว้ทันที เหมาะก่อนเปิดเกมใหญ่ในเครื่องที่ RAM น้อย " +
-                "Windows จะค่อย ๆ เติมแคชกลับมาเองซึ่งเป็นเรื่องปกติ"),
-            Tip = L("Open apps may feel slow for a moment while they reload what they need.",
-                    "แอปที่เปิดอยู่อาจช้าลงชั่วครู่ระหว่างโหลดข้อมูลที่ต้องใช้กลับเข้ามา"),
+                "Empties Windows' file cache in RAM and trims the memory of idle background apps right now. Useful just before starting a " +
+                "big game on a PC with little RAM. The app on screen, Windows itself and busy apps are left alone. Windows refills the " +
+                "cache over time — that is normal.",
+                "ล้างแคชไฟล์ใน RAM และลดหน่วยความจำของแอปเบื้องหลังที่ว่างอยู่ทันที เหมาะก่อนเปิดเกมใหญ่ในเครื่องที่ RAM น้อย " +
+                "โดยไม่แตะแอปที่อยู่หน้าจอ ตัว Windows และแอปที่กำลังทำงานหนัก — Windows จะค่อย ๆ เติมแคชกลับมาเองซึ่งเป็นเรื่องปกติ"),
+            Tip = L("Background apps may feel slow for a moment when you switch back to them. For everyday use, the RAM page's safe cleanup is gentler.",
+                    "แอปเบื้องหลังอาจช้าลงชั่วครู่ตอนสลับกลับไปใช้ ถ้าใช้งานทั่วไป การล้างแบบปลอดภัยในหน้า RAM จะนุ่มนวลกว่า"),
             Risk = TrickRisk.Safe,
-            Technical = "NtSetSystemInformation(SystemMemoryListInformation: empty working sets + purge standby list)",
+            Technical = "K32EmptyWorkingSet on idle background processes (not foreground/system/busy/excluded), then " +
+                        "NtSetSystemInformation(SystemMemoryListInformation, MemoryPurgeStandbyList)",
             RunLabel = L("Free now", "ล้างตอนนี้"),
             Run = _ => Task.Run(ClearStandbyMemory)
         });
