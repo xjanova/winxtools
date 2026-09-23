@@ -197,13 +197,13 @@
 
     <!-- Pro Banner -->
     <system:String x:Key="Pro_UpgradeTitle">Upgrade to Pro</system:String>
-    <system:String x:Key="Pro_UpgradeDesc">Unlock all premium features — only ฿199 (one-time)</system:String>
+    <system:String x:Key="Pro_UpgradeDesc">Unlock all premium features — only ฿199 per year</system:String>
     <system:String x:Key="Pro_TrialTitle">PRO Trial</system:String>
     <system:String x:Key="Pro_TrialDesc">All features unlocked</system:String>
     <system:String x:Key="Pro_OverlayTitle">PRO Feature</system:String>
-    <system:String x:Key="Pro_OverlayDesc">This feature requires WinXTools Pro — ฿199</system:String>
-    <system:String x:Key="Pro_UpgradeButton">Upgrade to Pro — ฿199</system:String>
-    <system:String x:Key="Pro_Price">฿199</system:String>
+    <system:String x:Key="Pro_OverlayDesc">This feature requires WinXTools Pro — ฿199/year</system:String>
+    <system:String x:Key="Pro_UpgradeButton">Upgrade to Pro — ฿199/year</system:String>
+    <system:String x:Key="Pro_Price">฿199/year</system:String>
 
     <!-- Common -->
     <system:String x:Key="Common_OK">OK</system:String>
@@ -885,7 +885,7 @@
     <system:String x:Key="RuleEditor_WholePc">whole PC</system:String>
 
     <!-- License, trial and updates (xman studio product API) -->
-    <system:String x:Key="Settings_BuyPro">Buy Pro — ฿199</system:String>
+    <system:String x:Key="Settings_BuyPro">Buy Pro — ฿199/year</system:String>
     <system:String x:Key="Settings_LicenseRefresh">Check again</system:String>
     <system:String x:Key="Settings_Activating">Activating...</system:String>
     <system:String x:Key="Settings_UpdateErrNotSigned">This update is not signed by xman studio, so it was not installed. Nothing was changed.</system:String>
@@ -895,7 +895,7 @@
     <system:String x:Key="License_OfflineSince">Not confirmed online yet this session (last confirmed {0}). Pro keeps working for up to {1} days without internet.</system:String>
     <system:String x:Key="License_ExpiredOn">Your Pro license expired on {0}.</system:String>
     <system:String x:Key="License_Expired">Your Pro license has expired.</system:String>
-    <system:String x:Key="License_ExpiredHelp">Buy Pro again to keep using the Pro features. The free features keep working.</system:String>
+    <system:String x:Key="License_ExpiredHelp">Renew Pro (฿199 per year) to keep using the Pro features. The free features keep working.</system:String>
     <system:String x:Key="License_BadgeExpired">EXPIRED</system:String>
     <system:String x:Key="License_Revoked">This license was cancelled by xman studio.</system:String>
     <system:String x:Key="License_RevokedHelp">If you think this is a mistake, contact xman studio support with your license key.</system:String>
@@ -905,7 +905,7 @@
     <system:String x:Key="License_Unverified">Your license could not be confirmed.</system:String>
     <system:String x:Key="License_UnverifiedHelp">WinXTools needs to reach the license server at least once every {0} days. Connect to the internet and press Check again.</system:String>
     <system:String x:Key="License_TrialUntil">Free Pro trial — every feature unlocked until {0}</system:String>
-    <system:String x:Key="License_TrialHelp">After the trial the free features keep working. Buy Pro (฿199, one-time) to keep everything.</system:String>
+    <system:String x:Key="License_TrialHelp">After the trial the free features keep working. Buy Pro (฿199 per year) to keep every feature.</system:String>
     <system:String x:Key="License_BadgeTrial">TRIAL</system:String>
     <system:String x:Key="License_FreeTrialUsed">Free version — the Pro trial on this PC has been used.</system:String>
     <system:String x:Key="License_Free">Free version</system:String>
@@ -920,7 +920,7 @@
     <system:String x:Key="License_Confirmed">The license server confirmed your license.</system:String>
     <system:String x:Key="License_OpenPageFailed" xml:space="preserve">The browser could not be opened. Please visit:&#x0a;{0}</system:String>
     <system:String x:Key="License_ErrInvalidKey">This key is not a WinXTools license. Check it for typos — keys bought for other xman studio apps do not work in WinXTools.</system:String>
-    <system:String x:Key="License_ErrExpired">This license has expired. Buy Pro again to keep the Pro features.</system:String>
+    <system:String x:Key="License_ErrExpired">This license has expired. Renew Pro (฿199 per year) to keep the Pro features.</system:String>
     <system:String x:Key="License_ErrRevoked">This license was cancelled by xman studio. Contact support if you think this is a mistake.</system:String>
     <system:String x:Key="License_ErrOtherDevice">The license stays on the other PC. Nothing was changed.</system:String>
     <system:String x:Key="License_ErrTrialKey">This is a trial key, not a Pro license. Buy WinXTools Pro to get a license key.</system:String>
