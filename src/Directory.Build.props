@@ -1,0 +1,14 @@
+<Project>
+  <!-- Customers must never learn where the source code lives (owner rule, 2026-09-24). By
+       default the SDK writes the commit id into the Product version that Explorer shows under
+       Properties > Details, and a Release build ships PDBs next to WinXTools.exe that carry the
+       repository's Source Link URL, with the build machine's paths in both. The app never shows
+       or sends a stack trace, so Release builds make no symbols at all. -->
+  <PropertyGroup>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+</Project>

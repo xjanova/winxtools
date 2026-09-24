@@ -18,7 +18,8 @@ namespace NetX.Core.System;
 /// </summary>
 public static class XmanApi
 {
-    public const string Host = "https://xman4289.com";
+    private const string HostName = "xman4289.com";
+    public const string Host = "https://" + HostName;
     public const string ProductSlug = "winx-tools";
     public const string ProductApi = Host + "/api/v1/product/" + ProductSlug;
     public const string ProductPageUrl = Host + "/products/" + ProductSlug;
@@ -34,16 +35,29 @@ public static class XmanApi
         "2BCEE858158CF5465FC9D76F0DFA312FEF25A4DCA8501DA9B46B67D1FBFA1B64"  // GlobalSign Root CA (R4 cross-sign)
     };
 
-    /// <summary>An HttpClient for xman4289.com that only trusts the pinned certificate chain.</summary>
-    public static HttpClient CreateClient(string userAgent, TimeSpan timeout)
+    /// <summary>
+    /// An HttpClient for xman4289.com that only trusts the pinned certificate chain. Without
+    /// <paramref name="followRedirects"/> a redirect comes back as the response, so the host it
+    /// points to is never contacted.
+    /// </summary>
+    public static HttpClient CreateClient(string userAgent, TimeSpan timeout, bool followRedirects = true)
     {
-        var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = ValidateServerCertificate };
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+            AllowAutoRedirect = followRedirects
+        };
         var client = new HttpClient(handler) { Timeout = timeout };
         client.DefaultRequestHeaders.Add("User-Agent", userAgent);
         // Laravel answers errors with JSON only when the caller asks for JSON.
         client.DefaultRequestHeaders.Add("Accept", "application/json");
         return client;
     }
+
+    /// <summary>True for an https:// address on xman4289.com itself (default port).</summary>
+    public static bool IsXmanUrl(Uri? uri) =>
+        uri != null && uri.IsAbsoluteUri && uri.Scheme == Uri.UriSchemeHttps && uri.IsDefaultPort
+        && uri.Host.Equals(HostName, StringComparison.OrdinalIgnoreCase);
 
     private static bool ValidateServerCertificate(HttpRequestMessage request, X509Certificate2? cert, X509Chain? chain, SslPolicyErrors errors)
     {

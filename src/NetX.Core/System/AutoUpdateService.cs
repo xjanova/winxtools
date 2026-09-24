@@ -31,7 +31,7 @@ public enum UpdateInstallResult
     Started,
     /// <summary>Another download/install is already in progress.</summary>
     AlreadyRunning,
-    /// <summary>No direct HTTPS link to an update file; use the release page instead.</summary>
+    /// <summary>No HTTPS download on xman4289.com itself (another host, or a redirect); use the product page instead.</summary>
     NoDirectDownload,
     DownloadFailed,
     /// <summary>The server sent a web page (e.g. a sign-in page) or an unknown file.</summary>
@@ -56,11 +56,10 @@ public class AutoUpdateService
 
     // Same update check the studio's other apps use: GET /api/v1/product/{slug}/update/check.
     // The server re-reads GitHub releases on demand (5-minute cache), so a new release shows
-    // up without anyone pressing Sync in the admin.
+    // up without anyone pressing Sync in the admin. xman4289.com is the only place the app
+    // checks and downloads: customers must never see where the source code lives.
     private const string XmanUpdateCheckUrl = XmanApi.ProductApi + "/update/check";
     private const string ProductPageUrl = XmanApi.ProductPageUrl;
-    // Fallback when xman4289.com cannot be reached (the repo is public).
-    private const string GitHubApiUrl = "https://api.github.com/repos/xjanova/winxtools/releases/latest";
 
     // The exe inside every release package (AssemblyName in NetX.App.csproj).
     private const string ProductExeName = "WinXTools.exe";
@@ -70,7 +69,6 @@ public class AutoUpdateService
     private const string StagingFolderName = "Update";
 
     private readonly HttpClient _xmanClient;
-    private readonly HttpClient _gitHubClient;
     private readonly string _currentVersion;
     private int _installing; // 1 while a download/install runs (Interlocked)
 
@@ -83,10 +81,6 @@ public class AutoUpdateService
         _currentVersion = GetCurrentVersion();
 
         _xmanClient = XmanApi.CreateClient("WinXTools-AutoUpdate/" + _currentVersion, TimeSpan.FromSeconds(30));
-
-        _gitHubClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        _gitHubClient.DefaultRequestHeaders.Add("User-Agent", "WinXTools-AutoUpdate");
-        _gitHubClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
     }
 
     public string CurrentVersion => _currentVersion;
@@ -99,13 +93,12 @@ public class AutoUpdateService
     public UpdateInfo? LastCheck { get; private set; }
 
     /// <summary>
-    /// Check for updates - tries xman API first, falls back to GitHub.
-    /// Returns null when neither could be checked (never "up to date" on failure).
+    /// Asks the xman product API whether a newer release exists.
+    /// Returns null when it could not be checked (never "up to date" on failure).
     /// </summary>
     public async Task<UpdateInfo?> CheckForUpdatesAsync()
     {
-        // Try xman studio API first, then GitHub
-        var info = await CheckXmanApiAsync() ?? await CheckGitHubAsync();
+        var info = await CheckXmanApiAsync();
         if (info != null) LastCheck = info;
         return info;
     }
@@ -121,10 +114,11 @@ public class AutoUpdateService
 
             var result = await response.Content.ReadFromJsonAsync<XmanUpdateCheck>();
             // No release published yet: the server answers has_update=false with an empty
-            // version. That is "nothing known", so let GitHub answer instead.
-            if (result == null || string.IsNullOrWhiteSpace(result.LatestVersion)) return null;
+            // version. That, like a version that cannot be read, is "nothing known" - a failed
+            // check, not "up to date".
+            if (result == null || !TryParseVersion(result.LatestVersion, out _, out _)) return null;
 
-            var latest = TrimVersionPrefix(result.LatestVersion);
+            var latest = TrimVersionPrefix(result.LatestVersion!);
             return new UpdateInfo
             {
                 CurrentVersion = _currentVersion,
@@ -136,8 +130,7 @@ public class AutoUpdateService
                 ExpectedSha256 = result.Sha256,
                 // The server's has_update is not enough on its own: never "update" to an
                 // older or equal version, whatever the server says.
-                IsUpdateAvailable = result.HasUpdate && UpdatePackageVerifier.IsNewer(latest, _currentVersion),
-                Source = "xman"
+                IsUpdateAvailable = result.HasUpdate && UpdatePackageVerifier.IsNewer(latest, _currentVersion)
             };
         }
         catch (Exception ex)
@@ -146,50 +139,6 @@ public class AutoUpdateService
             return null;
         }
     }
-
-    private async Task<UpdateInfo?> CheckGitHubAsync()
-    {
-        try
-        {
-            var release = await _gitHubClient.GetFromJsonAsync<GitHubRelease>(GitHubApiUrl);
-
-            // A release without a readable tag is a failed check, not "up to date".
-            if (release == null || !TryParseVersion(release.TagName, out _, out _))
-                return null;
-
-            // Only the release zip carries the signed manifest; a bare exe is never installed.
-            var asset = release.Assets?.FirstOrDefault(a => IsDownloadable(a, "-win-x64.zip"))
-                ?? release.Assets?.FirstOrDefault(a => IsDownloadable(a, ".zip"));
-            var latest = TrimVersionPrefix(release.TagName!);
-
-            return new UpdateInfo
-            {
-                CurrentVersion = _currentVersion,
-                LatestVersion = latest,
-                ReleaseNotes = release.Body ?? "",
-                DownloadUrl = asset?.BrowserDownloadUrl ?? "",
-                ReleaseUrl = release.HtmlUrl ?? "",
-                FileSize = asset?.Size ?? 0,
-                ExpectedSha256 = ParseGitHubDigest(asset?.Digest),
-                PublishedAt = release.PublishedAt,
-                IsUpdateAvailable = UpdatePackageVerifier.IsNewer(latest, _currentVersion),
-                Source = "github"
-            };
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"GitHub check failed: {ex.Message}");
-            return null;
-        }
-    }
-
-    private static bool IsDownloadable(GitHubAsset asset, string extension) =>
-        !string.IsNullOrEmpty(asset.BrowserDownloadUrl)
-        && asset.Name?.EndsWith(extension, StringComparison.OrdinalIgnoreCase) == true;
-
-    // GitHub reports "sha256:<hex>" for assets uploaded since mid-2025; older assets have none.
-    private static string? ParseGitHubDigest(string? digest) =>
-        digest?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true ? digest[7..] : null;
 
     private static string TrimVersionPrefix(string version) => version.Trim().TrimStart('v', 'V');
 
@@ -251,7 +200,8 @@ public class AutoUpdateService
 
     private async Task<UpdateInstallResult> InstallCoreAsync(UpdateInfo updateInfo)
     {
-        if (!Uri.TryCreate(updateInfo.DownloadUrl, UriKind.Absolute, out var url) || url.Scheme != Uri.UriSchemeHttps)
+        // Packages come from xman4289.com only, never from wherever the release is hosted.
+        if (!Uri.TryCreate(updateInfo.DownloadUrl, UriKind.Absolute, out var url) || !XmanApi.IsXmanUrl(url))
             return UpdateInstallResult.NoDirectDownload;
 
         var exePath = Environment.ProcessPath;
@@ -286,17 +236,16 @@ public class AutoUpdateService
     {
         try
         {
-            // Use a dedicated client with longer timeout for file downloads
-            using var downloadClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-            downloadClient.DefaultRequestHeaders.Add("User-Agent", "WinXTools-AutoUpdate");
+            // Pinned like the API calls, with a longer timeout for the file. xman4289.com sends the
+            // package itself; a redirect would hand the download to another host, so it is not followed.
+            using var downloadClient = XmanApi.CreateClient("WinXTools-AutoUpdate/" + _currentVersion,
+                TimeSpan.FromMinutes(10), followRedirects: false);
 
             using var response = await downloadClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            if ((int)response.StatusCode is >= 300 and <= 399) return UpdateInstallResult.NoDirectDownload;
             if (!response.IsSuccessStatusCode) return UpdateInstallResult.DownloadFailed;
 
-            // Redirects must stay on HTTPS, and a web page or API error is not a package
-            // (the xman download route answers anonymous requests with its sign-in page).
-            if (response.RequestMessage?.RequestUri?.Scheme != Uri.UriSchemeHttps)
-                return UpdateInstallResult.NoDirectDownload;
+            // A web page or API error is not a package.
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? "";
             if (mediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
                 || mediaType.Contains("json", StringComparison.OrdinalIgnoreCase))
@@ -812,9 +761,7 @@ public class UpdateInfo
     public long FileSize { get; set; }
     /// <summary>Hex SHA-256 of the download when the server publishes one; verified before install.</summary>
     public string? ExpectedSha256 { get; set; }
-    public DateTime? PublishedAt { get; set; }
     public bool IsUpdateAvailable { get; set; }
-    public string Source { get; set; } = "";
 }
 
 // xman studio GET /api/v1/product/{slug}/update/check (VersionController@checkUpdate).
@@ -830,24 +777,4 @@ internal class XmanUpdateCheck
     [JsonPropertyName("sha256")] public string? Sha256 { get; set; }
     [JsonPropertyName("file_size")] public long? FileSize { get; set; }
     [JsonPropertyName("filename")] public string? Filename { get; set; }
-}
-
-// GitHub API response models. GitHub uses snake_case, so every field needs JsonPropertyName;
-// without it tag_name parsed as null and every check looked "up to date".
-internal class GitHubRelease
-{
-    [JsonPropertyName("tag_name")] public string? TagName { get; set; }
-    [JsonPropertyName("name")] public string? Name { get; set; }
-    [JsonPropertyName("body")] public string? Body { get; set; }
-    [JsonPropertyName("html_url")] public string? HtmlUrl { get; set; }
-    [JsonPropertyName("published_at")] public DateTime? PublishedAt { get; set; }
-    [JsonPropertyName("assets")] public List<GitHubAsset>? Assets { get; set; }
-}
-
-internal class GitHubAsset
-{
-    [JsonPropertyName("name")] public string? Name { get; set; }
-    [JsonPropertyName("browser_download_url")] public string? BrowserDownloadUrl { get; set; }
-    [JsonPropertyName("size")] public long Size { get; set; }
-    [JsonPropertyName("digest")] public string? Digest { get; set; }
 }
