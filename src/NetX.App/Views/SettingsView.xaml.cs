@@ -630,7 +630,7 @@ public partial class SettingsView : Page
 
             if (updateInfo == null)
             {
-                // Neither xman studio nor GitHub answered: never report "up to date" here.
+                // xman studio gave no usable answer: never report "up to date" here.
                 MessageBox.Show(
                     Res("Settings_UpdateCheckFailed", "Couldn't check for updates.\n\nPlease check your internet connection and try again."),
                     Res("Settings_Updates", "Updates"),

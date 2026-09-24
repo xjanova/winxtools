@@ -450,7 +450,7 @@ If you need additional help:
 
 1. **Check this guide** - Most questions are answered here
 2. **Contact Support** - support@xmanstudio.com
-3. **Report Issues** - GitHub Issues page
+3. **WinXTools page** - https://xman4289.com/products/winx-tools (downloads, updates and licenses)
 
 ---
 
