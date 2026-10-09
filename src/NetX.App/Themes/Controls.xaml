@@ -1088,4 +1088,39 @@
         </Setter>
     </Style>
 
+    <!-- Disk tools (Defrag, Speed test, Disk space): drive picker card -->
+    <!-- Drive card: a radio button that looks like a card -->
+    <Style x:Key="DriveCardStyle" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,10,10"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Card"
+                            Width="212"
+                            Padding="12,10"
+                            CornerRadius="10"
+                            Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1.5">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource BorderHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource AccentPrimaryBrush}"/>
+                            <Setter TargetName="Card" Property="Background" Value="{StaticResource BgTertiaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Card" Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

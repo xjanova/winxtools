@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Drive makers' rated speeds (data sheets), used by the disk speed test -->
+    <EmbeddedResource Include="System\Storage\DriveSpecs.json" LogicalName="NetX.Core.DriveSpecs.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
     <!-- Pin native SQLite past CVE GHSA-2m69-gcr7-jv3q (patched in 2.1.12) -->
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />

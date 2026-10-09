@@ -1,0 +1,227 @@
+<Page x:Class="NetX.App.Views.DiskSpaceView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Disk Space"
+      Background="Transparent">
+
+    <Page.Resources>
+        <Style x:Key="RowButton" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Space_Title}" Style="{StaticResource HeaderTextStyle}" FontSize="28"/>
+                <TextBlock Text="{DynamicResource Space_Subtitle}" Style="{StaticResource BodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="ScanButton" Content="{DynamicResource Space_Scan}" Style="{StaticResource PrimaryButtonStyle}"
+                        Click="Scan_Click" Margin="0,0,10,0"/>
+                <Button x:Name="StopButton" Content="{DynamicResource Space_Stop}" Style="{StaticResource DangerButtonStyle}"
+                        Click="Stop_Click" Visibility="Collapsed"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Drives -->
+        <ItemsControl Grid.Row="1" x:Name="DriveList">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton GroupName="SpaceDrive" Style="{StaticResource DriveCardStyle}"
+                                 IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}"
+                                 Checked="DriveCard_Checked">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding LetterText}" FontSize="26" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <Grid Height="5" Margin="0,7,0,3">
+                                    <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="2.5"/>
+                                    <Border Background="{StaticResource AccentGradientHorizontalBrush}" CornerRadius="2.5"
+                                            HorizontalAlignment="Left" Width="{Binding UsedBarWidth}"/>
+                                </Grid>
+                                <TextBlock Text="{Binding UsageText}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Grid>
+                    </RadioButton>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Status -->
+        <Grid Grid.Row="2" Margin="0,2,0,10">
+            <TextBlock x:Name="StatusText" Text="{DynamicResource Space_Hint}" Style="{StaticResource BodyTextStyle}" TextWrapping="Wrap"/>
+            <ProgressBar x:Name="ScanProgress" Height="3" VerticalAlignment="Bottom" Margin="0,0,0,-6" IsIndeterminate="True"
+                         Visibility="Collapsed" Foreground="{StaticResource AccentPrimaryBrush}" Background="Transparent" BorderThickness="0"/>
+        </Grid>
+
+        <!-- What can be freed -->
+        <ItemsControl Grid.Row="3" x:Name="FindingList" Margin="0,0,0,6">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource GlassCardStyle}" Width="268" Margin="0,0,10,10" Padding="14,12">
+                        <StackPanel>
+                            <Grid>
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextWrapping="Wrap" Margin="0,0,64,0"
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <Border Background="{Binding RiskBrush}" CornerRadius="4" Padding="6,1" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <TextBlock Text="{Binding RiskText}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding RiskForeground}"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="{Binding SizeText}" FontFamily="{StaticResource MonoFont}" FontSize="22" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,6,0,0"/>
+                            <TextBlock Text="{Binding Description}" FontSize="11.5" TextWrapping="Wrap" Margin="0,4,0,8"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <Button Content="{Binding ActionText}" Style="{StaticResource SuccessButtonStyle}" HorizontalAlignment="Left"
+                                    Padding="12,5" Click="Finding_Click" IsEnabled="{Binding CanAct}"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Folders and files -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource GlassCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{DynamicResource Space_Folders}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                    <Grid Grid.Row="1" Margin="0,8,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="UpButton" Content="↑" Style="{StaticResource SecondaryButtonStyle}" Padding="10,2"
+                                Click="Up_Click" ToolTip="{DynamicResource Space_Up}" IsEnabled="False"/>
+                        <TextBlock Grid.Column="1" x:Name="PathText" Margin="10,0" VerticalAlignment="Center" FontSize="12"
+                                   TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <Button Grid.Column="2" x:Name="OpenFolderButton" Content="{DynamicResource Space_OpenFolder}" Style="{StaticResource RowButton}"
+                                Click="OpenCurrent_Click" IsEnabled="False"/>
+                    </Grid>
+                    <ListBox Grid.Row="2" x:Name="FolderList" Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" MouseDoubleClick="FolderList_DoubleClick"
+                             HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3" ToolTip="{Binding Path}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="86"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" MaxWidth="320"/>
+                                            <TextBlock Text="🔒" FontSize="10" Margin="6,0,0,0" Visibility="{Binding LockVisibility}"
+                                                       ToolTip="{DynamicResource Space_ProtectedTip}"/>
+                                        </StackPanel>
+                                        <Grid Height="5" Margin="0,4,0,0">
+                                            <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="2.5"/>
+                                            <Border Background="{Binding BarBrush}" CornerRadius="2.5" HorizontalAlignment="Left" Width="{Binding BarWidth}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding SizeText}" FontFamily="{StaticResource MonoFont}" FontSize="12.5"
+                                                   HorizontalAlignment="Right" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding PercentText}" FontSize="10.5" HorizontalAlignment="Right"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource GlassCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <TextBlock x:Name="FilesTitle" Text="{DynamicResource Space_LargestFiles}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                        <Button x:Name="ShowLargestButton" Content="{DynamicResource Space_ShowLargest}" Style="{StaticResource RowButton}"
+                                HorizontalAlignment="Right" Click="ShowLargest_Click" Visibility="Collapsed"/>
+                    </Grid>
+                    <ListBox Grid.Row="1" x:Name="FileList" Background="Transparent" BorderThickness="0" Margin="0,8,0,0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2" ToolTip="{Binding Path}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" IsEnabled="{Binding CanDelete}" VerticalAlignment="Center"
+                                              Margin="0,0,8,0" Checked="FileCheck_Changed" Unchecked="FileCheck_Changed"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Detail}" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding SizeText}" FontFamily="{StaticResource MonoFont}" FontSize="12.5"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                        <TextBlock x:Name="SelectionText" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="OpenFileFolderButton" Content="{DynamicResource Space_ShowInFolder}" Style="{StaticResource RowButton}"
+                                    Click="ShowInFolder_Click" Margin="0,0,8,0"/>
+                            <Button x:Name="DeleteButton" Content="{DynamicResource Space_DeleteSelected}" Style="{StaticResource DangerButtonStyle}"
+                                    Padding="12,5" Click="DeleteSelected_Click" IsEnabled="False"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

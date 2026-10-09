@@ -14,6 +14,11 @@ namespace NetX.App.Views;
 public partial class CleanerView : Page
 {
     private const string SelectionSettingKey = "Cleaner.Selection";
+    private const string KnownKeysSettingKey = "Cleaner.KnownKeys";
+
+    // Categories that existed before the selection started remembering which
+    // keys it had seen; anything newer starts at its own default.
+    private static readonly string[] OriginalKeys = ["Temp", "Browser", "Apps", "WER", "Thumbs", "Logs", "DO", "WU", "Shaders", "Recycle", "WinOld"];
 
     private readonly ObservableCollection<CleanCategoryItem> _items = new();
     private CancellationTokenSource? _cts;
@@ -25,9 +30,11 @@ public partial class CleanerView : Page
         InitializeComponent();
 
         var saved = LoadSelection();
+        var known = LoadKnownKeys();
         foreach (var category in SystemCleaner.Categories)
         {
-            var item = new CleanCategoryItem(category, saved?.Contains(category.Key) ?? category.DefaultOn);
+            bool selected = saved != null && known.Contains(category.Key) ? saved.Contains(category.Key) : category.DefaultOn;
+            var item = new CleanCategoryItem(category, selected);
             item.PropertyChanged += Item_PropertyChanged;
             _items.Add(item);
         }
@@ -36,6 +43,13 @@ public partial class CleanerView : Page
         // Leaving the page stops a running scan/clean instead of letting it
         // keep deleting in the background.
         Unloaded += (s, e) => _cts?.Cancel();
+    }
+
+    /// <summary>Selects every category, including the ones that cost something (the confirmation lists each warning).</summary>
+    private void SelectMax_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy) return;
+        foreach (var item in _items) item.IsSelected = true;
     }
 
     private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -147,7 +161,7 @@ public partial class CleanerView : Page
                 item.ApplyClean(result);
 
                 totalFreed += result.BytesFreed;
-                totalDeleted += result.FilesDeleted;
+                totalDeleted += Math.Max(0, result.FilesDeleted);
                 totalSkipped += result.FilesSkipped;
                 CleanProgress.Value = (i + 1) * 100.0 / selected.Count;
             }
@@ -224,7 +238,7 @@ public partial class CleanerView : Page
         }
 
         TotalSizeText.Text = FormatSize(scanned.Sum(i => i.Scan!.Bytes));
-        FilesCountText.Text = Loc.F("Cleaner_Files", "{0:N0} files", scanned.Sum(i => i.Scan!.FileCount));
+        FilesCountText.Text = Loc.F("Cleaner_Files", "{0:N0} files", scanned.Sum(i => Math.Max(0, i.Scan!.FileCount)));
 
         int inUse = scanned.Sum(i => i.Scan!.InUseCount);
         int recent = scanned.Sum(i => i.Scan!.RecentCount);
@@ -267,8 +281,20 @@ public partial class CleanerView : Page
         {
             DatabaseService.Instance.SetSetting(SelectionSettingKey,
                 string.Join(",", _items.Where(i => i.IsSelected).Select(i => i.Key)));
+            DatabaseService.Instance.SetSetting(KnownKeysSettingKey, string.Join(",", _items.Select(i => i.Key)));
         }
         catch { }
+    }
+
+    private static HashSet<string> LoadKnownKeys()
+    {
+        try
+        {
+            var value = DatabaseService.Instance.GetSetting(KnownKeysSettingKey);
+            if (value != null) return value.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+        }
+        catch { }
+        return OriginalKeys.ToHashSet();
     }
 
     internal static string FormatSize(long bytes)
@@ -379,7 +405,11 @@ public class CleanCategoryItem : INotifyPropertyChanged
 
         SizeText = CleanerView.FormatSize(scan.Bytes);
 
-        var parts = new List<string> { Loc.F("Cleaner_Files", "{0:N0} files", scan.FileCount) };
+        // Windows' Disk Cleanup handlers report space, not a file count.
+        var parts = new List<string>
+        {
+            scan.FileCount < 0 ? Loc.T("Cleaner_MeasuredByWindows", "measured by Windows Disk Cleanup") : Loc.F("Cleaner_Files", "{0:N0} files", scan.FileCount)
+        };
         if (scan.InUseCount > 0)
             parts.Add(Loc.F("Cleaner_InUseSize", "{0:N0} in use ({1}) skipped", scan.InUseCount, CleanerView.FormatSize(scan.InUseBytes)));
         if (scan.RecentCount > 0)
@@ -393,7 +423,9 @@ public class CleanCategoryItem : INotifyPropertyChanged
     public void ApplyClean(CleanExecResult result)
     {
         SizeText = Loc.F("Cleaner_Freed", "freed {0}", CleanerView.FormatSize(result.BytesFreed));
-        var detail = Loc.F("Cleaner_Deleted", "{0:N0} deleted", result.FilesDeleted);
+        var detail = result.FilesDeleted < 0
+            ? Loc.T("Cleaner_CleanedByWindows", "cleaned by Windows Disk Cleanup")
+            : Loc.F("Cleaner_Deleted", "{0:N0} deleted", result.FilesDeleted);
         if (result.FilesSkipped > 0)
             detail += " · " + Loc.F("Cleaner_Skipped", "{0:N0} skipped", result.FilesSkipped);
         Detail = detail;

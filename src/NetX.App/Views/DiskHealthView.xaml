@@ -1,0 +1,272 @@
+<Page x:Class="NetX.App.Views.DiskHealthView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:controls="clr-namespace:NetX.App.Controls"
+      Title="Bad blocks"
+      Background="Transparent">
+
+    <Page.Resources>
+        <Style x:Key="HudLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="HudValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style x:Key="LegendText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="5,0,14,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CountName" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="8,3,0,3"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CountValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="320"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Health_Title}" Style="{StaticResource HeaderTextStyle}" FontSize="28"/>
+                <TextBlock Text="{DynamicResource Health_Subtitle}" Style="{StaticResource BodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="QuickButton" Content="{DynamicResource Health_Quick}" Style="{StaticResource SecondaryButtonStyle}" Click="Quick_Click" Margin="0,0,10,0"/>
+                <Button x:Name="FullButton" Content="{DynamicResource Health_Full}" Style="{StaticResource PrimaryButtonStyle}" Click="Full_Click" Margin="0,0,10,0"/>
+                <Button x:Name="PauseButton" Content="{DynamicResource Health_Pause}" Style="{StaticResource SecondaryButtonStyle}" Click="Pause_Click"
+                        Margin="0,0,10,0" Visibility="Collapsed"/>
+                <Button x:Name="StopButton" Content="{DynamicResource Health_Stop}" Style="{StaticResource DangerButtonStyle}" Click="Stop_Click" Visibility="Collapsed"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Disks -->
+        <ItemsControl Grid.Row="1" x:Name="DiskList" Margin="0,0,0,6">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton GroupName="HealthDisk" Style="{StaticResource DriveCardStyle}"
+                                 IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}" Checked="DiskCard_Checked">
+                        <StackPanel>
+                            <TextBlock Text="{Binding LettersText}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                            <TextBlock Text="{Binding Model}" FontWeight="SemiBold" FontSize="12.5" TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource TextPrimaryBrush}" ToolTip="{Binding Model}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                <Border Background="{Binding BadgeBrush}" CornerRadius="4" Padding="6,1">
+                                    <TextBlock Text="{Binding MediaText}" FontSize="10" FontWeight="SemiBold" Foreground="Black"/>
+                                </Border>
+                                <TextBlock Text="{Binding SizeText}" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding HealthText}" FontSize="11" Margin="0,5,0,0" Foreground="{Binding HealthBrush}"/>
+                        </StackPanel>
+                    </RadioButton>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- 3D + side panel -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="420"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="330"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" CornerRadius="14" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
+                <Border.Background>
+                    <RadialGradientBrush GradientOrigin="0.5,0.35" Center="0.5,0.4" RadiusX="0.8" RadiusY="0.9">
+                        <GradientStop Color="#1a1f3a" Offset="0"/>
+                        <GradientStop Color="#0a0f22" Offset="0.6"/>
+                        <GradientStop Color="#050814" Offset="1"/>
+                    </RadialGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <controls:DiskScene3D x:Name="Scene"/>
+
+                    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18,14,0,0" IsHitTestVisible="False">
+                        <TextBlock x:Name="HudDisk" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock x:Name="HudMedia" FontSize="11" Foreground="{StaticResource AccentLightBrush}" Margin="0,2,0,0"/>
+                        <TextBlock x:Name="HudPercent" FontFamily="{StaticResource MonoFont}" FontSize="44" FontWeight="Bold"
+                                   Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,6,0,0">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="#00c8ff" BlurRadius="22" ShadowDepth="0" Opacity="0.75"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        <TextBlock x:Name="HudPhase" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" MaxWidth="380" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,14,16,0" Padding="12,8" CornerRadius="10"
+                            Background="#990a1428" BorderBrush="#331e90ff" BorderThickness="1" IsHitTestVisible="False">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{DynamicResource Health_HudSpeed}" Style="{StaticResource HudLabel}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" x:Name="HudSpeed" Text="—" Style="{StaticResource HudValue}"/>
+                            <TextBlock Grid.Row="1" Text="{DynamicResource Health_HudLatency}" Style="{StaticResource HudLabel}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" x:Name="HudLatency" Text="—" Style="{StaticResource HudValue}"/>
+                            <TextBlock Grid.Row="2" Text="{DynamicResource Health_HudElapsed}" Style="{StaticResource HudLabel}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" x:Name="HudElapsed" Text="—" Style="{StaticResource HudValue}"/>
+                            <TextBlock Grid.Row="3" Text="{DynamicResource Health_HudRemaining}" Style="{StaticResource HudLabel}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2" x:Name="HudRemaining" Text="—" Style="{StaticResource HudValue}"/>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="AlertBanner" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="24,0,24,16" Padding="12,6"
+                            CornerRadius="8" Background="#E6400A12" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
+                            Visibility="Collapsed" IsHitTestVisible="False">
+                        <TextBlock x:Name="AlertText" Foreground="#FFFF8A95" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" MaxWidth="460"
+                                   TextAlignment="Center"/>
+                    </Border>
+
+                    <TextBlock x:Name="CenterMessage" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="24,0,24,52"
+                               TextAlignment="Center" TextWrapping="Wrap" FontSize="13" MaxWidth="520" IsHitTestVisible="False"
+                               Foreground="{StaticResource TextPrimaryBrush}" Visibility="Collapsed">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="0" Opacity="0.9"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <ProgressBar x:Name="RunProgress" VerticalAlignment="Bottom" Height="4" BorderThickness="0" Maximum="100"
+                                 Background="#22000000" Foreground="{StaticResource AccentPrimaryBrush}" Visibility="Collapsed"/>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Health_StatusTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                            <TextBlock x:Name="StatusText" Style="{StaticResource BodyTextStyle}" TextWrapping="Wrap" FontSize="12.5" Margin="0,6,0,0"/>
+                            <TextBlock x:Name="AdviceText" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"
+                                       Foreground="{StaticResource WarningBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Health_ResultsTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Rectangle Grid.Row="0" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#1E9E72"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Health_Good}" Style="{StaticResource CountName}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" x:Name="CountGood" Text="—" Style="{StaticResource CountValue}"/>
+                                <Rectangle Grid.Row="1" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#E5C440"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Health_Slow}" Style="{StaticResource CountName}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" x:Name="CountSlow" Text="—" Style="{StaticResource CountValue}"/>
+                                <Rectangle Grid.Row="2" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#FF8A3D"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Health_VerySlow}" Style="{StaticResource CountName}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" x:Name="CountVerySlow" Text="—" Style="{StaticResource CountValue}"/>
+                                <Rectangle Grid.Row="3" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#FF3B4E"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Health_Error}" Style="{StaticResource CountName}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="2" x:Name="CountError" Text="—" Style="{StaticResource CountValue}"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" x:Name="MedianText" FontSize="11" Margin="8,6,0,0"
+                                           Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Health_DriveSaysTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                            <TextBlock x:Name="ReliabilityText" Style="{StaticResource BodyTextStyle}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource GlassCardStyle}" x:Name="BadCard" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Health_BadTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"
+                                       Foreground="{StaticResource DangerBrush}"/>
+                            <ItemsControl x:Name="BadList" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,2">
+                                            <TextBlock Text="{Binding Where}" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                       Foreground="{StaticResource DangerBrush}"/>
+                                            <TextBlock Text="{Binding File}" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip="{Binding File}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="BadMore" FontSize="11" Margin="0,4,0,0" Foreground="{StaticResource TextTertiaryBrush}" Visibility="Collapsed"/>
+                            <Button x:Name="MarkButton" Content="{DynamicResource Health_Mark}" Style="{StaticResource DangerButtonStyle}"
+                                    HorizontalAlignment="Left" Margin="0,10,0,0" Click="Mark_Click"/>
+                            <TextBlock Text="{DynamicResource Health_MarkNote}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
+                                       Foreground="{StaticResource TextTertiaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Flat map + legend -->
+        <Border Grid.Row="3" Margin="0,12,0,0" Padding="12,10" CornerRadius="10" Background="{StaticResource BgSecondaryBrush}">
+            <StackPanel>
+                <controls:ClusterMapView x:Name="FlatMap" Height="92"/>
+                <WrapPanel Margin="0,8,0,0">
+                    <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#101A2C" Stroke="#2d4a6f"/>
+                    <TextBlock Text="{DynamicResource Health_Untested}" Style="{StaticResource LegendText}"/>
+                    <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#1E9E72"/>
+                    <TextBlock Text="{DynamicResource Health_Good}" Style="{StaticResource LegendText}"/>
+                    <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#E5C440"/>
+                    <TextBlock Text="{DynamicResource Health_Slow}" Style="{StaticResource LegendText}"/>
+                    <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#FF8A3D"/>
+                    <TextBlock Text="{DynamicResource Health_VerySlow}" Style="{StaticResource LegendText}"/>
+                    <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#FF3B4E"/>
+                    <TextBlock Text="{DynamicResource Health_Error}" Style="{StaticResource LegendText}"/>
+                    <TextBlock x:Name="MapCaption" Style="{StaticResource LegendText}" Foreground="{StaticResource TextTertiaryBrush}"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

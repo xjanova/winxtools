@@ -259,7 +259,8 @@ internal static unsafe class MemoryNative
         long CpuTime,
         long WorkingSetBytes,
         long PrivateWorkingSetBytes,
-        long PrivateBytes);
+        long PrivateBytes,
+        int ParentPid = 0);
 
     private const int InitialSnapshotBytes = 512 * 1024;
     private const int MaxSnapshotBytes = 64 * 1024 * 1024;
@@ -329,7 +330,8 @@ internal static unsafe class MemoryNative
                 spi->UserTime + spi->KernelTime,
                 (long)spi->WorkingSetSize,
                 spi->WorkingSetPrivateSize,
-                (long)spi->PagefileUsage));
+                (long)spi->PagefileUsage,
+                (int)spi->InheritedFromUniqueProcessId));
 
             if (spi->NextEntryOffset == 0)
                 break;

@@ -24,11 +24,19 @@ public partial class UninstallerView : Page
         Loaded += Page_Loaded;
     }
 
+    /// <summary>Set by another page (Smart CPU's "Uninstall…") to open this list already filtered.</summary>
+    public static string? PendingSearch { get; set; }
+
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         // Loaded fires again whenever the page is re-attached; one initial read is enough
         if (_loadedOnce) return;
         _loadedOnce = true;
+        if (PendingSearch is { Length: > 0 } search)
+        {
+            PendingSearch = null;
+            SearchBox.Text = search;
+        }
 
         SetBusy(true);
         try

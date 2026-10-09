@@ -11,9 +11,12 @@ namespace NetX.Core.Optimization;
 /// share the run in progress), keeps recent results for the page, runs the
 /// automatic mode and persists the settings in the admin-only store.
 ///
-/// Automatic mode (like ISLC): every <see cref="AutoCheckInterval"/> it reads the
-/// memory lists — a cheap call — and cleans only when a condition has held for
-/// two samples in a row, and never more often than the cooldown allows.
+/// Automatic mode: every <see cref="AutoCheckInterval"/> it reads the memory
+/// lists — a cheap call — and acts only when a condition has held for two samples
+/// in a row, never more often than the cooldown allows, and only with what
+/// measurably helps (see <see cref="ChooseForHighLoad"/>). It never trims programs.
+/// When the programs themselves hold the memory, or Windows gets close to its
+/// commit limit, it says which ones instead (<see cref="MemoryAdvice"/>).
 /// </summary>
 public class RamOptimizer : IDisposable
 {
@@ -37,6 +40,26 @@ public class RamOptimizer : IDisposable
     public const int MaxListThresholdMB = 65536;
     public const int MaxTrimExclusions = 50;
 
+    /// <summary>Committed memory at or above this share of the limit is a warning: Windows is close to refusing memory.</summary>
+    public const int CommitWarnPercent = 90;
+
+    /// <summary>Pending writes (modified list) worth writing out — below this a flush changes nothing you'd notice.</summary>
+    public const long WorthFlushingMB = 256;
+
+    // Measured on a 32 GB PC: trimmed apps pulled 7 of 12 GB back within 30 s and the
+    // rest went through the page file. A trim (only ever by hand) therefore skips
+    // every program that did anything in the last two minutes.
+    private static readonly TimeSpan TrimMinIdle = TimeSpan.FromMinutes(2);
+
+    // Combining pages costs a few seconds of CPU: repeated hourly while it pays off, else every 6 h.
+    private const long CombinePaidOffMB = 256;
+    private static readonly TimeSpan CombineAgainWhenPaid = TimeSpan.FromHours(1);
+    private static readonly TimeSpan CombineAgainWhenNot = TimeSpan.FromHours(6);
+
+    // Commit warnings: at most hourly, or after 15 min when it got 3 points worse.
+    private static readonly TimeSpan CommitAdviceRepeat = TimeSpan.FromHours(1);
+    private static readonly TimeSpan CommitAdviceMinGap = TimeSpan.FromMinutes(15);
+
     private readonly object _settingsLock = new();
     private readonly object _runLock = new();
     private readonly object _timerLock = new();
@@ -50,6 +73,11 @@ public class RamOptimizer : IDisposable
     private int _loadStreak;
     private int _lowFreeStreak;
     private long _lastCleanupUtcTicks; // written by workers, read by the automatic timer
+    private long _lastCombineUtcTicks;  // 0: not tried in this session
+    private long _lastCombineMB;
+    private int _commitStreak;
+    private long _lastCommitAdviceUtcTicks;
+    private int _lastCommitAdvicePercent;
     private bool _savePending;
     private volatile bool _disposed;
 
@@ -69,6 +97,9 @@ public class RamOptimizer : IDisposable
     {
         _saveTimer = new Timer(_ => FlushSettings(), null, Timeout.Infinite, Timeout.Infinite);
         LoadSettings();
+
+        // Which programs are really idle (one snapshot every 10 s, about a millisecond).
+        ProcessActivity.Start();
 
         // Slider changes are saved a moment later; don't lose the last one on exit.
         AppDomain.CurrentDomain.ProcessExit += (_, _) => FlushSettings();
@@ -135,7 +166,7 @@ public class RamOptimizer : IDisposable
         set => SetInt(ref _minStandbyMB, Math.Clamp(value, MinListThresholdMB, MaxListThresholdMB));
     }
 
-    /// <summary>What "Clean now" (and the memory-load trigger) does. Defaults to <see cref="MemoryCleanItems.Safe"/>.</summary>
+    /// <summary>What "Clean now" does (the automatic mode chooses for itself). Defaults to <see cref="MemoryCleanItems.Safe"/>.</summary>
     public MemoryCleanItems CleanItems
     {
         get => (MemoryCleanItems)_cleanItems;
@@ -200,6 +231,43 @@ public class RamOptimizer : IDisposable
 
     /// <summary>Processes using the most RAM (private working set).</summary>
     public List<ProcessMemoryInfo> GetTopMemoryConsumers(int count = 10) => MemoryCleaner.GetTopProcesses(count);
+
+    /// <summary>
+    /// What the memory picture means and what would help: nothing to do, pending
+    /// writes that can be released safely, programs holding the memory, or the
+    /// commit limit close (with the programs to talk about). Takes a process
+    /// snapshot only when it names programs; call it off the UI thread.
+    /// </summary>
+    public MemoryAssessment Assess(MemoryInfo? info = null, int topCount = 3)
+    {
+        info ??= GetMemoryInfo();
+        int commitPercent = info.CommitLimitMB > 0
+            ? (int)Math.Min(100, Math.Round(info.CommitUsedMB * 100.0 / info.CommitLimitMB))
+            : 0;
+        long reclaimable = info.HasListDetail ? Math.Max(0, info.ModifiedMemoryMB) : 0;
+
+        var pressure =
+            commitPercent >= CommitWarnPercent ? MemoryPressure.CommitHigh :
+            info.TotalMemoryMB <= 0 || info.UsagePercent < _thresholdPercent ? MemoryPressure.Healthy :
+            reclaimable >= WorthFlushingMB ? MemoryPressure.Reclaimable :
+            MemoryPressure.AppsHoldMemory;
+
+        IReadOnlyList<AppMemoryInfo> apps = pressure switch
+        {
+            MemoryPressure.CommitHigh => AppMemory.GetTopCommitters(topCount),
+            MemoryPressure.AppsHoldMemory => AppMemory.GetTopApps(topCount),
+            _ => Array.Empty<AppMemoryInfo>()
+        };
+
+        return new MemoryAssessment
+        {
+            Pressure = pressure,
+            Info = info,
+            CommitPercent = commitPercent,
+            ReclaimableMB = reclaimable,
+            TopApps = apps
+        };
+    }
 
     #endregion
 
@@ -282,7 +350,7 @@ public class RamOptimizer : IDisposable
         OptimizeResult result;
         try
         {
-            result = MemoryCleaner.Run(items, trigger, exclusions, token);
+            result = MemoryCleaner.Run(items, trigger, exclusions, token, TrimMinIdle);
         }
         catch (Exception ex)
         {
@@ -301,6 +369,14 @@ public class RamOptimizer : IDisposable
         // Any cleanup — manual ones too — starts the automatic cooldown, so the
         // automatic mode doesn't clean again seconds after the user did.
         Volatile.Write(ref _lastCleanupUtcTicks, DateTime.UtcNow.Ticks);
+
+        // Remember whether combining paid off, so the automatic mode only repeats what works.
+        if (result.Operations.FirstOrDefault(o => o.Operation == MemoryOperation.CombinePages) is { } combine &&
+            combine.Status != MemoryOperationStatus.Skipped)
+        {
+            Volatile.Write(ref _lastCombineMB, combine.Succeeded ? combine.AmountMB : 0);
+            Volatile.Write(ref _lastCombineUtcTicks, DateTime.UtcNow.Ticks);
+        }
 
         return result;
     }
@@ -364,11 +440,14 @@ public class RamOptimizer : IDisposable
 
         try
         {
-            if (IsRunning || !MemoryCleaner.IsElevated)
-                return;
-
             var info = MemoryCleaner.ReadMemoryInfo(includeCompressedStore: false);
             if (info.TotalMemoryMB <= 0)
+                return;
+
+            // A warning, not a cleanup: works without administrator rights too.
+            CheckCommitPressure(info);
+
+            if (IsRunning || !MemoryCleaner.IsElevated)
                 return;
 
             bool loadHigh = _triggerOnLoad && info.UsagePercent >= _thresholdPercent;
@@ -384,7 +463,14 @@ public class RamOptimizer : IDisposable
             if (_loadStreak >= SamplesToTrigger)
             {
                 trigger = OptimizeTrigger.AutoMemoryLoad;
-                items = CleanItems;
+                items = ChooseForHighLoad(info);
+                if (items == MemoryCleanItems.None)
+                {
+                    // Programs hold the memory: cleaning would only slow them down.
+                    // The RAM page shows which ones; look again after two fresh samples.
+                    _loadStreak = 0;
+                    return;
+                }
             }
             else if (_lowFreeStreak >= SamplesToTrigger)
             {
@@ -414,6 +500,57 @@ public class RamOptimizer : IDisposable
         {
             Volatile.Write(ref _autoTickBusy, 0);
         }
+    }
+
+    /// <summary>
+    /// Measure first, then act — and only with what helps without hurting:
+    /// pending writes go to disk when there are enough of them, and identical
+    /// pages are combined when that hasn't been tried yet or paid off last time,
+    /// never while a full-screen game or video runs. Programs are never trimmed
+    /// and the file cache is never emptied automatically.
+    /// </summary>
+    private MemoryCleanItems ChooseForHighLoad(MemoryInfo info)
+    {
+        var items = MemoryCleanItems.None;
+        if (info.HasListDetail && info.ModifiedMemoryMB >= WorthFlushingMB)
+            items |= MemoryCleanItems.FlushModifiedList;
+        if (CombineDue() && !AppMemory.ForegroundIsFullscreen())
+            items |= MemoryCleanItems.CombinePages;
+        return items;
+    }
+
+    private bool CombineDue()
+    {
+        long last = Volatile.Read(ref _lastCombineUtcTicks);
+        if (last == 0) return true;
+        var wait = Volatile.Read(ref _lastCombineMB) >= CombinePaidOffMB ? CombineAgainWhenPaid : CombineAgainWhenNot;
+        return DateTime.UtcNow.Ticks - last >= wait.Ticks;
+    }
+
+    /// <summary>
+    /// Committed memory near the limit is what makes Windows refuse memory and
+    /// close programs; no cleanup lowers it. Two samples in a row raise
+    /// <see cref="MemoryAdvice"/> naming the programs that hold the most.
+    /// </summary>
+    private void CheckCommitPressure(MemoryInfo info)
+    {
+        int percent = info.CommitLimitMB > 0 ? (int)(info.CommitUsedMB * 100 / info.CommitLimitMB) : 0;
+        _commitStreak = percent >= CommitWarnPercent ? _commitStreak + 1 : 0;
+        if (_commitStreak < SamplesToTrigger)
+            return;
+
+        long now = DateTime.UtcNow.Ticks;
+        long since = now - Volatile.Read(ref _lastCommitAdviceUtcTicks);
+        bool due = since >= CommitAdviceRepeat.Ticks ||
+                   (since >= CommitAdviceMinGap.Ticks && percent >= _lastCommitAdvicePercent + 3);
+        if (!due)
+            return;
+
+        Volatile.Write(ref _lastCommitAdviceUtcTicks, now);
+        _lastCommitAdvicePercent = percent;
+        var advice = Assess(info);
+        try { MemoryAdvice?.Invoke(advice); }
+        catch (Exception ex) { Debug.WriteLine($"[RamOptimizer] Advice handler failed: {ex.Message}"); }
     }
 
     #endregion
@@ -536,6 +673,12 @@ public class RamOptimizer : IDisposable
     /// </summary>
     public event Action<OptimizeResult>? OnOptimizationComplete;
 
+    /// <summary>
+    /// Raised on a worker thread when the automatic mode has something to tell
+    /// rather than clean (today: committed memory close to the limit).
+    /// </summary>
+    public event Action<MemoryAssessment>? MemoryAdvice;
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -595,6 +738,32 @@ public class MemoryInfo
     public long InUseMemoryMB => HasListDetail
         ? Math.Max(0, TotalMemoryMB - FreeMemoryMB - StandbyMemoryMB - ModifiedMemoryMB)
         : UsedMemoryMB;
+}
+
+/// <summary>What the memory picture means for the user.</summary>
+public enum MemoryPressure
+{
+    /// <summary>Below the threshold: nothing needs doing.</summary>
+    Healthy,
+    /// <summary>High, and enough of it is pending writes that can be released without touching any program.</summary>
+    Reclaimable,
+    /// <summary>High, and running programs hold it: cleaning would only slow them down.</summary>
+    AppsHoldMemory,
+    /// <summary>Committed memory close to the limit: Windows may soon refuse memory or close programs.</summary>
+    CommitHigh
+}
+
+public sealed class MemoryAssessment
+{
+    public MemoryPressure Pressure { get; init; }
+    public MemoryInfo Info { get; init; } = new();
+    public int CommitPercent { get; init; }
+
+    /// <summary>Pending writes (modified list) a flush turns into available memory, in MB.</summary>
+    public long ReclaimableMB { get; init; }
+
+    /// <summary>Programs to name: biggest committers (CommitHigh) or biggest RAM users (AppsHoldMemory).</summary>
+    public IReadOnlyList<AppMemoryInfo> TopApps { get; init; } = Array.Empty<AppMemoryInfo>();
 }
 
 public class OptimizeResult

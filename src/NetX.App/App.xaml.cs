@@ -61,6 +61,12 @@ public partial class App : Application
         _ = ProcessKiller.Instance;
         _ = RamOptimizer.Instance;
 
+        // Smart defrag's optional "while the PC is idle" mode (off unless the user turned it on).
+        NetX.Core.System.Storage.SmartDefragService.Instance.Start();
+
+        // Smart CPU: keeps start-ups the user switched off switched off; optional automatic Efficiency mode.
+        NetX.Core.System.Background.SmartCpuService.Instance.Start();
+
         // Check and set language
         InitializeLanguage();
 

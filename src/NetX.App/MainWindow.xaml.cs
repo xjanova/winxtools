@@ -65,6 +65,12 @@ public partial class MainWindow : Window
         // Tell the user whenever Smart Kill / Auto-Kill closes an app on its own.
         ProcessKiller.Instance.ProcessAutoKilled += (_, args) => Dispatcher.BeginInvoke(() => ShowAutoKillNotice(args));
 
+        // Smart RAM: when Windows gets close to its commit limit, say which programs hold it.
+        RamOptimizer.Instance.MemoryAdvice += OnMemoryAdvice;
+
+        // Smart CPU: a program switched its start-up back on and WinXTools switched it off again.
+        NetX.Core.System.Background.SmartCpuService.Instance.Notice += OnSmartCpuNotice;
+
         _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
         _toastTimer.Tick += (s, e) => HideToast();
 
@@ -130,6 +136,9 @@ public partial class MainWindow : Window
                     (Loc.T("Pro_UpgradeTitle", "Upgrade to Pro"), Loc.T("Pro_UpgradeDesc", "Unlock all premium features"))
             };
             UpdateProOverlay();
+
+            // The bad-block scan is Pro: one still running when the trial or license ends stops (it only reads).
+            NetX.Core.System.Storage.SurfaceHealthScan.Current?.Stop();
         }
 
         if (ProOverlay.Visibility != Visibility.Visible) MainFrame.IsEnabled = true;
@@ -143,6 +152,45 @@ public partial class MainWindow : Window
         // The overlay only blocks the mouse; disabling the page also stops
         // Tab/keyboard from reaching the locked controls underneath.
         MainFrame.IsEnabled = !locked;
+
+        // Smart CPU's changes outlive Pro (start-ups stay off, browser policies stay set),
+        // so putting them back never needs Pro.
+        int changes = locked && _currentPageTag == "SmartCpu" ? NetX.Core.System.Background.SmartCpuService.Instance.Changes.Count : 0;
+        ProOverlayUndo.Visibility = changes > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (changes > 0)
+            ProOverlayUndoText.Text = Loc.F("Pro_SmartCpuChangesStay", "{0} changes Smart CPU made while you had Pro are still in place.", changes);
+    }
+
+    private async void ProOverlayUndo_Click(object sender, RoutedEventArgs e)
+    {
+        var smartCpu = NetX.Core.System.Background.SmartCpuService.Instance;
+        int count = smartCpu.Changes.Count;
+        if (count == 0) return;
+        if (MessageBox.Show(Loc.F("Pro_ConfirmUndoSmartCpu",
+                    "Put back the {0} things Smart CPU changed?\n\nStart-ups, services and browser settings go back to exactly how they were before. Programs that started with Windows will start with Windows again.",
+                    count),
+                Loc.T("Cpu_Title", "Smart CPU"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+            return;
+
+        ProOverlayUndoButton.IsEnabled = false;
+        try
+        {
+            var errors = await Task.Run(smartCpu.UndoAll);
+            ShowToast(errors.Count == 0
+                ? Loc.F("Pro_SmartCpuUndone", "Smart CPU's changes were put back ({0}).", count)
+                : Loc.F("Pro_SmartCpuUndoPartly", "{0} put back, {1} couldn't be: {2}", count - errors.Count, errors.Count, errors[0]));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MainWindow] Smart CPU undo: {ex}");
+            int left = smartCpu.Changes.Count;
+            ShowToast(Loc.F("Pro_SmartCpuUndoPartly", "{0} put back, {1} couldn't be: {2}", count - left, left, ErrorText.From(ex)));
+        }
+        finally
+        {
+            ProOverlayUndoButton.IsEnabled = true;
+            UpdateProOverlay();
+        }
     }
 
     #region Notices
@@ -192,6 +240,25 @@ public partial class MainWindow : Window
         ShowToast(Loc.F("Ram_AutoClosed", "Auto-closed: {0}", who) + "\n" + reason);
     }
 
+    // Raised on the automatic-mode timer thread.
+    private void OnMemoryAdvice(MemoryAssessment advice) => Dispatcher.BeginInvoke(() => ShowMemoryAdvice(advice));
+
+    // Raised on Smart CPU's watchdog thread.
+    private void OnSmartCpuNotice(string program) => Dispatcher.BeginInvoke(() =>
+        ShowToast(Loc.F("Cpu_TurnedOffAgainToast", "{0} switched its start-up back on — WinXTools turned it off again, as you asked.", program),
+            NavigateToSmartCpu));
+
+    private void ShowMemoryAdvice(MemoryAssessment advice)
+    {
+        if (advice.Pressure != MemoryPressure.CommitHigh) return;
+        var who = string.Join(", ", advice.TopApps.Take(3)
+            .Select(a => $"{a.DisplayName} {RamOptimizerView.FormatMB(a.PrivateMemoryMB)}"));
+        ShowToast(Loc.F("Ram_CommitToast",
+                "Windows is close to running out of memory ({0}% committed). Cleaning can't fix that — closing a program can. Holding the most: {1}. Click for details.",
+                advice.CommitPercent, who),
+            NavigateToRamOptimizer);
+    }
+
     #endregion
 
     private void MainWindow_Closed(object? sender, EventArgs e)
@@ -201,9 +268,17 @@ public partial class MainWindow : Window
         _toastTimer.Stop();
         TrialService.Instance.OnTrialStatusChanged -= OnTrialStatusChanged;
         XmanLicenseService.Instance.StatusChanged -= OnLicenseStatusChanged;
+        RamOptimizer.Instance.MemoryAdvice -= OnMemoryAdvice;
+        NetX.Core.System.Background.SmartCpuService.Instance.Notice -= OnSmartCpuNotice;
+        NetX.Core.System.Background.SmartCpuService.Instance.Shutdown();
 
         // Put the user's own proxy settings back if a free proxy is still applied.
         ProxyService.DisconnectOnExit();
+
+        // A defragmentation started here stops with the app (Windows finishes the file it is moving).
+        NetX.Core.System.Storage.DefragSession.StopRunning(TimeSpan.FromSeconds(10));
+        NetX.Core.System.Storage.SmartDefragService.Instance.Shutdown();
+        NetX.Core.System.Storage.SurfaceHealthScan.StopRunning(TimeSpan.FromSeconds(5));
 
         // Release the packet driver; packets still paced are sent first. App
         // blocks (firewall rules) intentionally stay until the user unblocks.
@@ -407,8 +482,13 @@ public partial class MainWindow : Window
             "NetworkTools" => new NetworkToolsView(),
             "ProxyVpn" => new ProxyVpnView(),
             "RamOptimizer" => new RamOptimizerView(),
+            "SmartCpu" => new SmartCpuView(),
             "Uninstaller" => new UninstallerView(),
             "Cleaner" => new CleanerView(),
+            "DiskSpace" => new DiskSpaceView(),
+            "Defrag" => new DefragView(),
+            "DiskSpeed" => new DiskSpeedView(),
+            "DiskHealth" => new DiskHealthView(),
             "WinOptimizer" => new WindowsOptimizerView(),
             "Rules" => new RulesView(),
             "Tricks" => new WindowsTricksView(),
@@ -437,8 +517,13 @@ public partial class MainWindow : Window
             "NetworkTools" => "Nav_NetworkTools",
             "ProxyVpn" => "Nav_ProxyVpn",
             "RamOptimizer" => "Nav_RamOptimizer",
+            "SmartCpu" => "Nav_SmartCpu",
             "Uninstaller" => "Nav_Uninstaller",
             "Cleaner" => "Nav_Cleaner",
+            "DiskSpace" => "Nav_DiskSpace",
+            "Defrag" => "Nav_Defrag",
+            "DiskSpeed" => "Nav_DiskSpeed",
+            "DiskHealth" => "Nav_DiskHealth",
             "WinOptimizer" => "Nav_WinOptimizer",
             "Rules" => "Nav_Rules",
             "Tricks" => "Nav_Tricks",
@@ -459,6 +544,22 @@ public partial class MainWindow : Window
     {
         _updateForSettings = installUpdate;
         NavButton_Click(NavSettings, new RoutedEventArgs());
+    }
+
+    /// <summary>Opens a page the way its menu button does ("Defrag", "SmartCpu", "Cleaner"…).</summary>
+    public void NavigateTo(string tag)
+    {
+        if (FindName("Nav" + tag) is Button button) NavButton_Click(button, new RoutedEventArgs());
+    }
+
+    public void NavigateToUninstaller()
+    {
+        if (NavUninstaller != null) NavButton_Click(NavUninstaller, new RoutedEventArgs());
+    }
+
+    public void NavigateToSmartCpu()
+    {
+        if (NavSmartCpu != null) NavButton_Click(NavSmartCpu, new RoutedEventArgs());
     }
 
     public void NavigateToRamOptimizer()

@@ -1,0 +1,351 @@
+<Page x:Class="NetX.App.Views.DiskSpeedView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+      Title="Disk Speed Test"
+      Background="Transparent">
+
+    <Page.Resources>
+        <SolidColorBrush x:Key="ScoreLightBrush" Color="{StaticResource GoldLightColor}"/>
+        <SolidColorBrush x:Key="ScoreHighlightBrush" Color="{StaticResource GoldHighlightColor}"/>
+        <Style x:Key="ColHead" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style x:Key="TestName" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="BigValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Text" Value="—"/>
+        </Style>
+        <Style x:Key="SmallValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style x:Key="OptLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
+            <!-- Header -->
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Speed_Title}" Style="{StaticResource HeaderTextStyle}" FontSize="28"/>
+                    <TextBlock Text="{DynamicResource Speed_Subtitle}" Style="{StaticResource BodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="StartButton" Content="{DynamicResource Speed_Start}" Style="{StaticResource PrimaryButtonStyle}"
+                            Click="Start_Click" Margin="0,0,10,0"/>
+                    <Button x:Name="StopButton" Content="{DynamicResource Speed_Stop}" Style="{StaticResource DangerButtonStyle}"
+                            Click="Stop_Click" Visibility="Collapsed"/>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="{DynamicResource Speed_PickHint}" FontSize="12" Margin="0,0,0,6" Foreground="{StaticResource TextTertiaryBrush}"/>
+
+            <!-- Drives: click a card to see its details, tick to include it in the test (several run at once) -->
+            <ItemsControl x:Name="DriveList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton GroupName="SpeedDrive" Style="{StaticResource DriveCardStyle}"
+                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                     Checked="DriveCard_Checked">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding LetterText}" FontSize="26" FontWeight="Bold"
+                                               Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,0,10,0"/>
+                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}"
+                                              ToolTip="{DynamicResource Speed_IncludeTip}" Margin="2,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{Binding Model}" FontSize="11" TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource TextTertiaryBrush}" ToolTip="{Binding Model}"/>
+                                    <Border Background="{Binding BadgeBrush}" CornerRadius="4" Padding="6,1" Margin="0,5,0,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding MediaText}" FontSize="10" FontWeight="SemiBold" Foreground="Black"/>
+                                    </Border>
+                                    <TextBlock Text="{Binding ScoreText}" FontSize="12.5" FontWeight="Bold" Margin="0,5,0,0"
+                                               Foreground="{StaticResource ScoreLightBrush}" Visibility="{Binding ScoreVisibility}"/>
+                                    <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Height="4" Margin="0,6,0,2"
+                                                 Visibility="{Binding ProgressVisibility}" Background="{StaticResource BgTertiaryBrush}"
+                                                 Foreground="{StaticResource AccentPrimaryBrush}" BorderThickness="0"/>
+                                    <TextBlock Text="{Binding LiveText}" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource TextSecondaryBrush}" Visibility="{Binding ProgressVisibility}"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Options -->
+            <Border Style="{StaticResource GlassCardStyle}" Padding="14,10" Margin="0,4,0,14">
+                <WrapPanel>
+                    <TextBlock Text="{DynamicResource Speed_OptSize}" Style="{StaticResource OptLabel}"/>
+                    <ComboBox x:Name="SizeBox" Width="96" Margin="0,0,18,0" Style="{StaticResource ModernComboBoxStyle}" SelectedIndex="1">
+                        <ComboBoxItem Content="256 MB" Tag="256"/>
+                        <ComboBoxItem Content="1 GB" Tag="1024"/>
+                        <ComboBoxItem Content="4 GB" Tag="4096"/>
+                    </ComboBox>
+                    <TextBlock Text="{DynamicResource Speed_OptDuration}" Style="{StaticResource OptLabel}"/>
+                    <ComboBox x:Name="DurationBox" Width="80" Margin="0,0,18,0" Style="{StaticResource ModernComboBoxStyle}" SelectedIndex="1">
+                        <ComboBoxItem Content="3 s" Tag="3"/>
+                        <ComboBoxItem Content="5 s" Tag="5"/>
+                        <ComboBoxItem Content="10 s" Tag="10"/>
+                    </ComboBox>
+                    <CheckBox x:Name="WritesBox" IsChecked="True" VerticalAlignment="Center" Margin="0,0,18,0" Foreground="{StaticResource TextPrimaryBrush}"
+                              Content="{DynamicResource Speed_OptWrites}"/>
+                    <CheckBox x:Name="SurfaceBox" IsChecked="True" VerticalAlignment="Center" Margin="0,0,18,0" Foreground="{StaticResource TextPrimaryBrush}"
+                              Content="{DynamicResource Speed_OptSurface}"/>
+                    <TextBlock Text="{DynamicResource Speed_OptLabel}" Style="{StaticResource OptLabel}"/>
+                    <ComboBox x:Name="LabelBox" Width="190" Margin="0,0,18,0" Style="{StaticResource ModernComboBoxStyle}" SelectedIndex="0">
+                        <ComboBoxItem Content="{DynamicResource Speed_LabelGeneral}" Tag=""/>
+                        <ComboBoxItem Content="{DynamicResource Speed_LabelBefore}" Tag="before"/>
+                        <ComboBoxItem Content="{DynamicResource Speed_LabelAfter}" Tag="after"/>
+                    </ComboBox>
+                    <CheckBox x:Name="ShareBox" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"
+                              Content="{DynamicResource Speed_Share}" ToolTip="{DynamicResource Speed_ShareTip}" Click="ShareBox_Click"/>
+                </WrapPanel>
+            </Border>
+
+            <!-- Results + expected -->
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="440"/>
+                    <ColumnDefinition Width="14"/>
+                    <ColumnDefinition Width="370"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource GlassCardStyle}">
+                    <StackPanel>
+                        <!-- Score -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border CornerRadius="12" Padding="16,8" Background="{StaticResource GoldMetallicDarkBrush}"
+                                    BorderBrush="{StaticResource GoldMetallicBorderBrush}" BorderThickness="1.5">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Speed_ScoreLabel}" FontSize="11" Foreground="{StaticResource ScoreLightBrush}"/>
+                                    <TextBlock x:Name="ScoreValue" Text="—" FontFamily="{StaticResource MonoFont}" FontSize="34" FontWeight="Bold"
+                                               Foreground="{StaticResource ScoreHighlightBrush}">
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect Color="#f59e0b" BlurRadius="18" ShadowDepth="0" Opacity="0.7"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="ScoreTier" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock x:Name="ScoreParts" FontSize="12" Margin="0,2,0,0" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="ScoreDelta" FontSize="12.5" FontWeight="SemiBold" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource Speed_Read}" Style="{StaticResource ColHead}"/>
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Speed_Write}" Style="{StaticResource ColHead}"/>
+
+                            <TextBlock Grid.Row="1" Text="SEQ1M Q8T1" Style="{StaticResource TestName}" ToolTip="{DynamicResource Speed_TipSeqQ8}"/>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,4">
+                                <TextBlock x:Name="SeqQ8R" Style="{StaticResource BigValue}" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                <TextBlock x:Name="SeqQ8RDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,4">
+                                <TextBlock x:Name="SeqQ8W" Style="{StaticResource BigValue}" Foreground="{StaticResource AuroraPinkBrush}"/>
+                                <TextBlock x:Name="SeqQ8WDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="2" Text="SEQ1M Q1T1" Style="{StaticResource TestName}" ToolTip="{DynamicResource Speed_TipSeqQ1}"/>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,4">
+                                <TextBlock x:Name="SeqQ1R" Style="{StaticResource BigValue}" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                <TextBlock x:Name="SeqQ1RDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,4">
+                                <TextBlock x:Name="SeqQ1W" Style="{StaticResource BigValue}" Foreground="{StaticResource AuroraPinkBrush}"/>
+                                <TextBlock x:Name="SeqQ1WDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="3" Text="RND4K Q32T1" Style="{StaticResource TestName}" ToolTip="{DynamicResource Speed_TipRndQ32}"/>
+                            <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,4">
+                                <TextBlock x:Name="RndQ32R" Style="{StaticResource BigValue}" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                <TextBlock x:Name="RndQ32RDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,4">
+                                <TextBlock x:Name="RndQ32W" Style="{StaticResource BigValue}" Foreground="{StaticResource AuroraPinkBrush}"/>
+                                <TextBlock x:Name="RndQ32WDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="4" Text="RND4K Q1T1" Style="{StaticResource TestName}" ToolTip="{DynamicResource Speed_TipRndQ1}"/>
+                            <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,4">
+                                <TextBlock x:Name="RndQ1R" Style="{StaticResource BigValue}" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                <TextBlock x:Name="RndQ1RDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="4" Grid.Column="2" Margin="0,4">
+                                <TextBlock x:Name="RndQ1W" Style="{StaticResource BigValue}" Foreground="{StaticResource AuroraPinkBrush}"/>
+                                <TextBlock x:Name="RndQ1WDetail" Style="{StaticResource SmallValue}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock x:Name="ExtraText" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="LiveText" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"
+                                       Text="{DynamicResource Speed_Hint}"/>
+                            <TextBlock Grid.Column="1" x:Name="LiveSpeed" FontFamily="{StaticResource MonoFont}" FontSize="16" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentLightBrush}" Margin="12,0,0,0"/>
+                        </Grid>
+                        <ProgressBar x:Name="RunProgress" Height="6" Margin="0,8,0,0" Visibility="Collapsed" Maximum="1"
+                                     Foreground="{StaticResource AccentPrimaryBrush}" Background="{StaticResource BgTertiaryBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource GlassCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource Speed_ExpectedTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                        <TextBlock x:Name="ExpectedModel" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock x:Name="ExpectedFigures" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <TextBlock x:Name="ExpectedSource" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap">
+                            <Hyperlink x:Name="SourceLink" Click="SourceLink_Click" Foreground="{StaticResource AccentLightBrush}">
+                                <Run x:Name="SourceRun"/>
+                            </Hyperlink>
+                        </TextBlock>
+                        <Border Margin="0,10,0,0" Padding="10,8" CornerRadius="8" Background="{StaticResource BgTertiaryBrush}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Speed_CrowdTitle}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentLightBrush}"/>
+                                <TextBlock x:Name="CrowdText" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextSecondaryBrush}" Text="—"/>
+                            </StackPanel>
+                        </Border>
+                        <Border x:Name="VerdictBadge" CornerRadius="6" Padding="10,6" Margin="0,12,0,0" Visibility="Collapsed">
+                            <TextBlock x:Name="VerdictText" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="Black"/>
+                        </Border>
+                        <ItemsControl x:Name="FindingList" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="12" TextWrapping="Wrap" Margin="0,3"
+                                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Charts -->
+            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,14">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock Text="{DynamicResource Speed_ChartsTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"
+                                   VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="{DynamicResource Speed_CompareWith}" Style="{StaticResource OptLabel}"/>
+                            <ComboBox x:Name="CompareBox" Width="320" Style="{StaticResource ModernComboBoxStyle}"
+                                      SelectionChanged="CompareBox_SelectionChanged" DisplayMemberPath="Text"/>
+                        </StackPanel>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Speed_ChartSeq}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <lvc:CartesianChart x:Name="SeqChart" Height="240" Background="Transparent"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{DynamicResource Speed_ChartRnd}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <lvc:CartesianChart x:Name="RndChart" Height="240" Background="Transparent"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{DynamicResource Speed_ChartSurface}" FontSize="12" Margin="0,12,0,0" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <lvc:CartesianChart x:Name="SurfaceChart" Height="270" Background="Transparent"/>
+                    <TextBlock x:Name="SurfaceNote" FontSize="11.5" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Foreground="{StaticResource TextTertiaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- History -->
+            <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Speed_HistoryTitle}" Style="{StaticResource SubHeaderTextStyle}" FontSize="15"/>
+                    <TextBlock x:Name="HistoryEmpty" Text="{DynamicResource Speed_HistoryEmpty}" FontSize="12" Margin="0,6,0,0"
+                               Foreground="{StaticResource TextTertiaryBrush}"/>
+                    <ItemsControl x:Name="HistoryList" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Text}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    <Button Grid.Column="1" Content="{DynamicResource Speed_Delete}" Style="{StaticResource SecondaryButtonStyle}"
+                                            Padding="10,3" FontSize="11" Click="DeleteRun_Click"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Padding="12,8" Background="{StaticResource BgSecondaryBrush}" CornerRadius="8">
+                <TextBlock Text="{DynamicResource Speed_Footer}" Style="{StaticResource BodyTextStyle}" TextWrapping="Wrap" FontSize="12"/>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

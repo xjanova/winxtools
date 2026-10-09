@@ -25,6 +25,9 @@ public partial class RamOptimizerView : Page
 {
     private const int MaxChartPoints = 60;
     private const int TopProcessCount = 15;
+
+    // Show programs (all their processes together) instead of single processes.
+    private static bool _groupByApp = true;
     private const int MaxHistoryItems = 20;
     private static readonly TimeSpan StaleChartAfter = TimeSpan.FromMinutes(1);
 
@@ -46,6 +49,7 @@ public partial class RamOptimizerView : Page
     private readonly Brush _dangerBrush;
     private readonly Brush _successBrush;
     private readonly Brush _mutedBrush;
+    private readonly Dictionary<Brush, Brush> _tints = new();
 
     // True while controls are being filled from settings (and during
     // InitializeComponent), so change handlers don't write the values back.
@@ -78,6 +82,7 @@ public partial class RamOptimizerView : Page
         ChartDataCache.Instance.InitializeCollection(_usageHistory, MaxChartPoints);
         InitializeChart();
 
+        GroupByAppToggle.IsChecked = _groupByApp;
         HistoryList.ItemsSource = _history;
         KillRulesList.ItemsSource = _killRules;
         LastRunOps.ItemsSource = _lastRunLines;
@@ -215,10 +220,11 @@ public partial class RamOptimizerView : Page
         _refreshInFlight = true;
         try
         {
-            var info = await Task.Run(() => MemoryCleaner.ReadMemoryInfo());
+            var assessment = await Task.Run(() => _ram.Assess(MemoryCleaner.ReadMemoryInfo()));
             if (!_isActive) return;
-            ApplyMemoryInfo(info);
-            AddChartPoint(info.UsagePercent);
+            ApplyMemoryInfo(assessment.Info);
+            ApplyAssessment(assessment);
+            AddChartPoint(assessment.Info.UsagePercent);
         }
         catch (Exception ex)
         {
@@ -311,6 +317,81 @@ public partial class RamOptimizerView : Page
 
     private static GridLength Star(long value) => new(Math.Max(0, value), GridUnitType.Star);
 
+    /// <summary>
+    /// Says what the numbers mean: nothing to do, something that can be released
+    /// safely, programs holding the memory, or Windows close to its commit limit —
+    /// naming the programs when that is the answer.
+    /// </summary>
+    private void ApplyAssessment(MemoryAssessment assessment)
+    {
+        var info = assessment.Info;
+        if (info.TotalMemoryMB <= 0)
+        {
+            SmartStatus.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        Brush brush;
+        string title, text;
+        switch (assessment.Pressure)
+        {
+            case MemoryPressure.CommitHigh:
+                brush = _dangerBrush;
+                title = Loc.T("Ram_SmartCommitTitle", "Windows is close to running out of memory");
+                text = Loc.F("Ram_SmartCommitText",
+                    "Committed {0} ({1}%). Cleaning can't lower this — only closing programs (or a bigger page file) can. Holding the most:",
+                    FormatPair(info.CommitUsedMB, info.CommitLimitMB), assessment.CommitPercent);
+                break;
+            case MemoryPressure.AppsHoldMemory:
+                brush = _warningBrush;
+                title = Loc.T("Ram_SmartAppsTitle", "Your programs are using the memory");
+                text = Loc.F("Ram_SmartAppsText",
+                    "{0}% in use, held by running programs — cleaning would only make them slower. If you need more, close one you aren't using:",
+                    info.UsagePercent);
+                break;
+            case MemoryPressure.Reclaimable:
+                brush = _accentBrush;
+                title = Loc.F("Ram_SmartReclaimTitle", "{0} can be released safely", FormatMB(assessment.ReclaimableMB));
+                text = Loc.T("Ram_SmartReclaimText",
+                    "Changes waiting to be written to disk. “Write pending changes to disk” releases them without touching any program.");
+                break;
+            default:
+                brush = _successBrush;
+                title = Loc.T("Ram_SmartOkTitle", "Memory is fine — nothing to clean");
+                text = info.HasListDetail
+                    ? Loc.F("Ram_SmartOkText",
+                        "{0} ready for programs, {1} of it cache that Windows hands over instantly. Emptying the cache would only make programs load slower.",
+                        FormatMB(info.AvailableMemoryMB), FormatMB(info.StandbyMemoryMB))
+                    : Loc.F("Ram_SmartOkTextBasic", "{0} ready for programs.", FormatMB(info.AvailableMemoryMB));
+                break;
+        }
+
+        bool commit = assessment.Pressure == MemoryPressure.CommitHigh;
+        SmartStatus.BorderBrush = brush;
+        SmartStatus.Background = Tint(brush);
+        SmartStatusTitle.Foreground = brush;
+        SmartStatusTitle.Text = title;
+        SmartStatusText.Text = text;
+        var lines = assessment.TopApps
+            .Select(a => new SmartAppLine(a.DisplayName, FormatMB(commit ? a.PrivateMemoryMB : a.MemoryMB)))
+            .ToList();
+        // Rebuilt only when something changed, not on every 2-second refresh.
+        if (SmartStatusApps.ItemsSource is not List<SmartAppLine> shown || !shown.SequenceEqual(lines))
+            SmartStatusApps.ItemsSource = lines;
+        SmartStatusApps.Visibility = assessment.TopApps.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        SmartStatus.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>The same colour, faint — the background of a status box.</summary>
+    private Brush Tint(Brush brush)
+    {
+        if (_tints.TryGetValue(brush, out var tint)) return tint;
+        var color = brush is SolidColorBrush solid ? solid.Color : Colors.Gray;
+        tint = new SolidColorBrush(Color.FromArgb(0x22, color.R, color.G, color.B));
+        tint.Freeze();
+        return _tints[brush] = tint;
+    }
+
     private void BreakdownBar_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         // Border.CornerRadius doesn't clip its children: round the bar itself.
@@ -333,11 +414,16 @@ public partial class RamOptimizerView : Page
         var texts = new RowTexts(
             Loc.T("Ram_TrimTip", "Trim: move this app's memory out of RAM (it loads back what it needs)"),
             Loc.T("Ram_EndTip", "End this process"),
-            Loc.T("Ram_RowProtectedTip", "Windows process or WinXTools itself — not available here"));
+            Loc.T("Ram_RowProtectedTip", "Windows process or WinXTools itself — not available here"),
+            Loc.T("Ram_AppDetail", "{0}.exe · {1:N0} processes"),
+            Loc.T("Ram_CloseAppTip", "Close this program (asks it to close first, like clicking X)"));
 
         try
         {
-            var rows = await Task.Run(() => BuildRows(MemoryCleaner.GetTopProcesses(TopProcessCount), texts));
+            bool grouped = _groupByApp;
+            var rows = await Task.Run(() => grouped
+                ? BuildAppRows(AppMemory.GetTopApps(TopProcessCount), texts)
+                : BuildRows(MemoryCleaner.GetTopProcesses(TopProcessCount), texts));
             if (!_isActive) return;
 
             ProcessList.ItemsSource = rows;
@@ -357,7 +443,14 @@ public partial class RamOptimizerView : Page
         }
     }
 
-    private sealed record RowTexts(string Trim, string End, string Protected);
+    private sealed record RowTexts(string Trim, string End, string Protected, string AppDetail, string CloseApp)
+    {
+        public string Detail(AppMemoryInfo app)
+        {
+            try { return string.Format(AppDetail, app.Name, app.Processes.Count); }
+            catch (FormatException) { return $"{app.Name}.exe · {app.Processes.Count:N0}"; }
+        }
+    }
 
     private static List<ProcessMemoryDisplayItem> BuildRows(List<ProcessMemoryInfo> processes, RowTexts texts) =>
         processes.Select(p => new ProcessMemoryDisplayItem
@@ -376,6 +469,31 @@ public partial class RamOptimizerView : Page
             EndToolTip = p.CanEnd ? texts.End : texts.Protected,
             Icon = ProcessIconHelper.GetProcessIcon(p.ProcessName)
         }).ToList();
+
+    private static List<ProcessMemoryDisplayItem> BuildAppRows(List<AppMemoryInfo> apps, RowTexts texts) =>
+        apps.Select(a => new ProcessMemoryDisplayItem
+        {
+            ProcessId = a.Processes[0].ProcessId,
+            ProcessName = a.Processes.Count > 1 ? $"{a.DisplayName}  ×{a.Processes.Count}" : a.DisplayName,
+            CreateTime = a.Processes[0].CreateTime,
+            MemoryMB = a.MemoryMB,
+            PrivateMemoryMB = a.PrivateMemoryMB,
+            MemoryText = FormatMB(a.MemoryMB),
+            PrivateMemoryText = FormatMB(a.PrivateMemoryMB),
+            DetailText = texts.Detail(a),
+            CanTrim = a.CanTrim,
+            CanEnd = a.CanEnd,
+            TrimToolTip = a.CanTrim ? texts.Trim : texts.Protected,
+            EndToolTip = a.CanEnd ? texts.CloseApp : texts.Protected,
+            Icon = ProcessIconHelper.GetProcessIcon(a.Name),
+            App = a
+        }).ToList();
+
+    private void GroupByApp_Click(object sender, RoutedEventArgs e)
+    {
+        _groupByApp = GroupByAppToggle.IsChecked == true;
+        _ = RefreshProcessListAsync();
+    }
 
     private void ShowListMessage(string? message)
     {
@@ -400,6 +518,22 @@ public partial class RamOptimizerView : Page
         button.IsEnabled = false;
         try
         {
+            if (item.App is { } app)
+            {
+                // Every process of the program; Windows-protected ones are skipped by TrimProcess itself.
+                var results = await Task.Run(() => app.Processes.Where(p => p.CanTrim)
+                    .Select(p => _ram.TrimProcess(p.ProcessId, p.ProcessName, p.CreateTime)).ToList());
+                if (!_isActive) return;
+                var trimmed = results.Where(r => r.Outcome == ProcessTrimOutcome.Trimmed && r.BeforeMB >= 0 && r.AfterMB >= 0).ToList();
+                ShowProcessAction(trimmed.Count == 0
+                        ? Loc.F("Ram_TrimFailed", "Couldn't trim {0}.", app.DisplayName)
+                        : Loc.F("Ram_TrimDone", "{0}: RAM in use {1} → {2}. It loads back what it needs.", app.DisplayName,
+                            FormatMB(trimmed.Sum(r => r.BeforeMB)), FormatMB(trimmed.Sum(r => r.AfterMB))),
+                    trimmed.Count == 0);
+                await RefreshProcessListAsync();
+                return;
+            }
+
             var result = await Task.Run(() => _ram.TrimProcess(item.ProcessId, item.ProcessName, item.CreateTime));
             if (!_isActive) return;
 
@@ -437,6 +571,12 @@ public partial class RamOptimizerView : Page
     {
         if (sender is not Button { DataContext: ProcessMemoryDisplayItem item } button)
             return;
+
+        if (item.App != null)
+        {
+            await CloseAppAsync(item, button);
+            return;
+        }
 
         var name = item.ProcessName;
         var title = Loc.T("Ram_EndProcessTitle", "End Process");
@@ -494,6 +634,71 @@ public partial class RamOptimizerView : Page
                 MessageBox.Show(
                     Loc.F("Ram_EndProcessFailed", "Could not end {0}. Windows may be protecting it, or it is still shutting down.", name),
                     Loc.T("Common_Error", "Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            button.IsEnabled = item.CanEnd;
+            _ = RefreshProcessListAsync();
+        }
+    }
+
+    /// <summary>
+    /// Closes a whole program: first asks each of its windows to close (like
+    /// clicking X, so it can save), then — only if the user agrees — ends the
+    /// processes that are still running.
+    /// </summary>
+    private async Task CloseAppAsync(ProcessMemoryDisplayItem item, Button button)
+    {
+        var app = item.App!;
+        var title = Loc.T("Ram_CloseAppTitle", "Close program");
+        if (!app.CanEnd)
+        {
+            MessageBox.Show(Loc.F("Ram_ProtectedProcess", "{0} is a protected Windows process and cannot be ended here.", app.DisplayName),
+                title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (MessageBox.Show(
+                Loc.F("Ram_ConfirmCloseApp",
+                    "Close {0}? It uses {1} of RAM in {2:N0} processes.\n\nWinXTools first asks it to close normally, like clicking X, so it can save your work. If something is still running after a few seconds you'll be asked before anything is forced.",
+                    app.DisplayName, FormatMB(app.MemoryMB), app.Processes.Count),
+                title, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+            return;
+
+        button.IsEnabled = false;
+        try
+        {
+            ShowProcessAction(Loc.F("Ram_Closing", "Asking {0} to close…", app.DisplayName), false);
+            var left = await AppMemory.CloseGracefullyAsync(app.Processes, TimeSpan.FromSeconds(6));
+            if (!_isActive) return;
+
+            if (left.Count > 0)
+            {
+                var answer = MessageBox.Show(
+                    Loc.F("Ram_ConfirmForceApp",
+                        "{0:N0} of {1}'s processes are still running (background helpers, or it is waiting for you to save).\n\nEnd them now? Anything not saved in them will be lost.",
+                        left.Count, app.DisplayName),
+                    title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+                if (answer == MessageBoxResult.Yes)
+                {
+                    await Task.Run(() =>
+                    {
+                        foreach (var p in left) _killer.EndProcess(p.ProcessId, p.ProcessName, p.CreateTime);
+                    });
+                    if (!_isActive) return;
+                    left = AppMemory.StillRunning(left);
+                }
+            }
+
+            ShowProcessAction(left.Count == 0
+                    ? Loc.F("Ram_AppClosed", "{0} was closed.", app.DisplayName)
+                    : Loc.F("Ram_AppPartlyClosed", "{0}: {1:N0} processes are still running.", app.DisplayName, left.Count),
+                left.Count > 0);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RamOptimizerView] Close app failed: {ex.Message}");
+            if (_isActive) ShowProcessAction(Loc.F("Ram_EndProcessFailed", "Could not end {0}. Windows may be protecting it, or it is still shutting down.", app.DisplayName), true);
         }
         finally
         {
@@ -1103,6 +1308,9 @@ public partial class RamOptimizerView : Page
     }
 }
 
+/// <summary>One program named in the memory status box.</summary>
+public sealed record SmartAppLine(string Name, string Size);
+
 public class ProcessMemoryDisplayItem
 {
     public int ProcessId { get; set; }
@@ -1118,6 +1326,9 @@ public class ProcessMemoryDisplayItem
     public string TrimToolTip { get; set; } = "";
     public string EndToolTip { get; set; } = "";
     public ImageSource? Icon { get; set; }
+
+    /// <summary>Set when the row is a whole program (all its processes) rather than one process.</summary>
+    public AppMemoryInfo? App { get; set; }
 }
 
 public class OptimizationHistoryItem

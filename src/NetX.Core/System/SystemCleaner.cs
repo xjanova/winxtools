@@ -18,7 +18,18 @@ public enum CleanTarget
     LogFiles,
     ShaderCache,
     RecycleBin,
-    WindowsOld
+    WindowsOld,
+    StoreAppCache,
+    InstallerLeftovers,
+    DevCaches,
+    WindowsSetupFiles,
+    DefenderFiles,
+    WindowsMisc,
+    UpdateCleanup,
+    DriverPackages,
+    LanguagePacks,
+    WindowsEsd,
+    CapCut
 }
 
 public enum CleanRisk
@@ -87,18 +98,73 @@ public static class SystemCleaner
         new(CleanTarget.TempFiles, "Temp", CleanRisk.Safe, true),
         new(CleanTarget.BrowserCache, "Browser", CleanRisk.Safe, true),
         new(CleanTarget.AppCache, "Apps", CleanRisk.Safe, true),
+        new(CleanTarget.CapCut, "CapCut", CleanRisk.Safe, true),
         new(CleanTarget.ErrorReports, "WER", CleanRisk.Safe, true),
         new(CleanTarget.Thumbnails, "Thumbs", CleanRisk.Safe, true),
         new(CleanTarget.LogFiles, "Logs", CleanRisk.Safe, true),
         new(CleanTarget.DeliveryOptimization, "DO", CleanRisk.Safe, true),
         new(CleanTarget.WindowsUpdate, "WU", CleanRisk.Medium, false),
         new(CleanTarget.ShaderCache, "Shaders", CleanRisk.Medium, false),
+        new(CleanTarget.StoreAppCache, "StoreApps", CleanRisk.Safe, true),
+        new(CleanTarget.InstallerLeftovers, "Installers", CleanRisk.Safe, true),
+        new(CleanTarget.WindowsSetupFiles, "WinSetup", CleanRisk.Safe, true),
+        new(CleanTarget.DefenderFiles, "Defender", CleanRisk.Safe, true),
+        new(CleanTarget.WindowsMisc, "WinMisc", CleanRisk.Safe, true),
+        new(CleanTarget.DevCaches, "DevCaches", CleanRisk.Medium, false),
+        new(CleanTarget.UpdateCleanup, "UpdateCleanup", CleanRisk.Medium, false),
+        new(CleanTarget.DriverPackages, "Drivers", CleanRisk.Medium, false),
+        new(CleanTarget.LanguagePacks, "Languages", CleanRisk.Medium, false),
         new(CleanTarget.RecycleBin, "Recycle", CleanRisk.Medium, false),
+        new(CleanTarget.WindowsEsd, "WinEsd", CleanRisk.Caution, false),
         new(CleanTarget.WindowsOld, "WinOld", CleanRisk.Caution, false),
     ];
 
+    /// <summary>
+    /// Categories cleaned by Windows' own Disk Cleanup handlers (system drive
+    /// only). Overlapping handlers (temp files, thumbnails, Recycle Bin, error
+    /// reports, Delivery Optimization, shader cache, Windows.old) are left out
+    /// because WinXTools cleans those itself; Downloads and File History
+    /// versions are user files and are never touched.
+    /// </summary>
+    private static readonly Dictionary<CleanTarget, string[]> WindowsHandlers = new()
+    {
+        [CleanTarget.WindowsSetupFiles] = ["Temporary Setup Files", "Windows Upgrade Log Files", "Upgrade Discarded Files",
+                                           "Windows Reset Log Files", "Setup Log Files", "Old ChkDsk Files"],
+        [CleanTarget.DefenderFiles] = ["Windows Defender"],
+        [CleanTarget.WindowsMisc] = ["Internet Cache Files", "Diagnostic Data Viewer database files", "Feedback Hub Archive log files",
+                                     "RetailDemo Offline Content", "BranchCache", "Downloaded Program Files", "Offline Pages Files",
+                                     "Temporary Sync Files", "Active Setup Temp Folders", "Content Indexer Cleaner"],
+        [CleanTarget.UpdateCleanup] = ["Update Cleanup"],
+        [CleanTarget.DriverPackages] = ["Device Driver Packages"],
+        [CleanTarget.LanguagePacks] = ["Language Pack"],
+        [CleanTarget.WindowsEsd] = ["Windows ESD installation files"],
+    };
+
+    public static bool IsWindowsHandlerTarget(CleanTarget target) => WindowsHandlers.ContainsKey(target);
+
+    // Windows Update cleanup works through the component store and can take a long time.
+    private static TimeSpan HandlerTimeout(CleanTarget target, bool purge) => target switch
+    {
+        CleanTarget.UpdateCleanup => purge ? TimeSpan.FromMinutes(90) : TimeSpan.FromMinutes(15),
+        _ => purge ? TimeSpan.FromMinutes(20) : TimeSpan.FromMinutes(5)
+    };
+
+    private static string SystemRoot => Path.GetPathRoot(WinDir) ?? @"C:\";
+
     // Temp files touched within this window may still belong to a running installer.
     private static readonly TimeSpan TempKeepWindow = TimeSpan.FromHours(24);
+
+    // Leftovers whose name says what they are (and that nothing reads back later)
+    // only need to be an hour old.
+    private static readonly TimeSpan KnownJunkKeepWindow = TimeSpan.FromHours(1);
+
+    private static readonly global::System.Text.RegularExpressions.Regex KnownTempJunk = new(
+        @"^(Microsoft\.NET\.Workload_.*\.log" +          // .NET SDK workload installer log, one per dotnet build/run
+        @"|__PSScriptPolicyTest_.*\.psm?1" +              // PowerShell's execution-policy probe
+        @"|RazerTempPicture_.*\.png" +                     // Razer Synapse
+        @"|mat-debug-\d+\.log" +
+        @"|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.tmp)$", // GUID-named downloads (browsers)
+        global::System.Text.RegularExpressions.RegexOptions.IgnoreCase | global::System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     #region Target folders
 
@@ -108,12 +174,65 @@ public static class SystemCleaner
     private static string ProgramData => Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
     private static string LocalLow => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow");
 
+    /// <summary>
+    /// Every temp folder Windows uses on this PC: TEMP/TMP as set for the user
+    /// and for the system (read fresh from the registry, so a TEMP moved to
+    /// another drive is found), the default AppData\Local\Temp (programs that
+    /// ignore TEMP still write there, and old leftovers stay behind after TEMP
+    /// is moved), and Windows\Temp. Duplicates and folders inside another one
+    /// in the list are dropped so nothing is counted twice.
+    /// </summary>
     private static IEnumerable<string> TempDirs()
     {
-        var userTemp = Path.GetTempPath();
-        if (IsSafeTempRoot(userTemp)) yield return userTemp;
-        yield return Path.Combine(WinDir, "Temp");
-        yield return Path.Combine(WinDir, "SystemTemp"); // Windows 11 24H2+
+        var system = new[] { Path.Combine(WinDir, "Temp"), Path.Combine(WinDir, "SystemTemp") }; // SystemTemp: Windows 11 24H2+
+        var fromUser = new List<string?>
+        {
+            Path.GetTempPath(),
+            Environment.GetEnvironmentVariable("TEMP"),
+            Environment.GetEnvironmentVariable("TMP"),
+            ReadEnvironmentKey(Registry.CurrentUser, "Environment", "TEMP"),
+            ReadEnvironmentKey(Registry.CurrentUser, "Environment", "TMP"),
+            ReadEnvironmentKey(Registry.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment", "TEMP"),
+            ReadEnvironmentKey(Registry.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment", "TMP"),
+            Path.Combine(LocalAppData, "Temp"),
+        };
+
+        var roots = new List<string>();
+        foreach (var dir in system.Concat(fromUser))
+        {
+            if (string.IsNullOrWhiteSpace(dir)) continue;
+            string full;
+            try { full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(LongPath(dir))); }
+            catch { continue; }
+
+            bool trusted = system.Any(s => s.Equals(full, StringComparison.OrdinalIgnoreCase));
+            // TEMP comes from settings a standard user can change: it must pass the safety check.
+            if (!trusted && !IsSafeTempRoot(full)) continue;
+            if (!roots.Contains(full, StringComparer.OrdinalIgnoreCase)) roots.Add(full);
+        }
+
+        foreach (var root in roots)
+        {
+            bool inside = roots.Any(other => !other.Equals(root, StringComparison.OrdinalIgnoreCase) &&
+                                             root.StartsWith(other + "\\", StringComparison.OrdinalIgnoreCase));
+            if (!inside) yield return root;
+        }
+    }
+
+    /// <summary>A TEMP/TMP value as stored in the registry, with %VARIABLES% expanded.</summary>
+    private static string? ReadEnvironmentKey(RegistryKey hive, string path, string name)
+    {
+        try
+        {
+            using var key = hive.OpenSubKey(path);
+            if (key?.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames) is not string raw) return null;
+            // %SystemRoot% and %USERPROFILE% are the same for this process as for Windows' own expansion.
+            return Environment.ExpandEnvironmentVariables(raw);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -128,16 +247,21 @@ public static class SystemCleaner
             if (Path.GetPathRoot(full)?.TrimEnd('\\').Equals(full.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) == true)
                 return false;
 
-            var leaf = Path.GetFileName(full);
-            if (!leaf.Equals("Temp", StringComparison.OrdinalIgnoreCase) &&
-                !leaf.Equals("Tmp", StringComparison.OrdinalIgnoreCase))
+            // The folder itself or one of its parents must be called Temp/Tmp
+            // (D:\Temp\User is fine; C:\Users\Me\Documents is not).
+            var root = Path.GetPathRoot(full) ?? "";
+            var parts = full[root.Length..].Split('\\', StringSplitOptions.RemoveEmptyEntries);
+            if (!parts.Any(p => p.Equals("Temp", StringComparison.OrdinalIgnoreCase) || p.Equals("Tmp", StringComparison.OrdinalIgnoreCase)))
                 return false;
 
+            // ProgramData too: a "Temp" folder of another program there may hold files
+            // that program still needs, and a standard user can point %TEMP% at it.
             string[] forbidden =
             [
                 WinDir,
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                ProgramData,
             ];
             return !forbidden.Any(f => !string.IsNullOrEmpty(f) &&
                 (full.Equals(f, StringComparison.OrdinalIgnoreCase) ||
@@ -187,6 +311,9 @@ public static class SystemCleaner
             }
             catch { }
 
+            // Crash reports nobody will send.
+            yield return Path.Combine(root, "Crashpad", "reports");
+
             foreach (var profile in profiles)
             {
                 // "Cache" already contains "Cache\Cache_Data" — listing both
@@ -231,10 +358,301 @@ public static class SystemCleaner
         }
 
         yield return Path.Combine(RoamingAppData, "Code", "CachedData");
+
+        // New Teams (Store app) keeps its web cache under EBWebView.
+        var teams = Path.Combine(LocalAppData, "Packages", "MSTeams_8wekyb3d8bbwe", "LocalCache", "Microsoft", "MSTeams", "EBWebView", "Default");
+        foreach (var sub in new[] { "Cache", "Code Cache", "GPUCache" })
+            yield return Path.Combine(teams, sub);
+
+        // LINE: downloaded images/stickers cache (chats are stored elsewhere).
+        yield return Path.Combine(LocalAppData, "LINE", "Cache");
+
+        // Adobe Premiere/After Effects media cache, rebuilt when a project opens.
+        yield return Path.Combine(RoamingAppData, "Adobe", "Common", "Media Cache Files");
+        yield return Path.Combine(RoamingAppData, "Adobe", "Common", "Media Cache");
         yield return Path.Combine(LocalAppData, "Steam", "htmlcache");
         yield return Path.Combine(LocalAppData, "EpicGamesLauncher", "Saved", "webcache");
         yield return Path.Combine(LocalAppData, "EpicGamesLauncher", "Saved", "webcache_4147");
         yield return Path.Combine(LocalAppData, "EpicGamesLauncher", "Saved", "webcache_4430");
+    }
+
+    /// <summary>
+    /// Temporary data of Microsoft Store apps: their web cache and the
+    /// TempState folder Windows itself may clear at any time. Never
+    /// LocalState/LocalCache, which hold the apps' real data.
+    /// </summary>
+    private static IEnumerable<string> StoreAppCacheDirs()
+    {
+        var packages = Path.Combine(LocalAppData, "Packages");
+        List<string> apps;
+        try { apps = Directory.EnumerateDirectories(packages).ToList(); }
+        catch { yield break; }
+        foreach (var app in apps)
+        {
+            yield return Path.Combine(app, "AC", "INetCache");
+            yield return Path.Combine(app, "AC", "Temp");
+            yield return Path.Combine(app, "TempState");
+        }
+    }
+
+    /// <summary>Download caches of developer tools; they download again what a build needs.</summary>
+    private static IEnumerable<string> DevCacheDirs()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        yield return Path.Combine(LocalAppData, "npm-cache");
+        yield return Path.Combine(LocalAppData, "pip", "Cache");
+        yield return Path.Combine(LocalAppData, "Yarn", "Cache");
+        yield return Path.Combine(LocalAppData, "NuGet", "v3-cache");
+        yield return Path.Combine(LocalAppData, "NuGet", "plugins-cache");
+        yield return Path.Combine(LocalAppData, "go-build");
+        yield return Path.Combine(LocalAppData, "Composer");
+        yield return Path.Combine(home, ".gradle", "caches");
+        yield return Path.Combine(home, ".cargo", "registry", "cache");
+        yield return Path.Combine(home, ".bun", "install", "cache");
+    }
+
+    #region CapCut
+
+    private static readonly string[] CapCutProcesses = ["CapCut", "JianyingPro"];
+    private static readonly string[] CapCutApps = ["CapCut", "JianyingPro"];
+    private static readonly string[] CefCacheNames = ["Cache", "Code Cache", "GPUCache", "DawnCache", "DawnGraphiteCache", "DawnWebGPUCache", "GrShaderCache", "ShaderCache"];
+    private static readonly global::System.Text.RegularExpressions.Regex CapCutProxyName =
+        new(@"^[0-9a-f]{32}_\d{2,5}_\d{2,5}\.(agency|mp4)$", global::System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// CapCut (and its Chinese edition JianyingPro): every old version it keeps
+    /// after each update (1.5–1.8 GB each — only the one named in
+    /// Apps\ProductInfo.xml runs), and its caches wherever its own settings put
+    /// them: effects, images, proxy videos, pre-renders, the built-in browser's
+    /// cache, logs and crash dumps. Projects, presets, screen recordings and
+    /// downloaded materials are never touched. Caches are only cleaned while
+    /// CapCut is closed; old versions can go while it runs.
+    /// </summary>
+    private static void VisitCapCut(CleanScanResult scan, CleanExecResult? clean, CancellationToken token)
+    {
+        bool running = CapCutProcesses.Any(name =>
+        {
+            try
+            {
+                var found = Process.GetProcessesByName(name);
+                foreach (var p in found) p.Dispose();
+                return found.Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        });
+
+        foreach (var dir in CapCutOldVersions())
+        {
+            Visit(dir, scan, clean, token);
+            if (clean != null) TryRemoveEmptyFolder(dir);
+        }
+
+        var caches = CapCutCaches(out var strays);
+        foreach (var dir in caches)
+        {
+            if (running)
+            {
+                VisitSizeOnly(dir, scan, token, countAsInUse: true);
+                continue;
+            }
+            Visit(dir, scan, clean, token);
+        }
+        if (!running)
+            foreach (var dir in strays)
+                Visit(dir, scan, clean, token, recursive: false, filter: name => CapCutProxyName.IsMatch(name));
+
+        if (running && scan.InUseCount > 0)
+        {
+            scan.NoteCode = "AppRunning";
+            scan.NoteArg = "CapCut";
+            if (clean != null)
+            {
+                clean.NoteCode = "AppRunning";
+                clean.NoteArg = "CapCut";
+            }
+        }
+    }
+
+    private static IEnumerable<string> CapCutRoots() =>
+        CapCutApps.Select(name => Path.Combine(LocalAppData, name)).Where(Directory.Exists);
+
+    /// <summary>Old version folders under Apps — never when the running version can't be told.</summary>
+    private static List<string> CapCutOldVersions()
+    {
+        var old = new List<string>();
+        foreach (var root in CapCutRoots())
+        {
+            var apps = Path.Combine(root, "Apps");
+            string? current = null;
+            try
+            {
+                var xml = global::System.Xml.Linq.XDocument.Load(Path.Combine(apps, "ProductInfo.xml"));
+                current = xml.Descendants("full_appver").FirstOrDefault()?.Attribute("value")?.Value.Trim();
+            }
+            catch
+            {
+            }
+            if (string.IsNullOrEmpty(current) || !Directory.Exists(Path.Combine(apps, current))) continue;
+
+            try
+            {
+                foreach (var dir in Directory.EnumerateDirectories(apps))
+                {
+                    var name = Path.GetFileName(dir);
+                    if (Version.TryParse(name, out _) && !name.Equals(current, StringComparison.OrdinalIgnoreCase) &&
+                        (File.GetAttributes(dir) & FileAttributes.ReparsePoint) == 0)
+                        old.Add(dir);
+                }
+            }
+            catch
+            {
+            }
+        }
+        return old;
+    }
+
+    /// <summary>
+    /// The cache folders — the defaults and wherever CapCut's globalSetting moved
+    /// them — with folders inside another one dropped so nothing counts twice.
+    /// <paramref name="strays"/>: folders next to the projects folder where proxy
+    /// videos are sometimes left behind.
+    /// </summary>
+    private static List<string> CapCutCaches(out List<string> strays)
+    {
+        var candidates = new List<string>();
+        strays = new List<string>();
+        foreach (var root in CapCutRoots())
+        {
+            var userData = Path.Combine(root, "User Data");
+            var settings = CapCutSettings(Path.Combine(userData, "Config", "globalSetting"));
+            candidates.Add(Path.Combine(userData, "Cache"));
+            foreach (var key in new[] { "currentCachePath", "agencyFileLocation", "remuxFileLocation", "prerenderCacheLocation" })
+                if (settings.TryGetValue(key, out var value) && IsCapCutCacheFolder(value, userData))
+                    candidates.Add(value);
+            candidates.AddRange(CefCaches(Path.Combine(userData, "CEF")));
+            candidates.Add(Path.Combine(userData, "Log"));
+            candidates.Add(Path.Combine(userData, "VELog"));
+            candidates.Add(Path.Combine(userData, "Crash"));
+
+            if (settings.TryGetValue("currentCustomDraftPath", out var drafts) && Path.GetDirectoryName(drafts.TrimEnd('\\')) is { Length: > 3 } parent &&
+                Directory.Exists(parent))
+                strays.Add(parent);
+        }
+
+        var result = new List<string>();
+        foreach (var dir in candidates.Select(c => Path.TrimEndingDirectorySeparator(Path.GetFullPath(c))).Distinct(StringComparer.OrdinalIgnoreCase)
+                     .OrderBy(c => c.Length))
+        {
+            if (!Directory.Exists(dir)) continue;
+            if (result.Any(r => dir.StartsWith(r + "\\", StringComparison.OrdinalIgnoreCase))) continue;
+            result.Add(dir);
+        }
+        return result;
+    }
+
+    /// <summary>CapCut's settings file: key=value lines, Windows paths written with doubled backslashes.</summary>
+    private static Dictionary<string, string> CapCutSettings(string file)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            if (!File.Exists(file) || new FileInfo(file).Length > 1024 * 1024) return values;
+            foreach (var line in File.ReadLines(file))
+            {
+                int eq = line.IndexOf('=');
+                if (eq <= 0) continue;
+                var value = line[(eq + 1)..].Trim().Replace(@"\\", @"\").Replace('/', '\\');
+                if (value.Length > 3 && value[1] == ':' && value[2] == '\\') values[line[..eq].Trim()] = value;
+            }
+        }
+        catch
+        {
+        }
+        return values;
+    }
+
+    /// <summary>
+    /// A folder the settings point at is cleaned only when it is CapCut's own:
+    /// inside its User Data, or holding its cache's tell-tale contents. Never a
+    /// drive root, Windows, Program Files or the top of the user's own folders.
+    /// </summary>
+    private static bool IsCapCutCacheFolder(string path, string userData)
+    {
+        try
+        {
+            var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+            if (full.Length <= 3 || !Directory.Exists(full)) return false;
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string[] forbidden =
+            [
+                WinDir, Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), home,
+                Path.Combine(home, "Desktop"), Path.Combine(home, "Documents"), Path.Combine(home, "Downloads"),
+                Path.Combine(home, "Pictures"), Path.Combine(home, "Videos"), Path.Combine(home, "Music")
+            ];
+            if (forbidden.Any(f => f.Length > 3 && (full.Equals(f, StringComparison.OrdinalIgnoreCase) ||
+                                                    f.StartsWith(full + "\\", StringComparison.OrdinalIgnoreCase))))
+                return false;
+            if (full.StartsWith(Path.TrimEndingDirectorySeparator(userData) + "\\", StringComparison.OrdinalIgnoreCase)) return true;
+
+            // Moved elsewhere: it must look like CapCut's cache.
+            return Directory.Exists(Path.Combine(full, "effect")) || Directory.Exists(Path.Combine(full, "agencycache")) ||
+                   Directory.EnumerateFiles(full, "*.agency").Any();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Web cache folders of the built-in browser (never its cookies, logins or local storage).</summary>
+    private static IEnumerable<string> CefCaches(string cefRoot)
+    {
+        if (!Directory.Exists(cefRoot)) yield break;
+        var pending = new Stack<(string Dir, int Depth)>();
+        pending.Push((cefRoot, 0));
+        while (pending.Count > 0)
+        {
+            var (dir, depth) = pending.Pop();
+            IEnumerable<string> subs;
+            try { subs = Directory.EnumerateDirectories(dir).ToList(); }
+            catch { continue; }
+            foreach (var sub in subs)
+            {
+                if (CefCacheNames.Contains(Path.GetFileName(sub), StringComparer.OrdinalIgnoreCase)) yield return sub;
+                else if (depth < 4) pending.Push((sub, depth + 1));
+            }
+        }
+    }
+
+    /// <summary>Removes a folder the clean emptied, when its parent is a real folder (no link swapped in).</summary>
+    private static void TryRemoveEmptyFolder(string dir)
+    {
+        var parent = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(dir));
+        if (parent == null || VerifiedRoot(parent) is not { } verified) return;
+        try
+        {
+            // Subfolders left empty by the clean go first.
+            foreach (var sub in Directory.EnumerateDirectories(dir, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length).ToList())
+                TryDeleteEmptyDirectory(sub, verified);
+        }
+        catch
+        {
+        }
+        TryDeleteEmptyDirectory(dir, verified);
+    }
+
+    #endregion
+
+    /// <summary>Unpacked driver installers that stay behind after the driver is installed.</summary>
+    private static IEnumerable<string> InstallerLeftoverDirs()
+    {
+        yield return Path.Combine(SystemRoot, "NVIDIA");
+        yield return Path.Combine(SystemRoot, "AMD");
+        yield return Path.Combine(ProgramData, "NVIDIA Corporation", "Downloader");
     }
 
     private static IEnumerable<string> ErrorReportDirs()
@@ -334,12 +752,36 @@ public static class SystemCleaner
                 break;
 
             case CleanTarget.RecycleBin:
-                var info = new SHQUERYRBINFO { cbSize = Marshal.SizeOf<SHQUERYRBINFO>() };
-                if (SHQueryRecycleBin(null, ref info) == 0)
+                if (QueryRecycleBin(out long binBytes, out long binItems))
                 {
-                    result.Bytes = info.i64Size;
-                    result.FileCount = (int)Math.Min(info.i64NumItems, int.MaxValue);
+                    result.Bytes = binBytes;
+                    result.FileCount = (int)Math.Min(binItems, int.MaxValue);
                 }
+                break;
+
+            case CleanTarget.StoreAppCache:
+                foreach (var dir in StoreAppCacheDirs()) Visit(dir, result, null, token);
+                break;
+
+            case CleanTarget.InstallerLeftovers:
+                foreach (var dir in InstallerLeftoverDirs()) Visit(dir, result, null, token);
+                break;
+
+            case CleanTarget.DevCaches:
+                foreach (var dir in DevCacheDirs()) Visit(dir, result, null, token);
+                NoteRunningApps(result, DevProcesses);
+                break;
+
+            case CleanTarget.CapCut:
+                VisitCapCut(result, null, token);
+                break;
+
+            case CleanTarget.WindowsSetupFiles or CleanTarget.DefenderFiles or CleanTarget.WindowsMisc or
+                CleanTarget.UpdateCleanup or CleanTarget.DriverPackages or CleanTarget.LanguagePacks or CleanTarget.WindowsEsd:
+                var measured = VolumeCacheHost.Measure(WindowsHandlers[target], SystemRoot, HandlerTimeout(target, false), token);
+                result.Bytes = measured.Bytes;
+                result.FileCount = -1; // Windows reports space, not files
+                result.NoteCode = measured.TimedOut ? "HandlerTimeout" : null;
                 break;
 
             case CleanTarget.WindowsOld:
@@ -412,19 +854,43 @@ public static class SystemCleaner
                 break;
 
             case CleanTarget.RecycleBin:
-                var query = new SHQUERYRBINFO { cbSize = Marshal.SizeOf<SHQUERYRBINFO>() };
-                SHQueryRecycleBin(null, ref query);
+                QueryRecycleBin(out long queuedBytes, out long queuedItems);
                 int hr = SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
                 if (hr == 0)
                 {
-                    result.BytesFreed = query.i64Size;
-                    result.FilesDeleted = (int)Math.Min(query.i64NumItems, int.MaxValue);
+                    result.BytesFreed = queuedBytes;
+                    result.FilesDeleted = (int)Math.Min(queuedItems, int.MaxValue);
                 }
                 // E_UNEXPECTED (0x8000FFFF) means the bin was already empty.
                 break;
 
             case CleanTarget.WindowsOld:
                 CleanWindowsOld(result, token);
+                break;
+
+            case CleanTarget.StoreAppCache:
+                foreach (var dir in StoreAppCacheDirs()) Visit(dir, scanLike, result, token);
+                break;
+
+            case CleanTarget.InstallerLeftovers:
+                foreach (var dir in InstallerLeftoverDirs()) Visit(dir, scanLike, result, token);
+                break;
+
+            case CleanTarget.DevCaches:
+                foreach (var dir in DevCacheDirs()) Visit(dir, scanLike, result, token);
+                break;
+
+            case CleanTarget.CapCut:
+                VisitCapCut(scanLike, result, token);
+                break;
+
+            case CleanTarget.WindowsSetupFiles or CleanTarget.DefenderFiles or CleanTarget.WindowsMisc or
+                CleanTarget.UpdateCleanup or CleanTarget.DriverPackages or CleanTarget.LanguagePacks or CleanTarget.WindowsEsd:
+                var purged = VolumeCacheHost.Purge(WindowsHandlers[target], SystemRoot, HandlerTimeout(target, true), token);
+                result.BytesFreed = purged.Bytes;
+                result.FilesDeleted = -1; // Windows reports space, not files
+                if (purged.TimedOut) result.NoteCode = "HandlerTimeout";
+                else if (purged.HandlersFailed > 0) result.NoteCode = "HandlerPartial";
                 break;
         }
 
@@ -484,7 +950,9 @@ public static class SystemCleaner
                 if (filter != null && !filter(file.Name)) continue;
 
                 if (keepNewerThan != null &&
-                    (file.LastWriteTime > keepNewerThan || file.CreationTime > keepNewerThan))
+                    (file.LastWriteTime > keepNewerThan || file.CreationTime > keepNewerThan) &&
+                    !(KnownTempJunk.IsMatch(file.Name) && file.LastWriteTime < DateTime.Now - KnownJunkKeepWindow &&
+                      file.CreationTime < DateTime.Now - KnownJunkKeepWindow))
                 {
                     scan.RecentCount++;
                     if (clean != null) clean.FilesSkipped++;
@@ -635,6 +1103,40 @@ public static class SystemCleaner
         }
     }
 
+    /// <summary>
+    /// Deletes one file the user picked, through a handle that is checked to
+    /// be exactly that path (a junction or link swapped in after the scan
+    /// can't redirect this elevated delete). Read-only files are deleted too.
+    /// </summary>
+    public static bool DeleteFileVerified(string path, out long freed)
+    {
+        freed = 0;
+        try
+        {
+            var expected = Path.TrimEndingDirectorySeparator(Path.GetFullPath(LongPath(path)));
+            using var handle = CreateFileW(LongPrefix(expected), DELETE | FILE_READ_ATTRIBUTES,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+            if (handle.IsInvalid) return false;
+
+            var final = FinalPath(handle);
+            if (final == null || !final.Equals(expected, StringComparison.OrdinalIgnoreCase)) return false;
+
+            long size = 0;
+            if (GetFileInformationByHandleEx(handle, FileStandardInfoClass, out FILE_STANDARD_INFO info, (uint)Marshal.SizeOf<FILE_STANDARD_INFO>()))
+            {
+                if (info.Directory) return false;
+                size = info.NumberOfLinks <= 1 ? info.AllocationSize : 0;
+            }
+            if (!DeleteByHandle(handle)) return false;
+            freed = size;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static bool DeleteByHandle(SafeFileHandle handle)
     {
         var ex = new FILE_DISPOSITION_INFO_EX
@@ -733,7 +1235,8 @@ public static class SystemCleaner
     #region Windows-managed categories
 
     private static readonly string[] BrowserProcesses = ["chrome", "msedge", "brave", "vivaldi", "opera", "firefox", "browser", "chromium"];
-    private static readonly string[] AppProcesses = ["discord", "teams", "code", "slack", "steamwebhelper", "epicgameslauncher"];
+    private static readonly string[] AppProcesses = ["discord", "teams", "ms-teams", "code", "slack", "steamwebhelper", "epicgameslauncher", "line", "adobe premiere pro", "afterfx"];
+    private static readonly string[] DevProcesses = ["devenv", "msbuild", "dotnet", "node", "java", "gradle", "go", "cargo", "python"];
 
     private static void NoteRunningApps(CleanScanResult result, string[] processNames)
     {
@@ -952,16 +1455,46 @@ public static class SystemCleaner
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern uint GetLongPathNameW(string lpszShortPath, StringBuilder lpszLongPath, uint cchBuffer);
 
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    private struct SHQUERYRBINFO
+    // shellapi.h packs this struct to 1 byte only in 32-bit builds; 64-bit
+    // Windows expects natural alignment (24 bytes). The wrong size made
+    // SHQueryRecycleBin fail, so the Recycle Bin always showed 0 bytes.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SHQUERYRBINFO64
     {
         public int cbSize;
         public long i64Size;
         public long i64NumItems;
     }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    private static extern int SHQueryRecycleBin(string? pszRootPath, ref SHQUERYRBINFO pSHQueryRBInfo);
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct SHQUERYRBINFO32
+    {
+        public int cbSize;
+        public long i64Size;
+        public long i64NumItems;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "SHQueryRecycleBinW")]
+    private static extern int SHQueryRecycleBin64(string? pszRootPath, ref SHQUERYRBINFO64 pSHQueryRBInfo);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "SHQueryRecycleBinW")]
+    private static extern int SHQueryRecycleBin32(string? pszRootPath, ref SHQUERYRBINFO32 pSHQueryRBInfo);
+
+    /// <summary>Size and item count of the Recycle Bins of all drives.</summary>
+    private static bool QueryRecycleBin(out long bytes, out long items)
+    {
+        if (Environment.Is64BitProcess)
+        {
+            var info = new SHQUERYRBINFO64 { cbSize = Marshal.SizeOf<SHQUERYRBINFO64>() };
+            bool ok = SHQueryRecycleBin64(null, ref info) == 0;
+            (bytes, items) = ok ? (info.i64Size, info.i64NumItems) : (0, 0);
+            return ok;
+        }
+        var info32 = new SHQUERYRBINFO32 { cbSize = Marshal.SizeOf<SHQUERYRBINFO32>() };
+        bool ok32 = SHQueryRecycleBin32(null, ref info32) == 0;
+        (bytes, items) = ok32 ? (info32.i64Size, info32.i64NumItems) : (0, 0);
+        return ok32;
+    }
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? pszRootPath, uint dwFlags);

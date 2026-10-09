@@ -314,7 +314,8 @@ public static class MemoryCleaner
     /// result. Each operation succeeds or fails on its own; nothing throws.
     /// </summary>
     public static OptimizeResult Run(MemoryCleanItems items, OptimizeTrigger trigger,
-        IReadOnlyCollection<string>? trimExclusions = null, CancellationToken cancellationToken = default)
+        IReadOnlyCollection<string>? trimExclusions = null, CancellationToken cancellationToken = default,
+        TimeSpan? trimMinIdle = null)
     {
         items &= MemoryCleanItems.All;
         if (items.HasFlag(MemoryCleanItems.PurgeStandbyList))
@@ -349,7 +350,7 @@ public static class MemoryCleaner
                     operations.Add(operation switch
                     {
                         MemoryOperation.CombinePages => CombinePages(scope),
-                        MemoryOperation.TrimWorkingSets => TrimBackgroundApps(trimExclusions, cancellationToken),
+                        MemoryOperation.TrimWorkingSets => TrimBackgroundApps(trimExclusions, cancellationToken, trimMinIdle),
                         MemoryOperation.FlushSystemFileCache => FlushFileCache(scope),
                         _ => MemoryListCommand(scope, operation)
                     });
@@ -486,7 +487,8 @@ public static class MemoryCleaner
     /// processes), Windows core/shell/audio/input processes, the user's exclusions,
     /// tiny processes and anything that used the CPU during the sampling window.
     /// </summary>
-    private static MemoryOperationResult TrimBackgroundApps(IReadOnlyCollection<string>? exclusions, CancellationToken cancellationToken)
+    private static MemoryOperationResult TrimBackgroundApps(IReadOnlyCollection<string>? exclusions, CancellationToken cancellationToken,
+        TimeSpan? minIdle = null)
     {
         const MemoryOperation operation = MemoryOperation.TrimWorkingSets;
 
@@ -526,6 +528,10 @@ public static class MemoryCleaner
                                 (foregroundName != null && p.Name.Equals(foregroundName, StringComparison.OrdinalIgnoreCase));
             bool busy = !cpuBefore.TryGetValue(p.Pid, out var earlier) || earlier.CreateTime != p.CreateTime ||
                         p.CpuTime - earlier.Cpu > BusyCpuTime100ns;
+            // With activity history, "idle" means idle for minutes, not for a quarter second:
+            // an app that is still being used loads its memory straight back (measured: 7 GB in 30 s).
+            if (!busy && minIdle is TimeSpan wanted && ProcessActivity.IdleFor(p.Pid, p.CreateTime) is TimeSpan idle && idle < wanted)
+                busy = true;
 
             if (p.Pid == ownPid || isForeground || IsNeverTrim(p.Name) || excluded.Contains(p.Name) || busy)
             {

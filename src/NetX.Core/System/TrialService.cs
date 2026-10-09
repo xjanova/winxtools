@@ -569,10 +569,11 @@ public class TrialService
 
     #region Pro Page Gating
 
-    // Pro-only page tags
+    // Pro-only page tags (Defrag stays free)
     private static readonly HashSet<string> ProOnlyPages = new(StringComparer.OrdinalIgnoreCase)
     {
-        "ProxyVpn", "Rules", "Tricks", "NetworkTools", "Network", "Packets"
+        "ProxyVpn", "Rules", "Tricks", "NetworkTools", "Network", "Packets",
+        "SmartCpu", "DiskSpace", "DiskSpeed", "DiskHealth"
     };
 
     public static bool IsProOnlyPage(string? pageTag) =>

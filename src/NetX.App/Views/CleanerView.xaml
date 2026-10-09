@@ -29,6 +29,12 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="SelectMaxButton"
+                        Content="{DynamicResource Cleaner_SelectMax}"
+                        ToolTip="{DynamicResource Cleaner_SelectMaxTip}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="SelectMax_Click"
+                        Margin="0,0,12,0"/>
                 <Button x:Name="ScanButton"
                         Content="{DynamicResource Cleaner_Scan}"
                         Style="{StaticResource PrimaryButtonStyle}"

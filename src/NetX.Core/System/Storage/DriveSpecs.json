@@ -1,0 +1,5205 @@
+{
+ "schema": 1,
+ "note": "Manufacturer-rated figures with their official source URL, compiled 2026-10 for the WinXTools disk speed test.",
+ "models": [
+  {
+   "id": "samsung-850-evo-120gb",
+   "brand": "Samsung",
+   "name": "850 EVO 120GB",
+   "kind": "sata-ssd",
+   "match": [
+    "850 EVO 120GB",
+    "MZ-75E120"
+   ],
+   "capacityGB": 120,
+   "interface": "SATA 6Gb/s",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 520,
+   "rndReadIops": 94000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 3.0.1, random: IOmeter 1.1.0; write via TurboWrite (SLC cache)",
+   "source": "Samsung SSD 850 EVO Data Sheet Rev. 3.1 (May 2016)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_850_EVO_Data_Sheet_Rev_3_1.pdf"
+  },
+  {
+   "id": "samsung-850-evo-250gb",
+   "brand": "Samsung",
+   "name": "850 EVO 250GB",
+   "kind": "sata-ssd",
+   "match": [
+    "850 EVO 250GB",
+    "MZ-75E250"
+   ],
+   "capacityGB": 250,
+   "interface": "SATA 6Gb/s",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 520,
+   "rndReadIops": 97000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 3.0.1, random: IOmeter 1.1.0; write via TurboWrite (SLC cache)",
+   "source": "Samsung SSD 850 EVO Data Sheet Rev. 3.1 (May 2016)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_850_EVO_Data_Sheet_Rev_3_1.pdf"
+  },
+  {
+   "id": "samsung-850-evo-500gb",
+   "brand": "Samsung",
+   "name": "850 EVO 500GB",
+   "kind": "sata-ssd",
+   "match": [
+    "850 EVO 500GB",
+    "MZ-75E500"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 3.0.1, random: IOmeter 1.1.0; write via TurboWrite (SLC cache)",
+   "source": "Samsung SSD 850 EVO Data Sheet Rev. 3.1 (May 2016)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_850_EVO_Data_Sheet_Rev_3_1.pdf"
+  },
+  {
+   "id": "samsung-850-evo-1tb",
+   "brand": "Samsung",
+   "name": "850 EVO 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "850 EVO 1TB",
+    "MZ-75E1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 3.0.1, random: IOmeter 1.1.0; write via TurboWrite (SLC cache)",
+   "source": "Samsung SSD 850 EVO Data Sheet Rev. 3.1 (May 2016)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_850_EVO_Data_Sheet_Rev_3_1.pdf"
+  },
+  {
+   "id": "samsung-850-evo-2tb",
+   "brand": "Samsung",
+   "name": "850 EVO 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "850 EVO 2TB",
+    "MZ-75E2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 3.0.1, random: IOmeter 1.1.0; write via TurboWrite (SLC cache)",
+   "source": "Samsung SSD 850 EVO Data Sheet Rev. 3.1 (May 2016)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_850_EVO_Data_Sheet_Rev_3_1.pdf"
+  },
+  {
+   "id": "samsung-850-evo-4tb",
+   "brand": "Samsung",
+   "name": "850 EVO 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "850 EVO 4TB",
+    "MZ-75E4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 3.0.1, random: IOmeter 1.1.0; write via TurboWrite (SLC cache)",
+   "source": "Samsung SSD 850 EVO Data Sheet Rev. 3.1 (May 2016)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_850_EVO_Data_Sheet_Rev_3_1.pdf"
+  },
+  {
+   "id": "samsung-860-evo-250gb",
+   "brand": "Samsung",
+   "name": "860 EVO 250GB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 EVO 250GB",
+    "MZ-76E250"
+   ],
+   "capacityGB": 250,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 860 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_EVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-860-evo-500gb",
+   "brand": "Samsung",
+   "name": "860 EVO 500GB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 EVO 500GB",
+    "MZ-76E500"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 860 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_EVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-860-evo-1tb",
+   "brand": "Samsung",
+   "name": "860 EVO 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 EVO 1TB",
+    "MZ-76E1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 860 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_EVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-860-evo-2tb",
+   "brand": "Samsung",
+   "name": "860 EVO 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 EVO 2TB",
+    "MZ-76E2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 860 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_EVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-860-evo-4tb",
+   "brand": "Samsung",
+   "name": "860 EVO 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 EVO 4TB",
+    "MZ-76E4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 98000,
+   "rndWriteIops": 90000,
+   "rndQueueDepth": "QD32",
+   "notes": "2.5-inch model; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 860 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_EVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-870-evo-250gb",
+   "brand": "Samsung",
+   "name": "870 EVO 250GB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 EVO 250GB",
+    "MZ-77E250"
+   ],
+   "capacityGB": 250,
+   "interface": "SATA 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 870 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_EVO_Data_Sheet_Rev1.1_230509.pdf"
+  },
+  {
+   "id": "samsung-870-evo-500gb",
+   "brand": "Samsung",
+   "name": "870 EVO 500GB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 EVO 500GB",
+    "MZ-77E500"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 870 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_EVO_Data_Sheet_Rev1.1_230509.pdf"
+  },
+  {
+   "id": "samsung-870-evo-1tb",
+   "brand": "Samsung",
+   "name": "870 EVO 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 EVO 1TB",
+    "MZ-77E1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 870 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_EVO_Data_Sheet_Rev1.1_230509.pdf"
+  },
+  {
+   "id": "samsung-870-evo-2tb",
+   "brand": "Samsung",
+   "name": "870 EVO 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 EVO 2TB",
+    "MZ-77E2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 870 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_EVO_Data_Sheet_Rev1.1_230509.pdf"
+  },
+  {
+   "id": "samsung-870-evo-4tb",
+   "brand": "Samsung",
+   "name": "870 EVO 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 EVO 4TB",
+    "MZ-77E4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung SSD 870 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_EVO_Data_Sheet_Rev1.1_230509.pdf"
+  },
+  {
+   "id": "samsung-860-qvo-1tb",
+   "brand": "Samsung",
+   "name": "860 QVO 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 QVO 1TB",
+    "MZ-76Q1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 96000,
+   "rndWriteIops": 89000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 860 QVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_QVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-860-qvo-2tb",
+   "brand": "Samsung",
+   "name": "860 QVO 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 QVO 2TB",
+    "MZ-76Q2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 97000,
+   "rndWriteIops": 89000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 860 QVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_QVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-860-qvo-4tb",
+   "brand": "Samsung",
+   "name": "860 QVO 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "860 QVO 4TB",
+    "MZ-76Q4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 97000,
+   "rndWriteIops": 89000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 860 QVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_860_QVO_Data_Sheet_Rev1.pdf"
+  },
+  {
+   "id": "samsung-870-qvo-1tb",
+   "brand": "Samsung",
+   "name": "870 QVO 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 QVO 1TB",
+    "MZ-77Q1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 870 QVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_QVO_Data_Sheet_Rev1.1_10129514052310.pdf"
+  },
+  {
+   "id": "samsung-870-qvo-2tb",
+   "brand": "Samsung",
+   "name": "870 QVO 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 QVO 2TB",
+    "MZ-77Q2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 870 QVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_QVO_Data_Sheet_Rev1.1_10129514052310.pdf"
+  },
+  {
+   "id": "samsung-870-qvo-4tb",
+   "brand": "Samsung",
+   "name": "870 QVO 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 QVO 4TB",
+    "MZ-77Q4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 870 QVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_QVO_Data_Sheet_Rev1.1_10129514052310.pdf"
+  },
+  {
+   "id": "samsung-870-qvo-8tb",
+   "brand": "Samsung",
+   "name": "870 QVO 8TB",
+   "kind": "sata-ssd",
+   "match": [
+    "870 QVO 8TB",
+    "MZ-77Q8T0"
+   ],
+   "capacityGB": 8000,
+   "interface": "SATA 6 Gbps",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 98000,
+   "rndWriteIops": 88000,
+   "rndQueueDepth": "QD32",
+   "notes": "QLC; seq: CrystalDiskMark 5.0.2, random: IOmeter 1.1.0; write via Intelligent TurboWrite, much slower after cache is full",
+   "source": "Samsung SSD 870 QVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_QVO_Data_Sheet_Rev1.1_10129514052310.pdf"
+  },
+  {
+   "id": "samsung-970-evo-250gb",
+   "brand": "Samsung",
+   "name": "970 EVO 250GB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO 250GB",
+    "MZ-V7E250"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3400,
+   "seqWriteMBs": 1500,
+   "rndReadIops": 200000,
+   "rndWriteIops": 350000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-970-EVO-Data-Sheet_Rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-500gb",
+   "brand": "Samsung",
+   "name": "970 EVO 500GB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO 500GB",
+    "MZ-V7E500"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3400,
+   "seqWriteMBs": 2300,
+   "rndReadIops": 370000,
+   "rndWriteIops": 450000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-970-EVO-Data-Sheet_Rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-1tb",
+   "brand": "Samsung",
+   "name": "970 EVO 1TB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO 1TB",
+    "MZ-V7E1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3400,
+   "seqWriteMBs": 2500,
+   "rndReadIops": 500000,
+   "rndWriteIops": 450000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-970-EVO-Data-Sheet_Rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-2tb",
+   "brand": "Samsung",
+   "name": "970 EVO 2TB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO 2TB",
+    "MZ-V7E2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2500,
+   "rndReadIops": 500000,
+   "rndWriteIops": 480000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-970-EVO-Data-Sheet_Rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-plus-250gb",
+   "brand": "Samsung",
+   "name": "970 EVO Plus 250GB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO Plus 250GB",
+    "MZ-V7S250"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2300,
+   "rndReadIops": 250000,
+   "rndWriteIops": 550000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Plus Data Sheet Rev. 3.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_970_EVO_Plus_Data_Sheet_Rev.3.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-plus-500gb",
+   "brand": "Samsung",
+   "name": "970 EVO Plus 500GB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO Plus 500GB",
+    "MZ-V7S500"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3200,
+   "rndReadIops": 480000,
+   "rndWriteIops": 550000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Plus Data Sheet Rev. 3.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_970_EVO_Plus_Data_Sheet_Rev.3.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-plus-1tb",
+   "brand": "Samsung",
+   "name": "970 EVO Plus 1TB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO Plus 1TB",
+    "MZ-V7S1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3300,
+   "rndReadIops": 600000,
+   "rndWriteIops": 550000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Plus Data Sheet Rev. 3.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_970_EVO_Plus_Data_Sheet_Rev.3.0.pdf"
+  },
+  {
+   "id": "samsung-970-evo-plus-2tb",
+   "brand": "Samsung",
+   "name": "970 EVO Plus 2TB",
+   "kind": "nvme",
+   "match": [
+    "970 EVO Plus 2TB",
+    "MZ-V7S2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.3",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3300,
+   "rndReadIops": 620000,
+   "rndWriteIops": 560000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 970 EVO Plus Data Sheet Rev. 3.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_970_EVO_Plus_Data_Sheet_Rev.3.0.pdf"
+  },
+  {
+   "id": "samsung-980-250gb",
+   "brand": "Samsung",
+   "name": "980 250GB",
+   "kind": "nvme",
+   "match": [
+    "Samsung SSD 980 250GB",
+    "MZ-V8V250"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.4",
+   "seqReadMBs": 2900,
+   "seqWriteMBs": 1300,
+   "rndReadIops": 230000,
+   "rndWriteIops": 320000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "no DRAM cache; IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 980 Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_980_Data_Sheet_Rev.1.1.pdf"
+  },
+  {
+   "id": "samsung-980-500gb",
+   "brand": "Samsung",
+   "name": "980 500GB",
+   "kind": "nvme",
+   "match": [
+    "Samsung SSD 980 500GB",
+    "MZ-V8V500"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.4",
+   "seqReadMBs": 3100,
+   "seqWriteMBs": 2600,
+   "rndReadIops": 400000,
+   "rndWriteIops": 470000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "no DRAM cache; IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 980 Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_980_Data_Sheet_Rev.1.1.pdf"
+  },
+  {
+   "id": "samsung-980-1tb",
+   "brand": "Samsung",
+   "name": "980 1TB",
+   "kind": "nvme",
+   "match": [
+    "Samsung SSD 980 1TB",
+    "MZ-V8V1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen 3.0 x4, NVMe 1.4",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "rndReadIops": 500000,
+   "rndWriteIops": 480000,
+   "rndQueueDepth": "QD32 T4",
+   "notes": "no DRAM cache; IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 980 Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_980_Data_Sheet_Rev.1.1.pdf"
+  },
+  {
+   "id": "samsung-980-pro-250gb",
+   "brand": "Samsung",
+   "name": "980 PRO 250GB",
+   "kind": "nvme",
+   "match": [
+    "980 PRO 250GB",
+    "MZ-V8P250"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen 4.0 x4, NVMe 1.3c",
+   "seqReadMBs": 6400,
+   "seqWriteMBs": 2700,
+   "rndReadIops": 500000,
+   "rndWriteIops": 600000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); on PCIe 3.0: up to 3500/2700 MB/s",
+   "source": "Samsung NVMe SSD 980 PRO Data Sheet Rev. 2.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-980-PRO-Data-Sheet_Rev.2.1_230509_10129505081019.pdf"
+  },
+  {
+   "id": "samsung-980-pro-500gb",
+   "brand": "Samsung",
+   "name": "980 PRO 500GB",
+   "kind": "nvme",
+   "match": [
+    "980 PRO 500GB",
+    "MZ-V8P500"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen 4.0 x4, NVMe 1.3c",
+   "seqReadMBs": 6900,
+   "seqWriteMBs": 5000,
+   "rndReadIops": 800000,
+   "rndWriteIops": 1000000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); on PCIe 3.0: up to 3500/3400 MB/s",
+   "source": "Samsung NVMe SSD 980 PRO Data Sheet Rev. 2.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-980-PRO-Data-Sheet_Rev.2.1_230509_10129505081019.pdf"
+  },
+  {
+   "id": "samsung-980-pro-1tb",
+   "brand": "Samsung",
+   "name": "980 PRO 1TB",
+   "kind": "nvme",
+   "match": [
+    "980 PRO 1TB",
+    "MZ-V8P1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen 4.0 x4, NVMe 1.3c",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 5000,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1000000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); on PCIe 3.0: up to 3500/3450 MB/s",
+   "source": "Samsung NVMe SSD 980 PRO Data Sheet Rev. 2.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-980-PRO-Data-Sheet_Rev.2.1_230509_10129505081019.pdf"
+  },
+  {
+   "id": "samsung-980-pro-2tb",
+   "brand": "Samsung",
+   "name": "980 PRO 2TB",
+   "kind": "nvme",
+   "match": [
+    "980 PRO 2TB",
+    "MZ-V8P2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen 4.0 x4, NVMe 1.3c",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 5100,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1000000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); on PCIe 3.0: up to 3500/3470 MB/s",
+   "source": "Samsung NVMe SSD 980 PRO Data Sheet Rev. 2.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung-NVMe-SSD-980-PRO-Data-Sheet_Rev.2.1_230509_10129505081019.pdf"
+  },
+  {
+   "id": "samsung-990-evo-1tb",
+   "brand": "Samsung",
+   "name": "990 EVO 1TB",
+   "kind": "nvme",
+   "match": [
+    "990 EVO 1TB",
+    "MZ-V9E1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 4.0 x4 / 5.0 x2, NVMe 2.0",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 4200,
+   "rndReadIops": 680000,
+   "rndWriteIops": 800000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "HMB (no DRAM); IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 990 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_evo_datasheet_rev.1.1.pdf"
+  },
+  {
+   "id": "samsung-990-evo-2tb",
+   "brand": "Samsung",
+   "name": "990 EVO 2TB",
+   "kind": "nvme",
+   "match": [
+    "990 EVO 2TB",
+    "MZ-V9E2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 4.0 x4 / 5.0 x2, NVMe 2.0",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 4200,
+   "rndReadIops": 700000,
+   "rndWriteIops": 800000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "HMB (no DRAM); IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 990 EVO Data Sheet Rev. 1.1",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_evo_datasheet_rev.1.1.pdf"
+  },
+  {
+   "id": "samsung-990-evo-plus-1tb",
+   "brand": "Samsung",
+   "name": "990 EVO Plus 1TB",
+   "kind": "nvme",
+   "match": [
+    "990 EVO Plus 1TB",
+    "MZ-V9S1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 4.0 x4 / 5.0 x2, NVMe 2.0",
+   "seqReadMBs": 7150,
+   "seqWriteMBs": 6300,
+   "rndReadIops": 850000,
+   "rndWriteIops": 1350000,
+   "notes": "HMB (no DRAM); IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); random QD/threads not stated",
+   "source": "Samsung NVMe SSD 990 EVO Plus Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_evo_plus_datasheet_rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-990-evo-plus-2tb",
+   "brand": "Samsung",
+   "name": "990 EVO Plus 2TB",
+   "kind": "nvme",
+   "match": [
+    "990 EVO Plus 2TB",
+    "MZ-V9S2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 4.0 x4 / 5.0 x2, NVMe 2.0",
+   "seqReadMBs": 7250,
+   "seqWriteMBs": 6300,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1350000,
+   "notes": "HMB (no DRAM); IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); random QD/threads not stated",
+   "source": "Samsung NVMe SSD 990 EVO Plus Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_evo_plus_datasheet_rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-990-evo-plus-4tb",
+   "brand": "Samsung",
+   "name": "990 EVO Plus 4TB",
+   "kind": "nvme",
+   "match": [
+    "990 EVO Plus 4TB",
+    "MZ-V9S4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe 4.0 x4 / 5.0 x2, NVMe 2.0",
+   "seqReadMBs": 7250,
+   "seqWriteMBs": 6300,
+   "rndReadIops": 1050000,
+   "rndWriteIops": 1400000,
+   "notes": "HMB (no DRAM); IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache); random QD/threads not stated",
+   "source": "Samsung NVMe SSD 990 EVO Plus Data Sheet Rev. 1.0",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_evo_plus_datasheet_rev.1.0.pdf"
+  },
+  {
+   "id": "samsung-990-pro-1tb",
+   "brand": "Samsung",
+   "name": "990 PRO 1TB",
+   "kind": "nvme",
+   "match": [
+    "990 PRO 1TB",
+    "MZ-V9P1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen 4.0 x4, NVMe 2.0",
+   "seqReadMBs": 7450,
+   "seqWriteMBs": 6900,
+   "rndReadIops": 1200000,
+   "rndWriteIops": 1550000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 990 PRO Data Sheet Rev. 2.0 (Jul 2023)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_pro_datasheet_rev.2.0.pdf"
+  },
+  {
+   "id": "samsung-990-pro-2tb",
+   "brand": "Samsung",
+   "name": "990 PRO 2TB",
+   "kind": "nvme",
+   "match": [
+    "990 PRO 2TB",
+    "MZ-V9P2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen 4.0 x4, NVMe 2.0",
+   "seqReadMBs": 7450,
+   "seqWriteMBs": 6900,
+   "rndReadIops": 1400000,
+   "rndWriteIops": 1550000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 990 PRO Data Sheet Rev. 2.0 (Jul 2023)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_pro_datasheet_rev.2.0.pdf"
+  },
+  {
+   "id": "samsung-990-pro-4tb",
+   "brand": "Samsung",
+   "name": "990 PRO 4TB",
+   "kind": "nvme",
+   "match": [
+    "990 PRO 4TB",
+    "MZ-V9P4T0"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe Gen 4.0 x4, NVMe 2.0",
+   "seqReadMBs": 7450,
+   "seqWriteMBs": 6900,
+   "rndReadIops": 1600000,
+   "rndWriteIops": 1550000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "IOmeter 1.1.0; write via Intelligent TurboWrite (SLC cache)",
+   "source": "Samsung NVMe SSD 990 PRO Data Sheet Rev. 2.0 (Jul 2023)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/samsung_nvme_ssd_990_pro_datasheet_rev.2.0.pdf"
+  },
+  {
+   "id": "wd-black-sn770-250gb",
+   "brand": "WD",
+   "name": "WD_BLACK SN770 250GB",
+   "kind": "nvme",
+   "match": [
+    "SN770 250GB",
+    "WDS250G3X0E"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 4000,
+   "seqWriteMBs": 2000,
+   "rndReadIops": 240000,
+   "rndWriteIops": 470000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated",
+   "source": "WD_BLACK SN770 NVMe SSD product brief",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn770-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn770-500gb",
+   "brand": "WD",
+   "name": "WD_BLACK SN770 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN770 500GB",
+    "WDS500G3X0E"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 4000,
+   "rndReadIops": 460000,
+   "rndWriteIops": 800000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated",
+   "source": "WD_BLACK SN770 NVMe SSD product brief",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn770-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn770-1tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN770 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN770 1TB",
+    "WDS100T3X0E"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5150,
+   "seqWriteMBs": 4900,
+   "rndReadIops": 740000,
+   "rndWriteIops": 800000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated",
+   "source": "WD_BLACK SN770 NVMe SSD product brief",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn770-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn770-2tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN770 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN770 2TB",
+    "WDS200T3X0E"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5150,
+   "seqWriteMBs": 4850,
+   "rndReadIops": 650000,
+   "rndWriteIops": 800000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated",
+   "source": "WD_BLACK SN770 NVMe SSD product brief",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn770-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850x-1tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850X 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN850X 1000GB",
+    "SN850X HS 1000GB",
+    "SN850X 1TB",
+    "WDS100T2X0E",
+    "WDS100T2XHE"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 6300,
+   "rndReadIops": 800000,
+   "rndWriteIops": 1100000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850X NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850x-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850x-2tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850X 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN850X 2000GB",
+    "SN850X HS 2000GB",
+    "SN850X 2TB",
+    "WDS200T2X0E",
+    "WDS200T2XHE"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 6600,
+   "rndReadIops": 1200000,
+   "rndWriteIops": 1100000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850X NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850x-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850x-4tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850X 4TB",
+   "kind": "nvme",
+   "match": [
+    "SN850X 4000GB",
+    "SN850X HS 4000GB",
+    "SN850X 4TB",
+    "WDS400T2X0E",
+    "WDS400T2XHE"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 6600,
+   "rndReadIops": 1200000,
+   "rndWriteIops": 1100000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850X NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850x-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850x-8tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850X 8TB",
+   "kind": "nvme",
+   "match": [
+    "SN850X 8000GB",
+    "SN850X HS 8000GB",
+    "SN850X 8TB",
+    "WDS800T2X0E",
+    "WDS800T2XHE"
+   ],
+   "capacityGB": 8000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 7200,
+   "seqWriteMBs": 6600,
+   "rndReadIops": 1200000,
+   "rndWriteIops": 1200000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850X NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850x-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850-500gb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN850 500GB",
+    "WDS500G1X0E",
+    "WDS500G1XHE"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen4 x4",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 4100,
+   "rndReadIops": 810000,
+   "rndWriteIops": 680000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850 NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850-1tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN850 1TB",
+    "WDS100T1X0E",
+    "WDS100T1XHE"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen4 x4",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 5300,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 720000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850 NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn850-2tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN850 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN850 2TB",
+    "WDS200T1X0E",
+    "WDS200T1XHE"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen4 x4",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 5100,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 710000,
+   "notes": "internal testing; random QD not stated; same spec with and without heatsink",
+   "source": "WD_BLACK SN850 NVMe SSD data sheet",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/data-sheet-wd-black-sn850-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn750-250gb",
+   "brand": "WD",
+   "name": "WD_BLACK SN750 250GB",
+   "kind": "nvme",
+   "match": [
+    "SN750 250GB",
+    "WDS250G3X0C"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3100,
+   "seqWriteMBs": 1600,
+   "rndReadIops": 220000,
+   "rndWriteIops": 180000,
+   "rndQueueDepth": "QD32 T8",
+   "notes": "non-heatsink model; seq at QD32 T1",
+   "source": "WD_BLACK SN750 NVMe SSD product brief (Sep 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn750-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn750-500gb",
+   "brand": "WD",
+   "name": "WD_BLACK SN750 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN750 500GB",
+    "WDS500G3X0C",
+    "WDS500G3XHC"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3430,
+   "seqWriteMBs": 2600,
+   "rndReadIops": 420000,
+   "rndWriteIops": 380000,
+   "rndQueueDepth": "QD32 T8",
+   "notes": "non-heatsink model; seq at QD32 T1; 500GB heatsink model has the same spec",
+   "source": "WD_BLACK SN750 NVMe SSD product brief (Sep 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn750-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn750-1tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN750 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN750 1TB",
+    "WDS100T3X0C"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3430,
+   "seqWriteMBs": 3000,
+   "rndReadIops": 515000,
+   "rndWriteIops": 560000,
+   "rndQueueDepth": "QD32 T8",
+   "notes": "non-heatsink model; seq at QD32 T1",
+   "source": "WD_BLACK SN750 NVMe SSD product brief (Sep 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn750-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn750-2tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN750 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN750 2TB",
+    "WDS200T3X0C"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3400,
+   "seqWriteMBs": 2900,
+   "rndReadIops": 480000,
+   "rndWriteIops": 540000,
+   "rndQueueDepth": "QD32 T8",
+   "notes": "non-heatsink model; seq at QD32 T1",
+   "source": "WD_BLACK SN750 NVMe SSD product brief (Sep 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn750-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-black-sn750-4tb",
+   "brand": "WD",
+   "name": "WD_BLACK SN750 4TB",
+   "kind": "nvme",
+   "match": [
+    "SN750 4TB",
+    "WDS400T3X0C"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3400,
+   "seqWriteMBs": 3100,
+   "rndReadIops": 550000,
+   "rndWriteIops": 520000,
+   "rndQueueDepth": "QD32 T8",
+   "notes": "non-heatsink model; seq at QD32 T1",
+   "source": "WD_BLACK SN750 NVMe SSD product brief (Sep 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-black-ssd/product-brief-wd-black-sn750-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn580-250gb",
+   "brand": "WD",
+   "name": "WD Blue SN580 250GB",
+   "kind": "nvme",
+   "match": [
+    "SN580 250GB",
+    "WDS250G3B0E"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen4 NVMe 1.4b",
+   "seqReadMBs": 4000,
+   "seqWriteMBs": 2000,
+   "rndReadIops": 240000,
+   "rndWriteIops": 470000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN580 NVMe SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sn580-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn580-500gb",
+   "brand": "WD",
+   "name": "WD Blue SN580 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN580 500GB",
+    "WDS500G3B0E"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen4 NVMe 1.4b",
+   "seqReadMBs": 4000,
+   "seqWriteMBs": 3600,
+   "rndReadIops": 450000,
+   "rndWriteIops": 750000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN580 NVMe SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sn580-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn580-1tb",
+   "brand": "WD",
+   "name": "WD Blue SN580 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN580 1TB",
+    "WDS100T3B0E"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen4 NVMe 1.4b",
+   "seqReadMBs": 4150,
+   "seqWriteMBs": 4150,
+   "rndReadIops": 600000,
+   "rndWriteIops": 750000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN580 NVMe SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sn580-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn580-2tb",
+   "brand": "WD",
+   "name": "WD Blue SN580 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN580 2TB",
+    "WDS200T3B0E"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen4 NVMe 1.4b",
+   "seqReadMBs": 4150,
+   "seqWriteMBs": 4150,
+   "rndReadIops": 600000,
+   "rndWriteIops": 750000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN580 NVMe SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sn580-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn570-250gb",
+   "brand": "WD",
+   "name": "WD Blue SN570 250GB",
+   "kind": "nvme",
+   "match": [
+    "SN570 250GB",
+    "WDS250G3B0C"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3300,
+   "seqWriteMBs": 1200,
+   "rndReadIops": 190000,
+   "rndWriteIops": 210000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; seq at QD32 T1",
+   "source": "WD Blue SN570 NVMe SSD product brief (Jan 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn570-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn570-500gb",
+   "brand": "WD",
+   "name": "WD Blue SN570 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN570 500GB",
+    "WDS500G3B0C"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2300,
+   "rndReadIops": 360000,
+   "rndWriteIops": 390000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; seq at QD32 T1",
+   "source": "WD Blue SN570 NVMe SSD product brief (Jan 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn570-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn570-1tb",
+   "brand": "WD",
+   "name": "WD Blue SN570 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN570 1TB",
+    "WDS100T3B0C"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "rndReadIops": 460000,
+   "rndWriteIops": 450000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; seq at QD32 T1",
+   "source": "WD Blue SN570 NVMe SSD product brief (Jan 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn570-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn570-2tb",
+   "brand": "WD",
+   "name": "WD Blue SN570 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN570 2TB",
+    "WDS200T3B0C"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3500,
+   "rndReadIops": 600000,
+   "rndWriteIops": 600000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; seq at QD32 T1",
+   "source": "WD Blue SN570 NVMe SSD product brief (Jan 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn570-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn550-250gb",
+   "brand": "WD",
+   "name": "WD Blue SN550 250GB",
+   "kind": "nvme",
+   "match": [
+    "SN550 250GB",
+    "WDS250G2B0C"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 950,
+   "rndReadIops": 165000,
+   "rndWriteIops": 160000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 7.0.0f, 1000MB LBA range",
+   "source": "WD Blue SN550 NVMe SSD product brief (Jun 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn550-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn550-500gb",
+   "brand": "WD",
+   "name": "WD Blue SN550 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN550 500GB",
+    "WDS500G2B0C"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1750,
+   "rndReadIops": 250000,
+   "rndWriteIops": 175000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 7.0.0f, 1000MB LBA range",
+   "source": "WD Blue SN550 NVMe SSD product brief (Jun 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn550-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn550-1tb",
+   "brand": "WD",
+   "name": "WD Blue SN550 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN550 1TB",
+    "WDS100T2B0C"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1950,
+   "rndReadIops": 345000,
+   "rndWriteIops": 385000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 7.0.0f, 1000MB LBA range",
+   "source": "WD Blue SN550 NVMe SSD product brief (Jun 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn550-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn550-2tb",
+   "brand": "WD",
+   "name": "WD Blue SN550 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN550 2TB",
+    "WDS200T2B0C"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen3 8 Gb/s, up to 4 lanes",
+   "seqReadMBs": 2600,
+   "seqWriteMBs": 1800,
+   "rndReadIops": 360000,
+   "rndWriteIops": 384000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "CrystalDiskMark 7.0.0f, 1000MB LBA range",
+   "source": "WD Blue SN550 NVMe SSD product brief (Jun 2021)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/product-brief-wd-blue-sn550-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn5000-500gb",
+   "brand": "WD",
+   "name": "WD Blue SN5000 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN5000 500GB",
+    "WDS500G4B0E"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 4000,
+   "rndReadIops": 460000,
+   "rndWriteIops": 770000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN5000 NVMe SSD data sheet (2024)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/data-sheet-wd-blue-sn5000-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn5000-1tb",
+   "brand": "WD",
+   "name": "WD Blue SN5000 1TB",
+   "kind": "nvme",
+   "match": [
+    "SN5000 1TB",
+    "WDS100T4B0E"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5150,
+   "seqWriteMBs": 4900,
+   "rndReadIops": 730000,
+   "rndWriteIops": 770000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN5000 NVMe SSD data sheet (2024)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/data-sheet-wd-blue-sn5000-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn5000-2tb",
+   "brand": "WD",
+   "name": "WD Blue SN5000 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN5000 2TB",
+    "WDS200T4B0E"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5150,
+   "seqWriteMBs": 4850,
+   "rndReadIops": 650000,
+   "rndWriteIops": 770000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1",
+   "source": "WD Blue SN5000 NVMe SSD data sheet (2024)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/data-sheet-wd-blue-sn5000-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sn5000-4tb",
+   "brand": "WD",
+   "name": "WD Blue SN5000 4TB",
+   "kind": "nvme",
+   "match": [
+    "SN5000 4TB",
+    "WDS400T4B0E"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe Gen4 16GT/s, up to 4 lanes",
+   "seqReadMBs": 5500,
+   "seqWriteMBs": 5000,
+   "rndReadIops": 690000,
+   "rndWriteIops": 900000,
+   "rndQueueDepth": "QD32 T16",
+   "notes": "seq at QD32 T1; 4TB uses QLC NAND",
+   "source": "WD Blue SN5000 NVMe SSD data sheet (2024)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-nvme-ssd/data-sheet-wd-blue-sn5000-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sn350-250gb",
+   "brand": "WD",
+   "name": "WD Green SN350 250GB",
+   "kind": "nvme",
+   "match": [
+    "SN350 250GB",
+    "WDS250G2G0C"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe Gen3 8Gb/s, up to 4 lanes",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1500,
+   "rndReadIops": 300000,
+   "rndWriteIops": 300000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated; TLC",
+   "source": "WD Green SN350 NVMe SSD product brief (Dec 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sn350-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sn350-500gb",
+   "brand": "WD",
+   "name": "WD Green SN350 500GB",
+   "kind": "nvme",
+   "match": [
+    "SN350 500GB",
+    "WDS500G2G0C"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe Gen3 8Gb/s, up to 4 lanes",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1500,
+   "rndReadIops": 300000,
+   "rndWriteIops": 300000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated; TLC",
+   "source": "WD Green SN350 NVMe SSD product brief (Dec 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sn350-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sn350-1tb-tlc",
+   "brand": "WD",
+   "name": "WD Green SN350 1TB (TLC, WDS100T2G0C)",
+   "kind": "nvme",
+   "match": [
+    "WDS100T2G0C"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen3 8Gb/s, up to 4 lanes",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1850,
+   "rndReadIops": 340000,
+   "rndWriteIops": 350000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated; two different 1TB versions exist; matched by part number only",
+   "source": "WD Green SN350 NVMe SSD product brief (Dec 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sn350-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sn350-1tb-qlc",
+   "brand": "WD",
+   "name": "WD Green SN350 1TB (QLC, WDS100T3G0C)",
+   "kind": "nvme",
+   "match": [
+    "WDS100T3G0C"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen3 8Gb/s, up to 4 lanes",
+   "seqReadMBs": 3200,
+   "seqWriteMBs": 2500,
+   "rndReadIops": 300000,
+   "rndWriteIops": 400000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated; two different 1TB versions exist; matched by part number only",
+   "source": "WD Green SN350 NVMe SSD product brief (Dec 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sn350-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sn350-2tb",
+   "brand": "WD",
+   "name": "WD Green SN350 2TB",
+   "kind": "nvme",
+   "match": [
+    "SN350 2TB",
+    "WDS200T3G0C"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen3 8Gb/s, up to 4 lanes",
+   "seqReadMBs": 3200,
+   "seqWriteMBs": 3000,
+   "rndReadIops": 500000,
+   "rndWriteIops": 450000,
+   "notes": "CrystalDiskMark 8.0.1, 1000MB LBA range; random QD not stated; QLC",
+   "source": "WD Green SN350 NVMe SSD product brief (Dec 2022)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sn350-nvme-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sa510-250gb",
+   "brand": "WD",
+   "name": "WD Blue SA510 250GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA510 2.5 250GB",
+    "SA510 M.2 250GB",
+    "WDS250G3B0A",
+    "WDS250G3B0B"
+   ],
+   "capacityGB": 250,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 555,
+   "seqWriteMBs": 440,
+   "rndReadIops": 80000,
+   "rndWriteIops": 78000,
+   "notes": "internal testing; random QD not stated; same spec for 2.5-inch and M.2",
+   "source": "WD Blue SA510 SATA SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sa510-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sa510-500gb",
+   "brand": "WD",
+   "name": "WD Blue SA510 500GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA510 2.5 500GB",
+    "SA510 M.2 500GB",
+    "WDS500G3B0A",
+    "WDS500G3B0B"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 510,
+   "rndReadIops": 90000,
+   "rndWriteIops": 82000,
+   "notes": "internal testing; random QD not stated; same spec for 2.5-inch and M.2",
+   "source": "WD Blue SA510 SATA SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sa510-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sa510-1tb",
+   "brand": "WD",
+   "name": "WD Blue SA510 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA510 2.5 1000GB",
+    "SA510 M.2 1000GB",
+    "SA510 1TB",
+    "WDS100T3B0A",
+    "WDS100T3B0B"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 520,
+   "rndReadIops": 90000,
+   "rndWriteIops": 82000,
+   "notes": "internal testing; random QD not stated; same spec for 2.5-inch and M.2",
+   "source": "WD Blue SA510 SATA SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sa510-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sa510-2tb",
+   "brand": "WD",
+   "name": "WD Blue SA510 2TB (2.5-inch)",
+   "kind": "sata-ssd",
+   "match": [
+    "SA510 2.5 2000GB",
+    "WDS200T3B0A"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 520,
+   "rndReadIops": 87000,
+   "rndWriteIops": 83000,
+   "notes": "internal testing; random QD not stated; M.2 2TB (WDS200T3B0B) is rated 85K random read, not included",
+   "source": "WD Blue SA510 SATA SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sa510-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-sa510-4tb",
+   "brand": "WD",
+   "name": "WD Blue SA510 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA510 2.5 4000GB",
+    "WDS400T3B0A"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 520,
+   "rndReadIops": 87000,
+   "rndWriteIops": 83000,
+   "notes": "internal testing; random QD not stated",
+   "source": "WD Blue SA510 SATA SSD product brief (2023)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/product-brief-wd-blue-sa510-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-blue-3d-nand-sata-250gb",
+   "brand": "WD",
+   "name": "WD Blue 3D NAND SATA 250GB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS250G2B0A",
+    "WDS250G2B0B"
+   ],
+   "capacityGB": 250,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 525,
+   "rndReadIops": 95000,
+   "rndWriteIops": 81000,
+   "rndQueueDepth": "QD32",
+   "notes": "CrystalDiskMark, 1000MB LBA range; same spec for 2.5-inch and M.2",
+   "source": "WD Blue 3D NAND SATA SSD data sheet 2879-800092 (Apr 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/data-sheet-wd-blue-3d-nand-sata-ssd-2879-800092.pdf"
+  },
+  {
+   "id": "wd-blue-3d-nand-sata-500gb",
+   "brand": "WD",
+   "name": "WD Blue 3D NAND SATA 500GB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS500G2B0A",
+    "WDS500G2B0B"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 95000,
+   "rndWriteIops": 84000,
+   "rndQueueDepth": "QD32",
+   "notes": "CrystalDiskMark, 1000MB LBA range; same spec for 2.5-inch and M.2",
+   "source": "WD Blue 3D NAND SATA SSD data sheet 2879-800092 (Apr 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/data-sheet-wd-blue-3d-nand-sata-ssd-2879-800092.pdf"
+  },
+  {
+   "id": "wd-blue-3d-nand-sata-1tb",
+   "brand": "WD",
+   "name": "WD Blue 3D NAND SATA 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS100T2B0A",
+    "WDS100T2B0B"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 95000,
+   "rndWriteIops": 84000,
+   "rndQueueDepth": "QD32",
+   "notes": "CrystalDiskMark, 1000MB LBA range; same spec for 2.5-inch and M.2",
+   "source": "WD Blue 3D NAND SATA SSD data sheet 2879-800092 (Apr 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/data-sheet-wd-blue-3d-nand-sata-ssd-2879-800092.pdf"
+  },
+  {
+   "id": "wd-blue-3d-nand-sata-2tb",
+   "brand": "WD",
+   "name": "WD Blue 3D NAND SATA 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS200T2B0A",
+    "WDS200T2B0B"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 95000,
+   "rndWriteIops": 84000,
+   "rndQueueDepth": "QD32",
+   "notes": "CrystalDiskMark, 1000MB LBA range; same spec for 2.5-inch and M.2",
+   "source": "WD Blue 3D NAND SATA SSD data sheet 2879-800092 (Apr 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/data-sheet-wd-blue-3d-nand-sata-ssd-2879-800092.pdf"
+  },
+  {
+   "id": "wd-blue-3d-nand-sata-4tb",
+   "brand": "WD",
+   "name": "WD Blue 3D NAND SATA 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS400T2B0A"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 530,
+   "rndReadIops": 95000,
+   "rndWriteIops": 82000,
+   "rndQueueDepth": "QD32",
+   "notes": "CrystalDiskMark, 1000MB LBA range",
+   "source": "WD Blue 3D NAND SATA SSD data sheet 2879-800092 (Apr 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-ssd/data-sheet-wd-blue-3d-nand-sata-ssd-2879-800092.pdf"
+  },
+  {
+   "id": "wd-green-sata-120gb",
+   "brand": "WD",
+   "name": "WD Green SATA 120GB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS120G2G0A",
+    "WDS120G2G0B"
+   ],
+   "capacityGB": 120,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD data sheet 2879-800082 (Nov 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/data-sheet-wd-green-ssd-2879-800083.pdf"
+  },
+  {
+   "id": "wd-green-sata-240gb",
+   "brand": "WD",
+   "name": "WD Green SATA 240GB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS240G2G0A",
+    "WDS240G2G0B"
+   ],
+   "capacityGB": 240,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD data sheet 2879-800082 (Nov 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/data-sheet-wd-green-ssd-2879-800083.pdf"
+  },
+  {
+   "id": "wd-green-sata-480gb",
+   "brand": "WD",
+   "name": "WD Green SATA 480GB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS480G2G0A",
+    "WDS480G2G0B"
+   ],
+   "capacityGB": 480,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD data sheet 2879-800082 (Nov 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/data-sheet-wd-green-ssd-2879-800083.pdf"
+  },
+  {
+   "id": "wd-green-sata-1tb",
+   "brand": "WD",
+   "name": "WD Green SATA 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS100T2G0A"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD data sheet 2879-800082 (Nov 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/data-sheet-wd-green-ssd-2879-800083.pdf"
+  },
+  {
+   "id": "wd-green-sata-2tb",
+   "brand": "WD",
+   "name": "WD Green SATA 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS200T2G0A"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD data sheet 2879-800082 (Nov 2019)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/data-sheet-wd-green-ssd-2879-800083.pdf"
+  },
+  {
+   "id": "wd-green-sata-240gb-g3",
+   "brand": "WD",
+   "name": "WD Green SATA 240GB (G3)",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS240G3G0A",
+    "WDS240G3G0B"
+   ],
+   "capacityGB": 240,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD product brief (2024)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sata-480gb-g3",
+   "brand": "WD",
+   "name": "WD Green SATA 480GB (G3)",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS480G3G0A",
+    "WDS480G3G0B"
+   ],
+   "capacityGB": 480,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD product brief (2024)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sata-ssd.pdf"
+  },
+  {
+   "id": "wd-green-sata-1tb-g3",
+   "brand": "WD",
+   "name": "WD Green SATA 1TB (G3)",
+   "kind": "sata-ssd",
+   "match": [
+    "WDS100T3G0A"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA III 6 Gb/s",
+   "seqReadMBs": 545,
+   "notes": "WD publishes only sequential read for WD Green SATA",
+   "source": "WD Green SATA SSD product brief (2024)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-green-ssd/product-brief-wd-green-sata-ssd.pdf"
+  },
+  {
+   "id": "kingston-a400-120gb",
+   "brand": "Kingston",
+   "name": "A400 120GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA400S37120G",
+    "SA400S37/120G"
+   ],
+   "capacityGB": 120,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 500,
+   "seqWriteMBs": 320,
+   "notes": "ATTO, out-of-box performance; Kingston publishes no IOPS for A400",
+   "source": "Kingston A400 datasheet (MKD-393.5US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA400S37_us.pdf"
+  },
+  {
+   "id": "kingston-a400-240gb",
+   "brand": "Kingston",
+   "name": "A400 240GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA400S37240G",
+    "SA400S37/240G",
+    "SA400M8240G",
+    "SA400M8/240G"
+   ],
+   "capacityGB": 240,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 500,
+   "seqWriteMBs": 350,
+   "notes": "ATTO, out-of-box performance; Kingston publishes no IOPS for A400",
+   "source": "Kingston A400 datasheet (MKD-393.5US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA400S37_us.pdf"
+  },
+  {
+   "id": "kingston-a400-480gb",
+   "brand": "Kingston",
+   "name": "A400 480GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA400S37480G",
+    "SA400S37/480G",
+    "SA400M8480G",
+    "SA400M8/480G"
+   ],
+   "capacityGB": 480,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 500,
+   "seqWriteMBs": 450,
+   "notes": "ATTO, out-of-box performance; Kingston publishes no IOPS for A400",
+   "source": "Kingston A400 datasheet (MKD-393.5US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA400S37_us.pdf"
+  },
+  {
+   "id": "kingston-a400-960gb",
+   "brand": "Kingston",
+   "name": "A400 960GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SA400S37960G",
+    "SA400S37/960G"
+   ],
+   "capacityGB": 960,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 500,
+   "seqWriteMBs": 450,
+   "notes": "ATTO, out-of-box performance; Kingston publishes no IOPS for A400",
+   "source": "Kingston A400 datasheet (MKD-393.5US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA400S37_us.pdf"
+  },
+  {
+   "id": "kingston-kc600-256gb",
+   "brand": "Kingston",
+   "name": "KC600 256GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SKC600256G",
+    "SKC600/256G",
+    "SKC600MS256G",
+    "SKC600MS/256G"
+   ],
+   "capacityGB": 256,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 500,
+   "rndReadIops": 90000,
+   "rndWriteIops": 80000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston KC600 datasheet (MKD-05282024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/kc600_en.pdf"
+  },
+  {
+   "id": "kingston-kc600-512gb",
+   "brand": "Kingston",
+   "name": "KC600 512GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SKC600512G",
+    "SKC600/512G",
+    "SKC600MS512G",
+    "SKC600MS/512G"
+   ],
+   "capacityGB": 512,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 90000,
+   "rndWriteIops": 80000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston KC600 datasheet (MKD-05282024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/kc600_en.pdf"
+  },
+  {
+   "id": "kingston-kc600-1024gb",
+   "brand": "Kingston",
+   "name": "KC600 1024GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SKC6001024G",
+    "SKC600/1024G",
+    "SKC600MS1024G",
+    "SKC600MS/1024G"
+   ],
+   "capacityGB": 1024,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 90000,
+   "rndWriteIops": 80000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston KC600 datasheet (MKD-05282024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/kc600_en.pdf"
+  },
+  {
+   "id": "kingston-kc600-2048gb",
+   "brand": "Kingston",
+   "name": "KC600 2048GB",
+   "kind": "sata-ssd",
+   "match": [
+    "SKC6002048G",
+    "SKC600/2048G"
+   ],
+   "capacityGB": 2048,
+   "interface": "SATA Rev. 3.0 (6Gb/s)",
+   "seqReadMBs": 550,
+   "seqWriteMBs": 520,
+   "rndReadIops": 90000,
+   "rndWriteIops": 80000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston KC600 datasheet (MKD-05282024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/kc600_en.pdf"
+  },
+  {
+   "id": "kingston-nv1-250gb",
+   "brand": "Kingston",
+   "name": "NV1 250GB",
+   "kind": "nvme",
+   "match": [
+    "SNVS250G",
+    "SNVS/250G"
+   ],
+   "capacityGB": 250,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2100,
+   "seqWriteMBs": 1100,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV1",
+   "source": "Kingston NV1 datasheet (MKD-433.4 US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNVS_us.pdf"
+  },
+  {
+   "id": "kingston-nv1-500gb",
+   "brand": "Kingston",
+   "name": "NV1 500GB",
+   "kind": "nvme",
+   "match": [
+    "SNVS500G",
+    "SNVS/500G"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2100,
+   "seqWriteMBs": 1700,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV1",
+   "source": "Kingston NV1 datasheet (MKD-433.4 US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNVS_us.pdf"
+  },
+  {
+   "id": "kingston-nv1-1tb",
+   "brand": "Kingston",
+   "name": "NV1 1TB",
+   "kind": "nvme",
+   "match": [
+    "SNVS1000G",
+    "SNVS/1000G"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2100,
+   "seqWriteMBs": 1700,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV1",
+   "source": "Kingston NV1 datasheet (MKD-433.4 US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNVS_us.pdf"
+  },
+  {
+   "id": "kingston-nv1-2tb",
+   "brand": "Kingston",
+   "name": "NV1 2TB",
+   "kind": "nvme",
+   "match": [
+    "SNVS2000G",
+    "SNVS/2000G"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2100,
+   "seqWriteMBs": 1700,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV1",
+   "source": "Kingston NV1 datasheet (MKD-433.4 US, 2022)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNVS_us.pdf"
+  },
+  {
+   "id": "kingston-nv2-250gb",
+   "brand": "Kingston",
+   "name": "NV2 250GB",
+   "kind": "nvme",
+   "match": [
+    "SNV2S250G",
+    "SNV2S/250G"
+   ],
+   "capacityGB": 250,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 3000,
+   "seqWriteMBs": 1300,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV2",
+   "source": "Kingston NV2 datasheet (MKD-453.3 US, 2023)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV2S_us.pdf"
+  },
+  {
+   "id": "kingston-nv2-500gb",
+   "brand": "Kingston",
+   "name": "NV2 500GB",
+   "kind": "nvme",
+   "match": [
+    "SNV2S500G",
+    "SNV2S/500G"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2100,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV2",
+   "source": "Kingston NV2 datasheet (MKD-453.3 US, 2023)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV2S_us.pdf"
+  },
+  {
+   "id": "kingston-nv2-1tb",
+   "brand": "Kingston",
+   "name": "NV2 1TB",
+   "kind": "nvme",
+   "match": [
+    "SNV2S1000G",
+    "SNV2S/1000G"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2100,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV2",
+   "source": "Kingston NV2 datasheet (MKD-453.3 US, 2023)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV2S_us.pdf"
+  },
+  {
+   "id": "kingston-nv2-2tb",
+   "brand": "Kingston",
+   "name": "NV2 2TB",
+   "kind": "nvme",
+   "match": [
+    "SNV2S2000G",
+    "SNV2S/2000G"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2800,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV2",
+   "source": "Kingston NV2 datasheet (MKD-453.3 US, 2023)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV2S_us.pdf"
+  },
+  {
+   "id": "kingston-nv2-4tb",
+   "brand": "Kingston",
+   "name": "NV2 4TB",
+   "kind": "nvme",
+   "match": [
+    "SNV2S4000G",
+    "SNV2S/4000G"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2800,
+   "notes": "out-of-box performance; Kingston publishes no IOPS for NV2",
+   "source": "Kingston NV2 datasheet (MKD-453.3 US, 2023)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV2S_us.pdf"
+  },
+  {
+   "id": "kingston-nv3-500gb",
+   "brand": "Kingston",
+   "name": "NV3 500GB",
+   "kind": "nvme",
+   "match": [
+    "SNV3S500G",
+    "SNV3S/500G",
+    "SNV3SM3500G",
+    "SNV3SM3/500G"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 3000,
+   "notes": "out-of-box performance; same spec for M.2 2280 and 2230 versions; Kingston publishes no IOPS for NV3",
+   "source": "Kingston NV3 datasheet (2025)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV3S_us.pdf"
+  },
+  {
+   "id": "kingston-nv3-1tb",
+   "brand": "Kingston",
+   "name": "NV3 1TB",
+   "kind": "nvme",
+   "match": [
+    "SNV3S1000G",
+    "SNV3S/1000G",
+    "SNV3SM31T0",
+    "SNV3SM3/1T0"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 6000,
+   "seqWriteMBs": 4000,
+   "notes": "out-of-box performance; same spec for M.2 2280 and 2230 versions; Kingston publishes no IOPS for NV3",
+   "source": "Kingston NV3 datasheet (2025)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV3S_us.pdf"
+  },
+  {
+   "id": "kingston-nv3-2tb",
+   "brand": "Kingston",
+   "name": "NV3 2TB",
+   "kind": "nvme",
+   "match": [
+    "SNV3S2000G",
+    "SNV3S/2000G",
+    "SNV3SM32T0",
+    "SNV3SM3/2T0"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 6000,
+   "seqWriteMBs": 5000,
+   "notes": "out-of-box performance; same spec for M.2 2280 and 2230 versions; Kingston publishes no IOPS for NV3",
+   "source": "Kingston NV3 datasheet (2025)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV3S_us.pdf"
+  },
+  {
+   "id": "kingston-nv3-4tb",
+   "brand": "Kingston",
+   "name": "NV3 4TB",
+   "kind": "nvme",
+   "match": [
+    "SNV3S4000G",
+    "SNV3S/4000G"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 6000,
+   "seqWriteMBs": 5000,
+   "notes": "out-of-box performance; same spec for M.2 2280 and 2230 versions; Kingston publishes no IOPS for NV3",
+   "source": "Kingston NV3 datasheet (2025)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SNV3S_us.pdf"
+  },
+  {
+   "id": "kingston-kc3000-512gb",
+   "brand": "Kingston",
+   "name": "KC3000 512GB",
+   "kind": "nvme",
+   "match": [
+    "SKC3000S512G",
+    "SKC3000S/512G"
+   ],
+   "capacityGB": 512,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 3900,
+   "rndReadIops": 450000,
+   "rndWriteIops": 900000,
+   "notes": "out-of-box performance; random QD not stated",
+   "source": "Kingston KC3000 datasheet (MKD-06032024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/KC3000_us.pdf"
+  },
+  {
+   "id": "kingston-kc3000-1024gb",
+   "brand": "Kingston",
+   "name": "KC3000 1024GB",
+   "kind": "nvme",
+   "match": [
+    "SKC3000S1024G",
+    "SKC3000S/1024G"
+   ],
+   "capacityGB": 1024,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 6000,
+   "rndReadIops": 900000,
+   "rndWriteIops": 1000000,
+   "notes": "out-of-box performance; random QD not stated",
+   "source": "Kingston KC3000 datasheet (MKD-06032024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/KC3000_us.pdf"
+  },
+  {
+   "id": "kingston-kc3000-2048gb",
+   "brand": "Kingston",
+   "name": "KC3000 2048GB",
+   "kind": "nvme",
+   "match": [
+    "SKC3000D2048G",
+    "SKC3000D/2048G"
+   ],
+   "capacityGB": 2048,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 7000,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1000000,
+   "notes": "out-of-box performance; random QD not stated",
+   "source": "Kingston KC3000 datasheet (MKD-06032024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/KC3000_us.pdf"
+  },
+  {
+   "id": "kingston-kc3000-4096gb",
+   "brand": "Kingston",
+   "name": "KC3000 4096GB",
+   "kind": "nvme",
+   "match": [
+    "SKC3000D4096G",
+    "SKC3000D/4096G"
+   ],
+   "capacityGB": 4096,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 7000,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1000000,
+   "notes": "out-of-box performance; random QD not stated",
+   "source": "Kingston KC3000 datasheet (MKD-06032024)",
+   "sourceUrl": "https://www.kingston.com/datasheets/KC3000_us.pdf"
+  },
+  {
+   "id": "kingston-fury-renegade-1tb",
+   "brand": "Kingston",
+   "name": "FURY Renegade 1TB",
+   "kind": "nvme",
+   "match": [
+    "SFYRSK1000G",
+    "SFYRSK/1000G"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 6000,
+   "rndReadIops": 900000,
+   "rndWriteIops": 1000000,
+   "notes": "heatsink models (part numbers listed in current datasheet); out-of-box performance; random QD not stated",
+   "source": "Kingston FURY Renegade PCIe 4.0 NVMe M.2 SSD datasheet (2026)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SFYR_us.pdf"
+  },
+  {
+   "id": "kingston-fury-renegade-2tb",
+   "brand": "Kingston",
+   "name": "FURY Renegade 2TB",
+   "kind": "nvme",
+   "match": [
+    "SFYRDK2000G",
+    "SFYRDK/2000G"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 7000,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1000000,
+   "notes": "heatsink models (part numbers listed in current datasheet); out-of-box performance; random QD not stated",
+   "source": "Kingston FURY Renegade PCIe 4.0 NVMe M.2 SSD datasheet (2026)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SFYR_us.pdf"
+  },
+  {
+   "id": "kingston-fury-renegade-4tb",
+   "brand": "Kingston",
+   "name": "FURY Renegade 4TB",
+   "kind": "nvme",
+   "match": [
+    "SFYRDK4000G",
+    "SFYRDK/4000G"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe 4.0 x4 NVMe",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 7000,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 1000000,
+   "notes": "heatsink models (part numbers listed in current datasheet); out-of-box performance; random QD not stated",
+   "source": "Kingston FURY Renegade PCIe 4.0 NVMe M.2 SSD datasheet (2026)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SFYR_us.pdf"
+  },
+  {
+   "id": "kingston-a2000-250gb",
+   "brand": "Kingston",
+   "name": "A2000 250GB",
+   "kind": "nvme",
+   "match": [
+    "SA2000M8250G",
+    "SA2000M8/250G"
+   ],
+   "capacityGB": 250,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2000,
+   "seqWriteMBs": 1100,
+   "rndReadIops": 150000,
+   "rndWriteIops": 180000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston A2000 datasheet (MKD-404US, 2019)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA2000_us.pdf"
+  },
+  {
+   "id": "kingston-a2000-500gb",
+   "brand": "Kingston",
+   "name": "A2000 500GB",
+   "kind": "nvme",
+   "match": [
+    "SA2000M8500G",
+    "SA2000M8/500G"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2200,
+   "seqWriteMBs": 2000,
+   "rndReadIops": 180000,
+   "rndWriteIops": 200000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston A2000 datasheet (MKD-404US, 2019)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA2000_us.pdf"
+  },
+  {
+   "id": "kingston-a2000-1tb",
+   "brand": "Kingston",
+   "name": "A2000 1TB",
+   "kind": "nvme",
+   "match": [
+    "SA2000M81000G",
+    "SA2000M8/1000G"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe PCIe Gen 3.0 x4",
+   "seqReadMBs": 2200,
+   "seqWriteMBs": 2000,
+   "rndReadIops": 250000,
+   "rndWriteIops": 220000,
+   "notes": "out-of-box performance; IOmeter 4K random on 8GB partition, QD not stated",
+   "source": "Kingston A2000 datasheet (MKD-404US, 2019)",
+   "sourceUrl": "https://www.kingston.com/datasheets/SA2000_us.pdf"
+  },
+  {
+   "id": "crucial-mx500-250gb",
+   "brand": "Crucial",
+   "name": "MX500 250GB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT250MX500SSD1"
+   ],
+   "capacityGB": 250,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 510,
+   "notes": "2.5-inch model; IOMeter QD32, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com MX500 product page (archived 2024-12-25)",
+   "sourceUrl": "https://web.archive.org/web/20241225162207/https://www.crucial.com/products/ssd/crucial-mx500-ssd"
+  },
+  {
+   "id": "crucial-mx500-500gb",
+   "brand": "Crucial",
+   "name": "MX500 500GB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT500MX500SSD1"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 510,
+   "notes": "2.5-inch model; IOMeter QD32, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com MX500 product page (archived 2024-12-25)",
+   "sourceUrl": "https://web.archive.org/web/20241225162207/https://www.crucial.com/products/ssd/crucial-mx500-ssd"
+  },
+  {
+   "id": "crucial-mx500-1tb",
+   "brand": "Crucial",
+   "name": "MX500 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT1000MX500SSD1"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 510,
+   "notes": "2.5-inch model; IOMeter QD32, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com MX500 product page (archived 2024-12-25)",
+   "sourceUrl": "https://web.archive.org/web/20241225162207/https://www.crucial.com/products/ssd/crucial-mx500-ssd"
+  },
+  {
+   "id": "crucial-mx500-2tb",
+   "brand": "Crucial",
+   "name": "MX500 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT2000MX500SSD1"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 510,
+   "notes": "2.5-inch model; IOMeter QD32, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com MX500 product page (archived 2024-12-25)",
+   "sourceUrl": "https://web.archive.org/web/20241225162207/https://www.crucial.com/products/ssd/crucial-mx500-ssd"
+  },
+  {
+   "id": "crucial-mx500-4tb",
+   "brand": "Crucial",
+   "name": "MX500 4TB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT4000MX500SSD1"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 560,
+   "seqWriteMBs": 510,
+   "notes": "2.5-inch model; IOMeter QD32, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com MX500 product page (archived 2024-12-25)",
+   "sourceUrl": "https://web.archive.org/web/20241225162207/https://www.crucial.com/products/ssd/crucial-mx500-ssd"
+  },
+  {
+   "id": "crucial-bx500-240gb",
+   "brand": "Crucial",
+   "name": "BX500 240GB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT240BX500SSD1"
+   ],
+   "capacityGB": 240,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 500,
+   "notes": "read from archived copy of crucial.com page",
+   "source": "Crucial.com CT240BX500SSD1 product page (archived 2026-01-05)",
+   "sourceUrl": "https://web.archive.org/web/20260105004617/https://www.crucial.com/ssd/bx500/ct240bx500ssd1"
+  },
+  {
+   "id": "crucial-bx500-480gb",
+   "brand": "Crucial",
+   "name": "BX500 480GB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT480BX500SSD1"
+   ],
+   "capacityGB": 480,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 500,
+   "notes": "read from archived copy of crucial.com page",
+   "source": "Crucial.com CT480BX500SSD1 product page (archived 2026-01-03)",
+   "sourceUrl": "https://web.archive.org/web/20260103103205/https://www.crucial.com/ssd/bx500/ct480bx500ssd1"
+  },
+  {
+   "id": "crucial-bx500-1tb",
+   "brand": "Crucial",
+   "name": "BX500 1TB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT1000BX500SSD1"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 500,
+   "notes": "read from archived copy of crucial.com page",
+   "source": "Crucial.com CT1000BX500SSD1 product page (archived 2026-01-01)",
+   "sourceUrl": "https://web.archive.org/web/20260101144653/https://www.crucial.com/ssd/bx500/ct1000bx500ssd1"
+  },
+  {
+   "id": "crucial-bx500-2tb",
+   "brand": "Crucial",
+   "name": "BX500 2TB",
+   "kind": "sata-ssd",
+   "match": [
+    "CT2000BX500SSD1"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA (6Gb/s)",
+   "seqReadMBs": 540,
+   "seqWriteMBs": 500,
+   "notes": "read from archived copy of crucial.com page",
+   "source": "Crucial.com CT2000BX500SSD1 product page (archived 2026-02-17)",
+   "sourceUrl": "https://web.archive.org/web/20260217125620/https://www.crucial.com/ssd/bx500/ct2000bx500ssd1"
+  },
+  {
+   "id": "crucial-p1-500gb",
+   "brand": "Crucial",
+   "name": "P1 500GB",
+   "kind": "nvme",
+   "match": [
+    "CT500P1SSD8"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe/PCIe Gen3 x4",
+   "seqReadMBs": 1900,
+   "seqWriteMBs": 950,
+   "notes": "read from archived copy of crucial.com page",
+   "source": "Crucial.com CT500P1SSD8 product page (archived 2019-10-20)",
+   "sourceUrl": "https://web.archive.org/web/20191020002229/https://www.crucial.com/usa/en/ct500p1ssd8"
+  },
+  {
+   "id": "crucial-p1-1tb",
+   "brand": "Crucial",
+   "name": "P1 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000P1SSD8"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe/PCIe Gen3 x4",
+   "seqReadMBs": 2000,
+   "seqWriteMBs": 1700,
+   "notes": "read from archived copy of crucial.com page",
+   "source": "Crucial.com CT1000P1SSD8 product page (archived 2019-10-14)",
+   "sourceUrl": "https://web.archive.org/web/20191014181627/https://www.crucial.com/usa/en/CT1000P1SSD8"
+  },
+  {
+   "id": "crucial-p2-250gb",
+   "brand": "Crucial",
+   "name": "P2 250GB",
+   "kind": "nvme",
+   "match": [
+    "CT250P2SSD8"
+   ],
+   "capacityGB": 250,
+   "interface": "NVMe (PCIe)",
+   "seqReadMBs": 2100,
+   "seqWriteMBs": 1150,
+   "notes": "CrystalDiskMark QD64 (QD8 x 8 threads), write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P2 product page (archived 2023-10-10)",
+   "sourceUrl": "https://web.archive.org/web/20231010164653/https://www.crucial.com/products/ssd/crucial-p2-ssd"
+  },
+  {
+   "id": "crucial-p2-500gb",
+   "brand": "Crucial",
+   "name": "P2 500GB",
+   "kind": "nvme",
+   "match": [
+    "CT500P2SSD8"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe (PCIe)",
+   "seqReadMBs": 2300,
+   "seqWriteMBs": 940,
+   "notes": "CrystalDiskMark QD64 (QD8 x 8 threads), write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P2 product page (archived 2023-10-10)",
+   "sourceUrl": "https://web.archive.org/web/20231010164653/https://www.crucial.com/products/ssd/crucial-p2-ssd"
+  },
+  {
+   "id": "crucial-p2-1tb",
+   "brand": "Crucial",
+   "name": "P2 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000P2SSD8"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe (PCIe)",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1800,
+   "notes": "CrystalDiskMark QD64 (QD8 x 8 threads), write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P2 product page (archived 2023-10-10)",
+   "sourceUrl": "https://web.archive.org/web/20231010164653/https://www.crucial.com/products/ssd/crucial-p2-ssd"
+  },
+  {
+   "id": "crucial-p2-2tb",
+   "brand": "Crucial",
+   "name": "P2 2TB",
+   "kind": "nvme",
+   "match": [
+    "CT2000P2SSD8"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe (PCIe)",
+   "seqReadMBs": 2400,
+   "seqWriteMBs": 1900,
+   "notes": "CrystalDiskMark QD64 (QD8 x 8 threads), write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P2 product page (archived 2023-10-10)",
+   "sourceUrl": "https://web.archive.org/web/20231010164653/https://www.crucial.com/products/ssd/crucial-p2-ssd"
+  },
+  {
+   "id": "crucial-p3-500gb",
+   "brand": "Crucial",
+   "name": "P3 500GB",
+   "kind": "nvme",
+   "match": [
+    "CT500P3SSD8"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe (PCIe Gen 3 x4)",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 1900,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 product page (archived 2023-02-15)",
+   "sourceUrl": "https://web.archive.org/web/20230215173830/https://www.crucial.com/products/ssd/crucial-p3-ssd"
+  },
+  {
+   "id": "crucial-p3-1tb",
+   "brand": "Crucial",
+   "name": "P3 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000P3SSD8"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe (PCIe Gen 3 x4)",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 product page (archived 2023-02-15)",
+   "sourceUrl": "https://web.archive.org/web/20230215173830/https://www.crucial.com/products/ssd/crucial-p3-ssd"
+  },
+  {
+   "id": "crucial-p3-2tb",
+   "brand": "Crucial",
+   "name": "P3 2TB",
+   "kind": "nvme",
+   "match": [
+    "CT2000P3SSD8"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe (PCIe Gen 3 x4)",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 product page (archived 2023-02-15)",
+   "sourceUrl": "https://web.archive.org/web/20230215173830/https://www.crucial.com/products/ssd/crucial-p3-ssd"
+  },
+  {
+   "id": "crucial-p3-4tb",
+   "brand": "Crucial",
+   "name": "P3 4TB",
+   "kind": "nvme",
+   "match": [
+    "CT4000P3SSD8"
+   ],
+   "capacityGB": 4000,
+   "interface": "NVMe (PCIe Gen 3 x4)",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 product page (archived 2023-02-15)",
+   "sourceUrl": "https://web.archive.org/web/20230215173830/https://www.crucial.com/products/ssd/crucial-p3-ssd"
+  },
+  {
+   "id": "crucial-p3-plus-500gb",
+   "brand": "Crucial",
+   "name": "P3 Plus 500GB",
+   "kind": "nvme",
+   "match": [
+    "CT500P3PSSD8"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 4700,
+   "seqWriteMBs": 1900,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 Plus product page (archived 2023-03-15)",
+   "sourceUrl": "https://web.archive.org/web/20230315023310/https://www.crucial.com/products/ssd/crucial-p3-plus-ssd"
+  },
+  {
+   "id": "crucial-p3-plus-1tb",
+   "brand": "Crucial",
+   "name": "P3 Plus 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000P3PSSD8"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 3600,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 Plus product page (archived 2023-03-15)",
+   "sourceUrl": "https://web.archive.org/web/20230315023310/https://www.crucial.com/products/ssd/crucial-p3-plus-ssd"
+  },
+  {
+   "id": "crucial-p3-plus-2tb",
+   "brand": "Crucial",
+   "name": "P3 Plus 2TB",
+   "kind": "nvme",
+   "match": [
+    "CT2000P3PSSD8"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 5000,
+   "seqWriteMBs": 4200,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 Plus product page (archived 2023-03-15)",
+   "sourceUrl": "https://web.archive.org/web/20230315023310/https://www.crucial.com/products/ssd/crucial-p3-plus-ssd"
+  },
+  {
+   "id": "crucial-p3-plus-4tb",
+   "brand": "Crucial",
+   "name": "P3 Plus 4TB",
+   "kind": "nvme",
+   "match": [
+    "CT4000P3PSSD8"
+   ],
+   "capacityGB": 4000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 4800,
+   "seqWriteMBs": 4100,
+   "notes": "CrystalDiskMark, queue full, write cache on; read from archived copy of crucial.com page",
+   "source": "Crucial.com P3 Plus product page (archived 2023-03-15)",
+   "sourceUrl": "https://web.archive.org/web/20230315023310/https://www.crucial.com/products/ssd/crucial-p3-plus-ssd"
+  },
+  {
+   "id": "crucial-p5-plus-500gb",
+   "brand": "Crucial",
+   "name": "P5 Plus 500GB",
+   "kind": "nvme",
+   "match": [
+    "CT500P5PSSD8"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 6600,
+   "seqWriteMBs": 4000,
+   "rndReadIops": 360000,
+   "rndWriteIops": 700000,
+   "notes": "seq: CrystalDiskMark QD128, write cache on; random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com P5 Plus product page (archived 2023-01-25)",
+   "sourceUrl": "https://web.archive.org/web/20230125092834/https://www.crucial.com/products/ssd/crucial-p5-plus-ssd"
+  },
+  {
+   "id": "crucial-p5-plus-1tb",
+   "brand": "Crucial",
+   "name": "P5 Plus 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000P5PSSD8"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 6600,
+   "seqWriteMBs": 5000,
+   "rndReadIops": 630000,
+   "rndWriteIops": 700000,
+   "notes": "seq: CrystalDiskMark QD128, write cache on; random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com P5 Plus product page (archived 2023-01-25)",
+   "sourceUrl": "https://web.archive.org/web/20230125092834/https://www.crucial.com/products/ssd/crucial-p5-plus-ssd"
+  },
+  {
+   "id": "crucial-p5-plus-2tb",
+   "brand": "Crucial",
+   "name": "P5 Plus 2TB",
+   "kind": "nvme",
+   "match": [
+    "CT2000P5PSSD8"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 6600,
+   "seqWriteMBs": 5000,
+   "rndReadIops": 720000,
+   "rndWriteIops": 700000,
+   "notes": "seq: CrystalDiskMark QD128, write cache on; random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com P5 Plus product page (archived 2023-01-25)",
+   "sourceUrl": "https://web.archive.org/web/20230125092834/https://www.crucial.com/products/ssd/crucial-p5-plus-ssd"
+  },
+  {
+   "id": "crucial-t500-500gb",
+   "brand": "Crucial",
+   "name": "T500 500GB",
+   "kind": "nvme",
+   "match": [
+    "CT500T500SSD8"
+   ],
+   "capacityGB": 500,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 7200,
+   "seqWriteMBs": 5700,
+   "rndReadIops": 800000,
+   "rndWriteIops": 1390000,
+   "notes": "random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com CT500T500SSD8 product page (archived 2025-12-14)",
+   "sourceUrl": "https://web.archive.org/web/20251214114420/https://www.crucial.com/ssd/t500/ct500t500ssd8"
+  },
+  {
+   "id": "crucial-t500-1tb",
+   "brand": "Crucial",
+   "name": "T500 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000T500SSD8"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 7300,
+   "seqWriteMBs": 6800,
+   "rndReadIops": 1150000,
+   "rndWriteIops": 1440000,
+   "notes": "random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com CT1000T500SSD8 product page (archived 2025-12-23)",
+   "sourceUrl": "https://web.archive.org/web/20251223150454/https://www.crucial.com/ssd/t500/ct1000t500ssd8"
+  },
+  {
+   "id": "crucial-t500-2tb",
+   "brand": "Crucial",
+   "name": "T500 2TB",
+   "kind": "nvme",
+   "match": [
+    "CT2000T500SSD8"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 7400,
+   "seqWriteMBs": 7000,
+   "rndReadIops": 1180000,
+   "rndWriteIops": 1440000,
+   "notes": "random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com CT2000T500SSD8 product page (archived 2026-01-02)",
+   "sourceUrl": "https://web.archive.org/web/20260102154248/https://www.crucial.com/ssd/t500/ct2000t500ssd8"
+  },
+  {
+   "id": "crucial-t500-4tb",
+   "brand": "Crucial",
+   "name": "T500 4TB",
+   "kind": "nvme",
+   "match": [
+    "CT4000T500SSD3"
+   ],
+   "capacityGB": 4000,
+   "interface": "NVMe (PCIe Gen 4 x4)",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 6900,
+   "rndReadIops": 1050000,
+   "rndWriteIops": 1350000,
+   "notes": "random QD not stated; read from archived copy of crucial.com page",
+   "source": "Crucial.com CT4000T500SSD3 product page (archived 2026-03-04)",
+   "sourceUrl": "https://web.archive.org/web/20260304120319/https://www.crucial.com/ssd/t500/CT4000T500SSD3"
+  },
+  {
+   "id": "crucial-t700-1tb",
+   "brand": "Crucial",
+   "name": "T700 1TB",
+   "kind": "nvme",
+   "match": [
+    "CT1000T700SSD3"
+   ],
+   "capacityGB": 1000,
+   "interface": "NVMe (PCIe Gen 5 x4)",
+   "seqReadMBs": 11700,
+   "seqWriteMBs": 9500,
+   "notes": "CrystalDiskMark QD512, write cache on (T700 series page); read from archived copy of crucial.com page",
+   "source": "Crucial.com CT1000T700SSD3 product page (archived 2026-01-27)",
+   "sourceUrl": "https://web.archive.org/web/20260127220446/https://www.crucial.com/ssd/t700/ct1000t700ssd3"
+  },
+  {
+   "id": "crucial-t700-2tb",
+   "brand": "Crucial",
+   "name": "T700 2TB",
+   "kind": "nvme",
+   "match": [
+    "CT2000T700SSD3"
+   ],
+   "capacityGB": 2000,
+   "interface": "NVMe (PCIe Gen 5 x4)",
+   "seqReadMBs": 12400,
+   "seqWriteMBs": 11800,
+   "notes": "CrystalDiskMark QD512, write cache on (T700 series page); read from archived copy of crucial.com page",
+   "source": "Crucial.com CT2000T700SSD3 product page (archived 2025-12-21)",
+   "sourceUrl": "https://web.archive.org/web/20251221221017/https://www.crucial.com/ssd/t700/ct2000t700ssd3"
+  },
+  {
+   "id": "crucial-t700-4tb",
+   "brand": "Crucial",
+   "name": "T700 4TB",
+   "kind": "nvme",
+   "match": [
+    "CT4000T700SSD3"
+   ],
+   "capacityGB": 4000,
+   "interface": "NVMe (PCIe Gen 5 x4)",
+   "seqReadMBs": 12400,
+   "seqWriteMBs": 11800,
+   "notes": "CrystalDiskMark QD512, write cache on (T700 series page); read from archived copy of crucial.com page",
+   "source": "Crucial.com CT4000T700SSD3 product page (archived 2025-12-13)",
+   "sourceUrl": "https://web.archive.org/web/20251213032508/https://www.crucial.com/ssd/t700/ct4000t700ssd3"
+  },
+  {
+   "id": "lexar-nm620-256gb",
+   "brand": "Lexar",
+   "name": "NM620 256GB",
+   "kind": "nvme",
+   "match": [
+    "NM620 256GB"
+   ],
+   "capacityGB": 256,
+   "interface": "PCIe Gen3x4",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 1300,
+   "rndReadIops": 92000,
+   "rndWriteIops": 240000,
+   "notes": "spec as currently published by Lexar; random QD not stated",
+   "source": "Lexar NM620 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM620-M-2-2280-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm620-512gb",
+   "brand": "Lexar",
+   "name": "NM620 512GB",
+   "kind": "nvme",
+   "match": [
+    "NM620 512GB"
+   ],
+   "capacityGB": 512,
+   "interface": "PCIe Gen3x4",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 2400,
+   "rndReadIops": 200000,
+   "rndWriteIops": 256000,
+   "notes": "spec as currently published by Lexar; random QD not stated",
+   "source": "Lexar NM620 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM620-M-2-2280-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm620-1tb",
+   "brand": "Lexar",
+   "name": "NM620 1TB",
+   "kind": "nvme",
+   "match": [
+    "NM620 1TB"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen3x4",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "rndReadIops": 200000,
+   "rndWriteIops": 256000,
+   "notes": "spec as currently published by Lexar; random QD not stated",
+   "source": "Lexar NM620 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM620-M-2-2280-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm620-2tb",
+   "brand": "Lexar",
+   "name": "NM620 2TB",
+   "kind": "nvme",
+   "match": [
+    "NM620 2TB"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen3x4",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3000,
+   "rndReadIops": 300000,
+   "rndWriteIops": 256000,
+   "notes": "spec as currently published by Lexar; random QD not stated",
+   "source": "Lexar NM620 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM620-M-2-2280-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm790-512gb",
+   "brand": "Lexar",
+   "name": "NM790 512GB",
+   "kind": "nvme",
+   "match": [
+    "NM790 512GB"
+   ],
+   "capacityGB": 512,
+   "interface": "PCIe Gen4x4",
+   "seqReadMBs": 7200,
+   "seqWriteMBs": 4400,
+   "rndReadIops": 800000,
+   "rndWriteIops": 800000,
+   "notes": "internal testing; random QD not stated",
+   "source": "Lexar NM790 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM790-M-2-2280-PCIe-Gen-4x4-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm790-1tb",
+   "brand": "Lexar",
+   "name": "NM790 1TB",
+   "kind": "nvme",
+   "match": [
+    "NM790 1TB"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe Gen4x4",
+   "seqReadMBs": 7400,
+   "seqWriteMBs": 6500,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 900000,
+   "notes": "internal testing; random QD not stated",
+   "source": "Lexar NM790 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM790-M-2-2280-PCIe-Gen-4x4-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm790-2tb",
+   "brand": "Lexar",
+   "name": "NM790 2TB",
+   "kind": "nvme",
+   "match": [
+    "NM790 2TB"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe Gen4x4",
+   "seqReadMBs": 7400,
+   "seqWriteMBs": 6500,
+   "rndReadIops": 1000000,
+   "rndWriteIops": 900000,
+   "notes": "internal testing; random QD not stated",
+   "source": "Lexar NM790 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM790-M-2-2280-PCIe-Gen-4x4-NVMe-SSD/"
+  },
+  {
+   "id": "lexar-nm790-4tb",
+   "brand": "Lexar",
+   "name": "NM790 4TB",
+   "kind": "nvme",
+   "match": [
+    "NM790 4TB"
+   ],
+   "capacityGB": 4000,
+   "interface": "PCIe Gen4x4",
+   "seqReadMBs": 7400,
+   "seqWriteMBs": 6500,
+   "rndReadIops": 900000,
+   "rndWriteIops": 900000,
+   "notes": "internal testing; random QD not stated",
+   "source": "Lexar NM790 product page (lexar.com)",
+   "sourceUrl": "https://www.lexar.com/global/products/Lexar-NM790-M-2-2280-PCIe-Gen-4x4-NVMe-SSD/"
+  },
+  {
+   "id": "skhynix-gold-p31-500gb",
+   "brand": "SK hynix",
+   "name": "Gold P31 500GB",
+   "kind": "nvme",
+   "match": [
+    "SHGP31-500GM",
+    "Gold P31 500GB"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe 3.0 NVMe, up to 4 lanes",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3100,
+   "rndReadIops": 570000,
+   "rndWriteIops": 600000,
+   "notes": "random QD not stated",
+   "source": "SK hynix Gold P31 product page (ssd.skhynix.com)",
+   "sourceUrl": "https://ssd.skhynix.com/gold_p31/"
+  },
+  {
+   "id": "skhynix-gold-p31-1tb",
+   "brand": "SK hynix",
+   "name": "Gold P31 1TB",
+   "kind": "nvme",
+   "match": [
+    "SHGP31-1000GM",
+    "Gold P31 1TB"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 3.0 NVMe, up to 4 lanes",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3200,
+   "rndReadIops": 570000,
+   "rndWriteIops": 600000,
+   "notes": "random QD not stated",
+   "source": "SK hynix Gold P31 product page (ssd.skhynix.com)",
+   "sourceUrl": "https://ssd.skhynix.com/gold_p31/"
+  },
+  {
+   "id": "skhynix-gold-p31-2tb",
+   "brand": "SK hynix",
+   "name": "Gold P31 2TB",
+   "kind": "nvme",
+   "match": [
+    "SHGP31-2000GM",
+    "Gold P31 2TB"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 3.0 NVMe, up to 4 lanes",
+   "seqReadMBs": 3500,
+   "seqWriteMBs": 3200,
+   "rndReadIops": 570000,
+   "rndWriteIops": 600000,
+   "notes": "random QD not stated",
+   "source": "SK hynix Gold P31 product page (ssd.skhynix.com)",
+   "sourceUrl": "https://ssd.skhynix.com/gold_p31/"
+  },
+  {
+   "id": "skhynix-platinum-p41-500gb",
+   "brand": "SK hynix",
+   "name": "Platinum P41 500GB",
+   "kind": "nvme",
+   "match": [
+    "SHPP41-500GM",
+    "Platinum P41 500GB"
+   ],
+   "capacityGB": 500,
+   "interface": "PCIe 4.0 NVMe, up to 4 lanes",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 4700,
+   "rndReadIops": 960000,
+   "rndWriteIops": 1000000,
+   "notes": "random QD not stated",
+   "source": "SK hynix Platinum P41 product page (ssd.skhynix.com)",
+   "sourceUrl": "https://ssd.skhynix.com/platinum_p41/"
+  },
+  {
+   "id": "skhynix-platinum-p41-1tb",
+   "brand": "SK hynix",
+   "name": "Platinum P41 1TB",
+   "kind": "nvme",
+   "match": [
+    "SHPP41-1000GM",
+    "Platinum P41 1TB"
+   ],
+   "capacityGB": 1000,
+   "interface": "PCIe 4.0 NVMe, up to 4 lanes",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 6500,
+   "rndReadIops": 1400000,
+   "rndWriteIops": 1300000,
+   "notes": "random QD not stated",
+   "source": "SK hynix Platinum P41 product page (ssd.skhynix.com)",
+   "sourceUrl": "https://ssd.skhynix.com/platinum_p41/"
+  },
+  {
+   "id": "skhynix-platinum-p41-2tb",
+   "brand": "SK hynix",
+   "name": "Platinum P41 2TB",
+   "kind": "nvme",
+   "match": [
+    "SHPP41-2000GM",
+    "Platinum P41 2TB"
+   ],
+   "capacityGB": 2000,
+   "interface": "PCIe 4.0 NVMe, up to 4 lanes",
+   "seqReadMBs": 7000,
+   "seqWriteMBs": 6500,
+   "rndReadIops": 1400000,
+   "rndWriteIops": 1300000,
+   "notes": "random QD not stated",
+   "source": "SK hynix Platinum P41 product page (ssd.skhynix.com)",
+   "sourceUrl": "https://ssd.skhynix.com/platinum_p41/"
+  },
+  {
+   "id": "agi-ai178-960gb",
+   "brand": "AGI",
+   "name": "AI178 960GB",
+   "kind": "sata-ssd",
+   "match": [
+    "AGI960G17AI178"
+   ],
+   "capacityGB": 960,
+   "interface": "SATA III (6Gb/s)",
+   "seqReadMBs": 561,
+   "seqWriteMBs": 527,
+   "notes": "max read/write from AGI's AI138 & AI178 (Agility, 3D TLC) page; page no longer online, read from archived copy",
+   "source": "AGI Technology product page: Agility series AI138 & AI178 (archived 2020-12-01)",
+   "sourceUrl": "https://web.archive.org/web/20201201201049/https://www.agi-gear.com/products_detail/21.htm"
+  },
+  {
+   "id": "seagate-st31000524as",
+   "brand": "Seagate",
+   "name": "Barracuda 7200.12 1TB (ST31000524AS)",
+   "kind": "hdd",
+   "match": [
+    "ST31000524AS"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 32,
+   "sustainedMBs": 125,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 4.16,
+   "notes": "Manual Table 1: 'Sustained data transfer rate OD (max) 125MB/s', internal data rate max 1695 Mb/s, 2 disks/4 heads, avg seek <8.5 ms read / <9.5 ms write (typical), track-to-track <1.0/<1.2 ms, I/O rate 600MB/s. Data sheet DS1668.6-1101US (Jan 2011) also gives 'Sustained Data Rate OD 125 MB/s', 32MB cache and average latency 4.17 ms: https://www.seagate.com/content/dam/seagate/migrated-assets/docs/pdf/datasheet/disc/barracuda-7200-12-ds1668-6-1101us.pdf",
+   "source": "Seagate Barracuda Product Manual 100636864 Rev. B (March 2011)",
+   "sourceUrl": "https://www.seagate.com/staticfiles/support/docs/100636864b.pdf"
+  },
+  {
+   "id": "seagate-st1000dm003-1sb10",
+   "brand": "Seagate",
+   "name": "Desktop HDD 1TB, -1SB10x revision (ST1000DM003-1SB102 / -1SB10C)",
+   "kind": "hdd",
+   "match": [
+    "ST1000DM003-1SB10"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "sustainedMBs": 151,
+   "avgSeekMs": 12.0,
+   "avgLatencyMs": 4.16,
+   "notes": "Manual covers only the -1SB102 (64MB cache) and -1SB10C (32MB cache) builds: 'Maximum sustained data rate, OD read 151MB/s', internal data rate max 1695 Mb/s, 1 disk/2 heads, avg seek <12.0 ms read / <13.0 ms write. Earlier ST1000DM003 builds are rated 210 MB/s (entry seagate-st1000dm003). This entry must win over the generic one (longest match).",
+   "source": "Seagate Desktop HDD Product Manual 100768625 Rev. E (June 2017)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/desktop-hdd-fam/en-us/docs/100768625e.pdf"
+  },
+  {
+   "id": "seagate-st1000dm003",
+   "brand": "Seagate",
+   "name": "Desktop HDD (formerly Barracuda) 1TB (ST1000DM003)",
+   "kind": "hdd",
+   "match": [
+    "ST1000DM003"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 210,
+   "avgDataRateMBs": 156,
+   "avgSeekMs": 8.5,
+   "notes": "DS1770.5: 'Max Sustained Data Rate, OD Read 210 MB/s', 'Average Data Rate, Read/Write 156 MB/s', seek <8.5 ms read / <9.5 ms write, 1 disk/2 heads. 7200 RPM per Desktop HDD Product Manual 100768625 (same model number). Units whose model string contains -1SB10 are rated 151 MB/s (separate entry).",
+   "source": "Seagate Desktop HDD Data Sheet DS1770.5-1409US (Sept 2014)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/desktop-hdd-fam/en-us/docs/desktop-hdd-ds1770-5-1409us.pdf"
+  },
+  {
+   "id": "seagate-st1000dm010",
+   "brand": "Seagate",
+   "name": "BarraCuda 1TB (ST1000DM010)",
+   "kind": "hdd",
+   "match": [
+    "ST1000DM010"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 210,
+   "avgDataRateMBs": 156,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 4.16,
+   "recording": "CMR",
+   "notes": "Manual: 'Maximum sustained data rate, OD read 210MB/s', 'Average data rate, read/write 156MB/s', internal rate max 2147 Mb/s, avg seek <8.5 ms read / <9.5 ms write. DS1900.14-2007US (July 2020) also lists 210 MB/s, 64MB, CMR: https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf",
+   "source": "Seagate BarraCuda Product Manual 100804187 Rev. C (Feb 2017)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/barracuda-fam/barracuda-new/en-us/docs/100804187c.pdf"
+  },
+  {
+   "id": "seagate-st1000dm014",
+   "brand": "Seagate",
+   "name": "BarraCuda 1TB 256MB (ST1000DM014)",
+   "kind": "hdd",
+   "match": [
+    "ST1000DM014"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "sustainedMBs": 220,
+   "recording": "SMR",
+   "notes": "Current 1TB BarraCuda (added beyond the requested list). 'Max Sustained Data Rate, OD Read 220MB/s'.",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS17.2-2603US (2026)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/barracuda-3-5-hdd/barracuda-3-5-hdd-DS17-2-2603US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st2000dm006",
+   "brand": "Seagate",
+   "name": "BarraCuda 2TB (ST2000DM006)",
+   "kind": "hdd",
+   "match": [
+    "ST2000DM006"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 210,
+   "avgDataRateMBs": 156,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 4.16,
+   "notes": "Manual: max sustained OD read 210 MB/s, average data rate 156 MB/s, avg seek <8.5 ms read / <9.5 ms write; 2TB built with 3 disks/6 heads or 2 disks/4 heads.",
+   "source": "Seagate BarraCuda Product Manual 100804187 Rev. C (Feb 2017)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/barracuda-fam/barracuda-new/en-us/docs/100804187c.pdf"
+  },
+  {
+   "id": "seagate-st2000dm008",
+   "brand": "Seagate",
+   "name": "BarraCuda 2TB (ST2000DM008)",
+   "kind": "hdd",
+   "match": [
+    "ST2000DM008"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "sustainedMBs": 220,
+   "recording": "SMR",
+   "notes": "Same 220 MB/s, 256MB, 7200 RPM, SMR in the 2026 data sheet DS17.2-2603US.",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS1900.14-2007US (July 2020)",
+   "sourceUrl": "https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf"
+  },
+  {
+   "id": "seagate-st2000dm005",
+   "brand": "Seagate",
+   "name": "BarraCuda 2TB 5400 RPM (ST2000DM005)",
+   "kind": "hdd",
+   "match": [
+    "ST2000DM005"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 190,
+   "recording": "SMR",
+   "notes": "Added beyond the requested list.",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS1900.14-2007US (July 2020)",
+   "sourceUrl": "https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf"
+  },
+  {
+   "id": "seagate-st3000dm007",
+   "brand": "Seagate",
+   "name": "BarraCuda 3TB 5400 RPM (ST3000DM007)",
+   "kind": "hdd",
+   "match": [
+    "ST3000DM007"
+   ],
+   "capacityGB": 3000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 185,
+   "recording": "SMR",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS1900.14-2007US (July 2020)",
+   "sourceUrl": "https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf"
+  },
+  {
+   "id": "seagate-st3000dm008",
+   "brand": "Seagate",
+   "name": "BarraCuda 3TB 7200 RPM (ST3000DM008)",
+   "kind": "hdd",
+   "match": [
+    "ST3000DM008"
+   ],
+   "capacityGB": 3000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 210,
+   "avgDataRateMBs": 156,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 4.16,
+   "notes": "Manual: max sustained OD read 210 MB/s, average data rate 156 MB/s, 3 disks/6 heads, avg seek <8.5 ms read / <9.5 ms write.",
+   "source": "Seagate BarraCuda Product Manual 100804187 Rev. C (Feb 2017)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/barracuda-fam/barracuda-new/en-us/docs/100804187c.pdf"
+  },
+  {
+   "id": "seagate-st4000dm004",
+   "brand": "Seagate",
+   "name": "BarraCuda 4TB (ST4000DM004)",
+   "kind": "hdd",
+   "match": [
+    "ST4000DM004"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 190,
+   "recording": "SMR",
+   "notes": "Same 190 MB/s, 256MB, 5400 RPM, SMR in DS17.2-2603US (2026).",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS1900.14-2007US (July 2020)",
+   "sourceUrl": "https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf"
+  },
+  {
+   "id": "seagate-st6000dm003",
+   "brand": "Seagate",
+   "name": "BarraCuda 6TB (ST6000DM003)",
+   "kind": "hdd",
+   "match": [
+    "ST6000DM003"
+   ],
+   "capacityGB": 6000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 185,
+   "recording": "SMR",
+   "notes": "Added beyond the requested list.",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS1900.14-2007US (July 2020)",
+   "sourceUrl": "https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf"
+  },
+  {
+   "id": "seagate-st8000dm004",
+   "brand": "Seagate",
+   "name": "BarraCuda 8TB (ST8000DM004)",
+   "kind": "hdd",
+   "match": [
+    "ST8000DM004"
+   ],
+   "capacityGB": 8000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 190,
+   "recording": "SMR",
+   "notes": "Added beyond the requested list.",
+   "source": "Seagate BarraCuda 3.5 HDD Data Sheet DS1900.14-2007US (July 2020)",
+   "sourceUrl": "https://seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/3-5-barracudaDS1900-14-2007US-en_CA.pdf"
+  },
+  {
+   "id": "seagate-st500dm002-1sb10",
+   "brand": "Seagate",
+   "name": "Desktop HDD 500GB, -1SB10A revision (ST500DM002-1SB10A)",
+   "kind": "hdd",
+   "match": [
+    "ST500DM002-1SB10"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 16,
+   "sustainedMBs": 151,
+   "avgSeekMs": 12.0,
+   "avgLatencyMs": 4.16,
+   "notes": "Manual covers only the -1SB10A build: 'Maximum sustained data rate, OD read 151MB/s', 1 disk/1 head, avg seek <12.0 ms read / <13.0 ms write. Older ST500DM002 builds are rated 144 MB/s (entry seagate-st500dm002). This entry must win over the generic one (longest match).",
+   "source": "Seagate Desktop HDD Product Manual 100768625 Rev. E (June 2017)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/desktop-hdd-fam/en-us/docs/100768625e.pdf"
+  },
+  {
+   "id": "seagate-st500dm002",
+   "brand": "Seagate",
+   "name": "Desktop HDD (formerly Barracuda) 500GB (ST500DM002)",
+   "kind": "hdd",
+   "match": [
+    "ST500DM002"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 16,
+   "sustainedMBs": 144,
+   "avgDataRateMBs": 125,
+   "avgSeekMs": 8.5,
+   "notes": "DS1770.5: 'Max Sustained Data Rate, OD Read 144 MB/s', 'Average Data Rate, Read/Write 125 MB/s', seek <8.5 ms read / <9.5 ms write. 7200 RPM per Desktop HDD Product Manual 100768625 (same model number). -1SB10x builds are rated 151 MB/s (separate entry).",
+   "source": "Seagate Desktop HDD Data Sheet DS1770.5-1409US (Sept 2014)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/desktop-hdd-fam/en-us/docs/desktop-hdd-ds1770-5-1409us.pdf"
+  },
+  {
+   "id": "seagate-st500dm009",
+   "brand": "Seagate",
+   "name": "BarraCuda 500GB (ST500DM009)",
+   "kind": "hdd",
+   "match": [
+    "ST500DM009"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 32,
+   "sustainedMBs": 210,
+   "avgDataRateMBs": 156,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 4.16,
+   "recording": "CMR",
+   "notes": "Manual: max sustained OD read 210 MB/s, average data rate 156 MB/s, 32MB cache, avg seek <8.5 ms read / <9.5 ms write. DS1900.14-2007US: 210 MB/s, 32MB, CMR.",
+   "source": "Seagate BarraCuda Product Manual 100804187 Rev. C (Feb 2017)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/barracuda-fam/barracuda-new/en-us/docs/100804187c.pdf"
+  },
+  {
+   "id": "seagate-st1000lm035",
+   "brand": "Seagate",
+   "name": "Mobile HDD / BarraCuda 2.5in 1TB 7mm (ST1000LM035)",
+   "kind": "hdd",
+   "match": [
+    "ST1000LM035"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 140,
+   "avgSeekMs": 13.0,
+   "avgLatencyMs": 5.6,
+   "notes": "Manual lists 'Data transfer rate (up to) 140 MB/s' (Seagate's only throughput figure for this model; revision history: 'Changed Sustained Data transfer rate to 140 MB/s'). 1 disk/2 heads, avg seek 13.0 ms read, track-to-track 1.5 ms.",
+   "source": "Seagate Mobile HDD Product Manual 100775165 Rev. C (May 2016)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/seagate-laptop-fam/mobile-hdd/en-us/docs/100775165c.pdf"
+  },
+  {
+   "id": "seagate-st1000lm048",
+   "brand": "Seagate",
+   "name": "BarraCuda 2.5in 1TB 7mm (ST1000LM048)",
+   "kind": "hdd",
+   "match": [
+    "ST1000LM048"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 140,
+   "recording": "SMR",
+   "notes": "Data sheet row 'Data Transfer Rate (MB/s): Up to 140' (treated as max sustained).",
+   "source": "Seagate BarraCuda 2.5 HDD Data Sheet DS1907.4-2507US (2025)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/barracuda-2-5/barracuda-2-5-DS1907-4-2507US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st2000lm015",
+   "brand": "Seagate",
+   "name": "BarraCuda 2.5in 2TB 7mm (ST2000LM015)",
+   "kind": "hdd",
+   "match": [
+    "ST2000LM015"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 140,
+   "recording": "SMR",
+   "notes": "Data sheet row 'Data Transfer Rate (MB/s): Up to 140' (treated as max sustained).",
+   "source": "Seagate BarraCuda 2.5 HDD Data Sheet DS1907.4-2507US (2025)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/barracuda-2-5/barracuda-2-5-DS1907-4-2507US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st500lm030",
+   "brand": "Seagate",
+   "name": "BarraCuda 2.5in 500GB 7mm (ST500LM030)",
+   "kind": "hdd",
+   "match": [
+    "ST500LM030"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 140,
+   "recording": "SMR",
+   "notes": "Data sheet row 'Data Transfer Rate (MB/s): Up to 140' (treated as max sustained). Added beyond the requested list.",
+   "source": "Seagate BarraCuda 2.5 HDD Data Sheet DS1907.4-2507US (2025)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/barracuda-2-5/barracuda-2-5-DS1907-4-2507US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st4000lm024",
+   "brand": "Seagate",
+   "name": "BarraCuda 2.5in 4TB 15mm (ST4000LM024)",
+   "kind": "hdd",
+   "match": [
+    "ST4000LM024"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 140,
+   "recording": "SMR",
+   "notes": "Data sheet row 'Data Transfer Rate (MB/s): Up to 140' (treated as max sustained). Added beyond the requested list.",
+   "source": "Seagate BarraCuda 2.5 HDD Data Sheet DS1907.4-2507US (2025)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/barracuda-2-5/barracuda-2-5-DS1907-4-2507US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st5000lm000",
+   "brand": "Seagate",
+   "name": "BarraCuda 2.5in 5TB 15mm (ST5000LM000)",
+   "kind": "hdd",
+   "match": [
+    "ST5000LM000"
+   ],
+   "capacityGB": 5000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 140,
+   "recording": "SMR",
+   "notes": "Data sheet row 'Data Transfer Rate (MB/s): Up to 140' (treated as max sustained). Added beyond the requested list.",
+   "source": "Seagate BarraCuda 2.5 HDD Data Sheet DS1907.4-2507US (2025)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/barracuda-2-5/barracuda-2-5-DS1907-4-2507US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st4000vn008",
+   "brand": "Seagate",
+   "name": "IronWolf 4TB (ST4000VN008)",
+   "kind": "hdd",
+   "match": [
+    "ST4000VN008"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5900,
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Same 180 MB/s, 5900 RPM, 64MB in DS1904.9-1707US (July 2017): https://www.seagate.com/www-content/datasheets/pdfs/ironwolf-12tb-DS1904-9-1707US-en_US.pdf",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st4000vn006",
+   "brand": "Seagate",
+   "name": "IronWolf 4TB (ST4000VN006)",
+   "kind": "hdd",
+   "match": [
+    "ST4000VN006"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 202,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st3000vn007",
+   "brand": "Seagate",
+   "name": "IronWolf 3TB (ST3000VN007)",
+   "kind": "hdd",
+   "match": [
+    "ST3000VN007"
+   ],
+   "capacityGB": 3000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5900,
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Added beyond the requested list.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st3000vn006",
+   "brand": "Seagate",
+   "name": "IronWolf 3TB (ST3000VN006)",
+   "kind": "hdd",
+   "match": [
+    "ST3000VN006"
+   ],
+   "capacityGB": 3000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 202,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Added beyond the requested list.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st2000vn004",
+   "brand": "Seagate",
+   "name": "IronWolf 2TB (ST2000VN004)",
+   "kind": "hdd",
+   "match": [
+    "ST2000VN004"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5900,
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Added beyond the requested list.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st2000vn003",
+   "brand": "Seagate",
+   "name": "IronWolf 2TB (ST2000VN003)",
+   "kind": "hdd",
+   "match": [
+    "ST2000VN003"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 180,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Added beyond the requested list.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st1000vn002",
+   "brand": "Seagate",
+   "name": "IronWolf 1TB (ST1000VN002)",
+   "kind": "hdd",
+   "match": [
+    "ST1000VN002"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5900,
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Added beyond the requested list.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st1000vn008",
+   "brand": "Seagate",
+   "name": "IronWolf 1TB (ST1000VN008)",
+   "kind": "hdd",
+   "match": [
+    "ST1000VN008"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 180,
+   "notes": "'Max. Sustained Transfer Rate OD (MB/s)' row. Added beyond the requested list.",
+   "source": "Seagate IronWolf 3.5 HDD Data Sheet DS1904.20-2111US (Nov 2021)",
+   "sourceUrl": "https://www.seagate.com/files/www-content/datasheets/pdfs/ironwolf-18tb-DS1904-20-2111US-en_US.pdf"
+  },
+  {
+   "id": "seagate-st1000vx005",
+   "brand": "Seagate",
+   "name": "SkyHawk 1TB (ST1000VX005)",
+   "kind": "hdd",
+   "match": [
+    "ST1000VX005"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 5.1,
+   "notes": "Manual Table 2: 'Maximum sustained data rate, OD read 180MB/s', internal rate max 2147 Mb/s, 1 disk/2 heads, avg seek <8.5 ms read / <19.5 ms write (as printed). RPM is not stated in the Seagate documents found (manual says 'Low-RPM'); 5.1 ms average latency corresponds to ~5900 RPM. SkyHawk data sheet DS1902.8-1803US also gives 180 MB/s, 64MB: https://www.seagate.com/www-content/datasheets/pdfs/skyhawk-3-5-hdd-DS1902-8-1803US-en_US.pdf",
+   "source": "Seagate SkyHawk SATA Product Manual 100804836 Rev. J (April 2018)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/skyhawk/en-us/docs/100804836j.pdf"
+  },
+  {
+   "id": "seagate-st2000vx008",
+   "brand": "Seagate",
+   "name": "SkyHawk 2TB (ST2000VX008)",
+   "kind": "hdd",
+   "match": [
+    "ST2000VX008"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "avgSeekMs": 12.0,
+   "avgLatencyMs": 5.1,
+   "notes": "Manual Table 2: 'Maximum sustained data rate, OD read 180MB/s', internal rate max 1813 Mb/s, 2 disks/4 heads, avg seek <12.0 ms read/write. RPM not stated in the Seagate documents found (5.1 ms latency corresponds to ~5900 RPM). DS1902.8-1803US also gives 180 MB/s, 64MB: https://www.seagate.com/www-content/datasheets/pdfs/skyhawk-3-5-hdd-DS1902-8-1803US-en_US.pdf",
+   "source": "Seagate SkyHawk SATA Product Manual 100804836 Rev. J (April 2018)",
+   "sourceUrl": "https://www.seagate.com/www-content/product-content/skyhawk/en-us/docs/100804836j.pdf"
+  },
+  {
+   "id": "wd-wd10ezex",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 1TB (WD10EZEX)",
+   "kind": "hdd",
+   "match": [
+    "WD10EZEX"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 150,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing). 2015 spec sheet 2879-771436-A10 gives 'Host to/from drive (sustained) 150 MB/s', 7200 RPM Class.",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd10ezrz",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 1TB (WD10EZRZ)",
+   "kind": "hdd",
+   "match": [
+    "WD10EZRZ"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 150,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing). 2015 spec sheet 2879-771436-A10 gives 150 MB/s sustained, '5400 RPM Class'.",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd20ezaz",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 2TB (WD20EZAZ)",
+   "kind": "hdd",
+   "match": [
+    "WD20EZAZ"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 180,
+   "recording": "SMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing).",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd20ezbx",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 2TB (WD20EZBX)",
+   "kind": "hdd",
+   "match": [
+    "WD20EZBX"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "sustainedMBs": 215,
+   "recording": "SMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing).",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd40ezaz",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 4TB (WD40EZAZ)",
+   "kind": "hdd",
+   "match": [
+    "WD40EZAZ"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 180,
+   "recording": "SMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing).",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd40ezax",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 4TB (WD40EZAX)",
+   "kind": "hdd",
+   "match": [
+    "WD40EZAX"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 180,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing).",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd5000azlx",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 500GB (WD5000AZLX)",
+   "kind": "hdd",
+   "match": [
+    "WD5000AZLX"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 32,
+   "sustainedMBs": 150,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing). Added beyond the requested list.",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd5000azrz",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 500GB (WD5000AZRZ)",
+   "kind": "hdd",
+   "match": [
+    "WD5000AZRZ"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 150,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing). Added beyond the requested list.",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd10earz",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 1TB (WD10EARZ)",
+   "kind": "hdd",
+   "match": [
+    "WD10EARZ"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing). Added beyond the requested list.",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd20earz",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 2TB (WD20EARZ)",
+   "kind": "hdd",
+   "match": [
+    "WD20EARZ"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 180,
+   "recording": "CMR",
+   "notes": "'Internal Transfer Rate (max)' row (WD: based on internal testing). Added beyond the requested list.",
+   "source": "WD Blue 3.5-inch SATA PC HDD Product Brief (March 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-pc-hdd.pdf"
+  },
+  {
+   "id": "wd-wd5000aakx",
+   "brand": "WD",
+   "name": "WD Blue 3.5in 500GB 16MB (WD5000AAKX)",
+   "kind": "hdd",
+   "match": [
+    "WD5000AAKX"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 16,
+   "sustainedMBs": 126,
+   "notes": "'Data transfer rate (max) Host to/from drive (sustained) 126 MB/s'; WD states '7200 RPM Class'.",
+   "source": "WD Blue PC Hard Drives Spec Sheet 2879-771436-A10 (Nov 2015)",
+   "sourceUrl": "https://products.wdc.com/library/SpecSheet/ENG/2879-771436.pdf"
+  },
+  {
+   "id": "wd-wd10spzx",
+   "brand": "WD",
+   "name": "WD Blue 2.5in 1TB (WD10SPZX)",
+   "kind": "hdd",
+   "match": [
+    "WD10SPZX"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 150,
+   "recording": "SMR",
+   "notes": "'Host to/from drive (sustained) 150 MB/s (max.)'; 'Performance Class 5400 RPM'.",
+   "source": "WD Blue 2.5-inch PC HDD Product Brief (May 2023)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-mobile-sata-hdd.pdf"
+  },
+  {
+   "id": "wd-wd20spzx",
+   "brand": "WD",
+   "name": "WD Blue 2.5in 2TB (WD20SPZX)",
+   "kind": "hdd",
+   "match": [
+    "WD20SPZX"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 149,
+   "recording": "SMR",
+   "notes": "'Host to/from drive (sustained) 149 MB/s (max.)'; 'Performance Class 5400 RPM'. Added beyond the requested list.",
+   "source": "WD Blue 2.5-inch PC HDD Product Brief (May 2023)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-mobile-sata-hdd.pdf"
+  },
+  {
+   "id": "wd-wd5000lpzx",
+   "brand": "WD",
+   "name": "WD Blue 2.5in 500GB (WD5000LPZX)",
+   "kind": "hdd",
+   "match": [
+    "WD5000LPZX"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 150,
+   "recording": "SMR",
+   "notes": "'Host to/from drive (sustained) 150 MB/s (max.)'; 'Performance Class 5400 RPM'. Added beyond the requested list.",
+   "source": "WD Blue 2.5-inch PC HDD Product Brief (May 2023)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-blue-hdd/product-brief-western-digital-wd-blue-mobile-sata-hdd.pdf"
+  },
+  {
+   "id": "wd-wd10jpvx",
+   "brand": "WD",
+   "name": "WD Blue 2.5in 1TB 8MB (WD10JPVX)",
+   "kind": "hdd",
+   "match": [
+    "WD10JPVX"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 8,
+   "notes": "WD's spec sheet lists only 'Interface speed 6 Gb/s' and 'Rotational speed 5400' for this model - no sustained MB/s figure is published.",
+   "source": "WD Blue PC Mobile Hard Drives Spec Sheet 2879-771437-A10 (Jan 2018)",
+   "sourceUrl": "https://products.wdc.com/library/SpecSheet/ENG/2879-771437.pdf"
+  },
+  {
+   "id": "wd-wd1003fzex",
+   "brand": "WD",
+   "name": "WD Black 3.5in 1TB (WD1003FZEX)",
+   "kind": "hdd",
+   "match": [
+    "WD1003FZEX"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 150,
+   "notes": "'Host to/from drive (sustained) 150 MB/s'; WD states '7200-RPM Class'.",
+   "source": "WD Black PC Hard Drives Spec Sheet 2879-771434-A13 (Jan 2018)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/wd/product/wd-black-hdd/data-sheet-wd-black-pc-hd-series-2879-771434.pdf"
+  },
+  {
+   "id": "wd-wd2003fzex",
+   "brand": "WD",
+   "name": "WD Black 3.5in 2TB (WD2003FZEX)",
+   "kind": "hdd",
+   "match": [
+    "WD2003FZEX"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "sustainedMBs": 164,
+   "notes": "'Host to/from drive (sustained) 164 MB/s'; WD states '7200-RPM Class'.",
+   "source": "WD Black PC Hard Drives Spec Sheet 2879-771434-A13 (Jan 2018)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/wd/product/wd-black-hdd/data-sheet-wd-black-pc-hd-series-2879-771434.pdf"
+  },
+  {
+   "id": "wd-wd40efzz",
+   "brand": "WD",
+   "name": "WD Red Plus 4TB (WD40EFZZ)",
+   "kind": "hdd",
+   "match": [
+    "WD40EFZZ"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "sustainedMBs": 180,
+   "recording": "CMR",
+   "notes": "'Internal transfer rate up to 180MB/s'. Listed because the requested WD40EFZX is not in any WD document that could be retrieved (current 4TB Red Plus SKUs).",
+   "source": "WD Red Plus Data Sheet (Sept 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-red-plus-hdd/data-sheet-western-digital-wd-red-plus-hdd.pdf"
+  },
+  {
+   "id": "wd-wd40efpx",
+   "brand": "WD",
+   "name": "WD Red Plus 4TB (WD40EFPX)",
+   "kind": "hdd",
+   "match": [
+    "WD40EFPX"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 256,
+   "sustainedMBs": 180,
+   "recording": "CMR",
+   "notes": "'Internal transfer rate up to 180MB/s'. Listed because the requested WD40EFZX is not in any WD document that could be retrieved (current 4TB Red Plus SKUs).",
+   "source": "WD Red Plus Data Sheet (Sept 2025)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/wd-red-plus-hdd/data-sheet-western-digital-wd-red-plus-hdd.pdf"
+  },
+  {
+   "id": "wd-wd10purz",
+   "brand": "WD",
+   "name": "WD Purple 1TB (WD10PURZ)",
+   "kind": "hdd",
+   "match": [
+    "WD10PURZ"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 110,
+   "notes": "'Host to/from drive (sustained) 110 MB/s'; WD states '5400 RPM Class' (exact RPM not published).",
+   "source": "WD Purple Surveillance Hard Drives Spec Sheet 2879-800012-A10 (Jan 2018)",
+   "sourceUrl": "https://products.wdc.com/library/SpecSheet/ENG/2879-800012.pdf"
+  },
+  {
+   "id": "wd-wd20purz",
+   "brand": "WD",
+   "name": "WD Purple 2TB (WD20PURZ)",
+   "kind": "hdd",
+   "match": [
+    "WD20PURZ"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 145,
+   "notes": "'Host to/from drive (sustained) 145 MB/s'; WD states '5400 RPM Class' (exact RPM not published).",
+   "source": "WD Purple Surveillance Hard Drives Spec Sheet 2879-800012-A10 (Jan 2018)",
+   "sourceUrl": "https://products.wdc.com/library/SpecSheet/ENG/2879-800012.pdf"
+  },
+  {
+   "id": "wd-wd40purz",
+   "brand": "WD",
+   "name": "WD Purple 4TB (WD40PURZ)",
+   "kind": "hdd",
+   "match": [
+    "WD40PURZ"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 64,
+   "sustainedMBs": 150,
+   "notes": "'Host to/from drive (sustained) 150 MB/s'; WD states '5400 RPM Class' (exact RPM not published). Added beyond the requested list.",
+   "source": "WD Purple Surveillance Hard Drives Spec Sheet 2879-800012-A10 (Jan 2018)",
+   "sourceUrl": "https://products.wdc.com/library/SpecSheet/ENG/2879-800012.pdf"
+  },
+  {
+   "id": "toshiba-dt01aca050",
+   "brand": "Toshiba",
+   "name": "DT01ACA 500GB (DT01ACA050)",
+   "kind": "hdd",
+   "match": [
+    "DT01ACA050"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 32,
+   "avgLatencyMs": 4.17,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Interface 'Serial ATA 3.0 / ATA-8', 6.0 Gbit/s max; buffer 32 MiB.",
+   "source": "Toshiba DT01ACAxxx Desktop HDD Product Overview Rev. 00 (2015)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-DT01ACAxxx-Product-Overview.pdf"
+  },
+  {
+   "id": "toshiba-dt01aca100",
+   "brand": "Toshiba",
+   "name": "DT01ACA 1TB (DT01ACA100)",
+   "kind": "hdd",
+   "match": [
+    "DT01ACA100"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 32,
+   "avgLatencyMs": 4.17,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Interface 'Serial ATA 3.0 / ATA-8', 6.0 Gbit/s max; buffer 32 MiB.",
+   "source": "Toshiba DT01ACAxxx Desktop HDD Product Overview Rev. 00 (2015)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-DT01ACAxxx-Product-Overview.pdf"
+  },
+  {
+   "id": "toshiba-dt01aca200",
+   "brand": "Toshiba",
+   "name": "DT01ACA 2TB (DT01ACA200)",
+   "kind": "hdd",
+   "match": [
+    "DT01ACA200"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "avgLatencyMs": 4.17,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Interface 'Serial ATA 3.0 / ATA-8', 6.0 Gbit/s max; buffer 64 MiB.",
+   "source": "Toshiba DT01ACAxxx Desktop HDD Product Overview Rev. 00 (2015)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-DT01ACAxxx-Product-Overview.pdf"
+  },
+  {
+   "id": "toshiba-dt01aca300",
+   "brand": "Toshiba",
+   "name": "DT01ACA 3TB (DT01ACA300)",
+   "kind": "hdd",
+   "match": [
+    "DT01ACA300"
+   ],
+   "capacityGB": 3000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "avgLatencyMs": 4.17,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Interface 'Serial ATA 3.0 / ATA-8', 6.0 Gbit/s max; buffer 64 MiB.",
+   "source": "Toshiba DT01ACAxxx Desktop HDD Product Overview Rev. 00 (2015)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-DT01ACAxxx-Product-Overview.pdf"
+  },
+  {
+   "id": "toshiba-hdwd105",
+   "brand": "Toshiba",
+   "name": "P300 500GB (HDWD105)",
+   "kind": "hdd",
+   "match": [
+    "HDWD105"
+   ],
+   "capacityGB": 500,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Retail HDWD105EZSTA / bulk HDWD105UZSVA.",
+   "source": "Toshiba Electronics Europe storage brochure 2018, 'Technical data - Internal HDD' (p.19)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2018/11/Brochure_2018_26_09_Screen.pdf"
+  },
+  {
+   "id": "toshiba-hdwd110",
+   "brand": "Toshiba",
+   "name": "P300 1TB (HDWD110)",
+   "kind": "hdd",
+   "match": [
+    "HDWD110"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "avgLatencyMs": 4.17,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Bulk HDWD110UZSVA; also listed (7200 rpm, 64MB) in the 2018 brochure.",
+   "source": "Toshiba P300 Desktop PC Hard Drives data sheet (Toshiba Electronics Europe, 11/2023)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2017/08/TOSH_16046_P300_GB_30_11.pdf"
+  },
+  {
+   "id": "toshiba-hdwd120",
+   "brand": "Toshiba",
+   "name": "P300 2TB 64MB (HDWD120)",
+   "kind": "hdd",
+   "match": [
+    "HDWD120"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 64,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Older 2TB P300 (the current 2TB P300 is HDWD320).",
+   "source": "Toshiba Electronics Europe storage brochure 2018, 'Technical data - Internal HDD' (p.19)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2018/11/Brochure_2018_26_09_Screen.pdf"
+  },
+  {
+   "id": "toshiba-hdwd320",
+   "brand": "Toshiba",
+   "name": "P300 2TB 256MB (HDWD320)",
+   "kind": "hdd",
+   "match": [
+    "HDWD320"
+   ],
+   "capacityGB": 2000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "avgLatencyMs": 4.17,
+   "recording": "SMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Added beyond the requested list.",
+   "source": "Toshiba P300 Desktop PC Hard Drives data sheet (Toshiba Electronics Europe, 11/2023)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2017/08/TOSH_16046_P300_GB_30_11.pdf"
+  },
+  {
+   "id": "toshiba-mq01abd100",
+   "brand": "Toshiba",
+   "name": "MQ01ABD 2.5in 1TB (MQ01ABD100)",
+   "kind": "hdd",
+   "match": [
+    "MQ01ABD100"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA (6.0 Gbit/s max per Toshiba)",
+   "rpm": 5400,
+   "cacheMB": 8,
+   "avgLatencyMs": 5.56,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Overview lists 'Serial ATA 2.6 / ATA-8' with 'Interface Speed 6.0 Gbit/s Max'; buffer 8 MiB. The video variant MQ01ABD100V also contains this string.",
+   "source": "Toshiba MQ01ABDxxx Client Mobile HDD Product Overview Rev. 01 (2017)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-MQ01ABDxxx-Product-Overview.pdf"
+  },
+  {
+   "id": "toshiba-mq04abf100",
+   "brand": "Toshiba",
+   "name": "MQ04AB 2.5in 1TB 7mm (MQ04ABF100)",
+   "kind": "hdd",
+   "match": [
+    "MQ04ABF100"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 128,
+   "avgLatencyMs": 5.56,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Toshiba series page gives only 'Internal Transfer Speed (Typ.) 819.7 ~ 1733.6 Mbit/s' (media rate, ID..OD; not a host MB/s rating): https://toshiba.semicon-storage.com/us/storage/product/internal-specialty/pc/articles/mq04ab-series.html",
+   "source": "Toshiba MQ04AB Series Product Manual Rev. 01 (Feb 2018)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-MQ04AB_Product-Manual.pdf"
+  },
+  {
+   "id": "toshiba-hdwe140",
+   "brand": "Toshiba",
+   "name": "X300 4TB (HDWE140)",
+   "kind": "hdd",
+   "match": [
+    "HDWE140"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 128,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Earlier X300 generation.",
+   "source": "Toshiba Electronics Europe storage brochure 2018, 'Technical data - Internal HDD' (p.19)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2018/11/Brochure_2018_26_09_Screen.pdf"
+  },
+  {
+   "id": "toshiba-hdwe150",
+   "brand": "Toshiba",
+   "name": "X300 5TB (HDWE150)",
+   "kind": "hdd",
+   "match": [
+    "HDWE150"
+   ],
+   "capacityGB": 5000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 128,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Earlier X300 generation.",
+   "source": "Toshiba Electronics Europe storage brochure 2018, 'Technical data - Internal HDD' (p.19)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2018/11/Brochure_2018_26_09_Screen.pdf"
+  },
+  {
+   "id": "toshiba-hdwe160",
+   "brand": "Toshiba",
+   "name": "X300 6TB (HDWE160)",
+   "kind": "hdd",
+   "match": [
+    "HDWE160"
+   ],
+   "capacityGB": 6000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 128,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Earlier X300 generation.",
+   "source": "Toshiba Electronics Europe storage brochure 2018, 'Technical data - Internal HDD' (p.19)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2018/11/Brochure_2018_26_09_Screen.pdf"
+  },
+  {
+   "id": "toshiba-hdwf180",
+   "brand": "Toshiba",
+   "name": "X300 8TB (HDWF180)",
+   "kind": "hdd",
+   "match": [
+    "HDWF180"
+   ],
+   "capacityGB": 8000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 128,
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Earlier X300 generation.",
+   "source": "Toshiba Electronics Europe storage brochure 2018, 'Technical data - Internal HDD' (p.19)",
+   "sourceUrl": "https://www.toshiba-storage.com/wp-content/uploads/2018/11/Brochure_2018_26_09_Screen.pdf"
+  },
+  {
+   "id": "toshiba-hdwr440",
+   "brand": "Toshiba",
+   "name": "X300 4TB 256MiB (HDWR440)",
+   "kind": "hdd",
+   "match": [
+    "HDWR440"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Current X300 generation (air, CMR).",
+   "source": "Toshiba X300 Performance Hard Drives data sheet HDD-XSENC (2025)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v3/master/en/storage/product/internal-specialty/HDD-XSENC.pdf"
+  },
+  {
+   "id": "toshiba-hdwr740",
+   "brand": "Toshiba",
+   "name": "X300 4TB 512MiB (HDWR740)",
+   "kind": "hdd",
+   "match": [
+    "HDWR740"
+   ],
+   "capacityGB": 4000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 512,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Current X300 generation (air, CMR).",
+   "source": "Toshiba X300 Performance Hard Drives data sheet HDD-XSENC (2025)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v3/master/en/storage/product/internal-specialty/HDD-XSENC.pdf"
+  },
+  {
+   "id": "toshiba-hdwr460",
+   "brand": "Toshiba",
+   "name": "X300 6TB 256MiB (HDWR460)",
+   "kind": "hdd",
+   "match": [
+    "HDWR460"
+   ],
+   "capacityGB": 6000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Current X300 generation (air, CMR).",
+   "source": "Toshiba X300 Performance Hard Drives data sheet HDD-XSENC (2025)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v3/master/en/storage/product/internal-specialty/HDD-XSENC.pdf"
+  },
+  {
+   "id": "toshiba-hdwr760",
+   "brand": "Toshiba",
+   "name": "X300 6TB 512MiB (HDWR760)",
+   "kind": "hdd",
+   "match": [
+    "HDWR760"
+   ],
+   "capacityGB": 6000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 512,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Current X300 generation (air, CMR).",
+   "source": "Toshiba X300 Performance Hard Drives data sheet HDD-XSENC (2025)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v3/master/en/storage/product/internal-specialty/HDD-XSENC.pdf"
+  },
+  {
+   "id": "toshiba-hdwr480",
+   "brand": "Toshiba",
+   "name": "X300 8TB 256MiB (HDWR480)",
+   "kind": "hdd",
+   "match": [
+    "HDWR480"
+   ],
+   "capacityGB": 8000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 256,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Current X300 generation (air, CMR).",
+   "source": "Toshiba X300 Performance Hard Drives data sheet HDD-XSENC (2025)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v3/master/en/storage/product/internal-specialty/HDD-XSENC.pdf"
+  },
+  {
+   "id": "toshiba-hdwr780",
+   "brand": "Toshiba",
+   "name": "X300 8TB 512MiB (HDWR780)",
+   "kind": "hdd",
+   "match": [
+    "HDWR780"
+   ],
+   "capacityGB": 8000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 512,
+   "recording": "CMR",
+   "notes": "Toshiba publishes no sustained MB/s figure for this model. Current X300 generation (air, CMR).",
+   "source": "Toshiba X300 Performance Hard Drives data sheet HDD-XSENC (2025)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v3/master/en/storage/product/internal-specialty/HDD-XSENC.pdf"
+  },
+  {
+   "id": "hgst-hds721010cla332",
+   "brand": "Hitachi/HGST",
+   "name": "Deskstar 7K1000.C 1TB (HDS721010CLA332)",
+   "kind": "hdd",
+   "match": [
+    "HDS721010CLA332"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 3Gb/s",
+   "rpm": 7200,
+   "cacheMB": 32,
+   "avgSeekMs": 8.5,
+   "avgLatencyMs": 4.17,
+   "notes": "No sustained MB/s figure published; spec gives 'Max Data transfer rate (Mbps) 1546' (media rate) for the 1TB model, 2 disks/4 heads, avg seek 8.5 ms read / 9.5 ms write (2-disk model). Spec table lists interface 300 or 600 MB/s by variant; '3Gb/s' here assumes the CLA3xx (vs CLA6xx) model code.",
+   "source": "HGST Deskstar 7K1000.C / Ultrastar A7K2000 OEM Specification Rev. 2.8 (11 March 2015)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/eol/cinemastar-series/product-manual-cinemastar-deskstar-7k1000-c-ultrastar-a7k2000-oem-spec.pdf"
+  },
+  {
+   "id": "hgst-hts541010a9e680",
+   "brand": "Hitachi/HGST",
+   "name": "Travelstar 5K1000 1TB (HTS541010A9E680)",
+   "kind": "hdd",
+   "match": [
+    "HTS541010A9E680"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 5400,
+   "cacheMB": 8,
+   "avgSeekMs": 12.0,
+   "avgLatencyMs": 5.5,
+   "notes": "No sustained MB/s figure published; 'Data transfer rates (buffer to/from media) (Mbps) (Max) 998', buffer-host 6.0 Gbit/s, buffer 8192 KB, avg seek 12 ms read / 13 ms write (typ), average latency 5.5 ms (revolution 11.1 ms).",
+   "source": "HGST Travelstar 5K1000 OEM Specification Rev. 2.0 (25 July 2012)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/hgst/travelstar-5k-series/product-manual-travelstar-5k1000.pdf"
+  },
+  {
+   "id": "hgst-hus722t1tala604",
+   "brand": "HGST/WD",
+   "name": "Ultrastar 7K2 / DC HA210 1TB (HUS722T1TALA604)",
+   "kind": "hdd",
+   "match": [
+    "HUS722T1TALA604"
+   ],
+   "capacityGB": 1000,
+   "interface": "SATA 6Gb/s",
+   "rpm": 7200,
+   "cacheMB": 128,
+   "sustainedMBs": 184,
+   "avgLatencyMs": 4.2,
+   "notes": "'Sustained transfer rate (MB/sec, typ.) 184' (175 MiB/s); WD footnote: excludes command overhead. Data buffer 128MB.",
+   "source": "Western Digital Ultrastar DC HA210 (formerly Ultrastar 7K2) Data Sheet (rev 8/19)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/data-center-drives/ultrastar-dc-ha200-series/data-sheet-ultrastar-dc-ha210.pdf"
+  },
+  {
+   "id": "seagate-one-touch-pw",
+   "brand": "Seagate",
+   "name": "One Touch with Password (portable HDD)",
+   "kind": "usb-hdd",
+   "match": [
+    "One Touch w/PW"
+   ],
+   "interface": "USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Data sheet: 'Compatible with USB 3.0', 1-5TB (STKY1000400/STKY2000400/STKZ4000400/STKZ5000400 and colour variants). The 2025 AMER sheet DS2066.3 also gives no MB/s. Match string 'One Touch w/PW' was reported by the owner's Windows.",
+   "source": "Seagate One Touch with Password Data Sheet DS2066 (2021)",
+   "sourceUrl": "https://www.seagate.com/www-content/datasheets/pdfs/one-touch-pw-DS2066-2102-GB-en_AS.pdf"
+  },
+  {
+   "id": "seagate-one-touch-hdd",
+   "brand": "Seagate",
+   "name": "One Touch portable HDD (no password, STKB/STKC)",
+   "kind": "usb-hdd",
+   "match": [
+    "One Touch HDD"
+   ],
+   "interface": "USB 3.2 Gen 1 / USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. Models STKB1000400/STKB2000400/STKC4000400/STKC5000400 (+colours).",
+   "source": "Seagate One Touch Portable Storage Data Sheet DS2054.3",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/en/content-fragments/products/datasheets/one-touch-portable-storage/one-touch-portable-storage-DS2054-3-2009-WW-en_US.pdf"
+  },
+  {
+   "id": "seagate-expansion-portable",
+   "brand": "Seagate",
+   "name": "Expansion Portable HDD",
+   "kind": "usb-hdd",
+   "match": [
+    "Expansion HDD"
+   ],
+   "interface": "USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. Models STKM1000400/STKM2000400/STKM4000400/STKM5000400.",
+   "source": "Seagate Expansion Portable Drive Data Sheet DS2060.1 (2021)",
+   "sourceUrl": "https://www.seagate.com/www-content/datasheets/pdfs/expansion-portable-DS2060-1-2102-WW-en_US.pdf"
+  },
+  {
+   "id": "seagate-expansion-desktop",
+   "brand": "Seagate",
+   "name": "Expansion Desktop HDD",
+   "kind": "usb-hdd",
+   "match": [
+    "Expansion Desk"
+   ],
+   "interface": "USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. Models STKP4000400 ... STKP18000400.",
+   "source": "Seagate Expansion Desktop Drive Data Sheet DS2063 (2021)",
+   "sourceUrl": "https://www.seagate.com/www-content/datasheets/pdfs/expansion-desktop-3-5-DS2063-2102-WW-en_US.pdf"
+  },
+  {
+   "id": "seagate-basic",
+   "brand": "Seagate",
+   "name": "Seagate Basic portable HDD",
+   "kind": "usb-hdd",
+   "match": [
+    "Seagate Basic"
+   ],
+   "interface": "USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. Models STJL1000400/STJL2000400/STJL4000400/STJL5000400.",
+   "source": "Seagate Basic External Portable Drive Data Sheet DS2025.1 (2019)",
+   "sourceUrl": "https://www.seagate.com/content/dam/seagate/migrated-assets/www-content/datasheets/pdfs/basic-portable-drive-DS2025-1-1909US-en_US.pdf"
+  },
+  {
+   "id": "wd-my-passport",
+   "brand": "WD",
+   "name": "WD My Passport (portable HDD)",
+   "kind": "usb-hdd",
+   "match": [
+    "My Passport"
+   ],
+   "interface": "USB 3.2 Gen 1 / USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Windows typically shows 'WD My Passport 25E2' (owner example). The pattern also matches My Passport Ultra/for Mac and the My Passport SSD - use Windows MediaType/SeekPenalty to tell SSD from HDD.",
+   "source": "WD My Passport Portable HDD Storage data sheet (2024)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/wd/product/external-storage/my_passport/my-passport-new/product-overview-wd-my-passport.pdf"
+  },
+  {
+   "id": "wd-elements",
+   "brand": "WD",
+   "name": "WD Elements Portable / Desktop (HDD)",
+   "kind": "usb-hdd",
+   "match": [
+    "WD Elements"
+   ],
+   "interface": "USB 3.2 Gen 1 / USB 3.0 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. Elements Desktop overview (2025) gives the same interface: https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/wd/product/external-storage/wd_elements/wd_elements_desktop/product-overview-wd-elements-desktop.pdf",
+   "source": "WD Elements USB-C Portable HDD data sheet (2026)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/wd/product/external-storage/wd_elements/wd-elements-portable-usb-c-hdd/data-sheet-wd-elements-portable-usb-c-hdd.pdf"
+  },
+  {
+   "id": "toshiba-canvio",
+   "brand": "Toshiba",
+   "name": "Toshiba Canvio Basics / Advance (portable HDD)",
+   "kind": "usb-hdd",
+   "match": [
+    "TOSHIBA External USB 3.0"
+   ],
+   "interface": "USB 3.2 Gen 1 (5Gbps)",
+   "notes": "Manufacturer publishes no MB/s rating for this HDD-based drive (interface only); the internal 2.5/3.5-inch drive model is not specified. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. Product pages: 'USB 3.2 Gen 1 (USB 2.0 compatible)', 'Max. transfer rate ~5.0 Gbit/s' (interface rate, not drive rate). Canvio Advance page gives the same: https://www.toshiba-storage.com/products/toshiba-portable-hard-drives-canvio-advance/",
+   "source": "Toshiba Canvio Basics product page (toshiba-storage.com)",
+   "sourceUrl": "https://www.toshiba-storage.com/products/canvio-basics/"
+  },
+  {
+   "id": "samsung-t7-shield",
+   "brand": "Samsung",
+   "name": "Portable SSD T7 Shield",
+   "kind": "usb-ssd",
+   "match": [
+    "PSSD T7 Shield"
+   ],
+   "interface": "USB 3.2 Gen 2 (10Gbps)",
+   "seqReadMBs": 1050,
+   "seqWriteMBs": 1000,
+   "notes": "'read/write speeds of up to 1,050/1,000MB/s' (needs USB 3.2 Gen 2 + UASP). Must be checked before the plain T7 entry (longest match). Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Samsung Portable SSD T7 Shield User Manual (English) ver 1.0 (2022)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/user-manual/Samsung_Portable_SSD_T7_Shield_User_Manual_English_ver_1.0_10129520009325.pdf"
+  },
+  {
+   "id": "samsung-t7",
+   "brand": "Samsung",
+   "name": "Portable SSD T7",
+   "kind": "usb-ssd",
+   "match": [
+    "PSSD T7"
+   ],
+   "interface": "USB 3.2 Gen 2 (10Gbps)",
+   "seqReadMBs": 1050,
+   "seqWriteMBs": 1000,
+   "notes": "'Sequential Read Up to 1,050 MB/sec', 'Sequential Write Up to 1,000 MB/sec' (Samsung internal test with enclosed cable). The 2025 'T7 Resurrected' (MU-PD) has the same ratings. Pattern also matches T7 Shield/T7 Touch (same 1,050/1,000 ratings). Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Samsung Portable SSD T7 Data Sheet Rev. 2.0 (2024)",
+   "sourceUrl": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_Portable_SSD_T7_Datasheet_Rev2.0.pdf"
+  },
+  {
+   "id": "samsung-t9",
+   "brand": "Samsung",
+   "name": "Portable SSD T9",
+   "kind": "usb-ssd",
+   "match": [
+    "PSSD T9"
+   ],
+   "interface": "USB 3.2 Gen 2x2 (20Gbps)",
+   "seqReadMBs": 2000,
+   "seqWriteMBs": 1950,
+   "notes": "Samsung spec pages: 1TB and 2TB 'Sequential Write Up to 1,950 MB/s', 4TB 'Up to 2,000 MB/s'; read up to 2,000 MB/s for all (needs Gen 2x2 host + UASP). 2TB page: https://www.samsung.com/nz/memory-storage/portable-ssd/portable-ssd-t9-2tb-black-mu-pg2t0b-ww ; 4TB page: https://www.samsung.com/uk/memory-storage/portable-ssd/portable-ssd-t9-4tb-black-mu-pg4t0b-eu/ . Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Samsung UK product page, Portable SSD T9 1TB (MU-PG1T0B)",
+   "sourceUrl": "https://www.samsung.com/uk/memory-storage/portable-ssd/portable-ssd-t9-1tb-black-mu-pg1t0b-eu"
+  },
+  {
+   "id": "sandisk-extreme-portable-v2",
+   "brand": "SanDisk",
+   "name": "SanDisk Extreme Portable SSD V2 (SDSSDE61)",
+   "kind": "usb-ssd",
+   "match": [
+    "Extreme 55AE"
+   ],
+   "interface": "USB 3.2 Gen 2 (10Gbps)",
+   "seqReadMBs": 1050,
+   "seqWriteMBs": 1000,
+   "notes": "'Up to 1050MB/s read speed, up to 1000MB/s write speed' (500GB-4TB). Windows usually shows 'SanDisk Extreme 55AE'. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "SanDisk Extreme Portable SSD data sheet (WD, 4/23)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/sandisk/product/portable-drives/extreme-usb-3-2-ssd/data-sheet-sandisk-extreme-usb-3-2-ssd.pdf"
+  },
+  {
+   "id": "sandisk-extreme-pro-portable-v2",
+   "brand": "SanDisk",
+   "name": "SanDisk Extreme PRO Portable SSD V2 (SDSSDE81)",
+   "kind": "usb-ssd",
+   "match": [
+    "Extreme Pro 55AF"
+   ],
+   "interface": "USB 3.2 Gen 2x2 (20Gbps)",
+   "seqReadMBs": 2000,
+   "seqWriteMBs": 2000,
+   "notes": "'Up to 2000MB/s read and write speeds' (1-4TB). Windows usually shows 'SanDisk Extreme Pro 55AF'. Not the newer 4000MB/s SDSSDE83 model. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "SanDisk Extreme PRO Portable SSD data sheet (WD, 5/23)",
+   "sourceUrl": "https://documents.sandisk.com/content/dam/asset-library/en_us/assets/public/sandisk/product/portable-drives/extreme-pro-usb-3-2-ssd/data-sheet-sandisk-extreme-pro-usb-3-2-ssd.pdf"
+  },
+  {
+   "id": "crucial-x6",
+   "brand": "Crucial",
+   "name": "Crucial X6 Portable SSD",
+   "kind": "usb-ssd",
+   "match": [
+    "Crucial X6",
+    "X6SSD9"
+   ],
+   "interface": "USB-C (10Gbps class)",
+   "seqReadMBs": 540,
+   "notes": "Launch release (25 Aug 2020, up to 2TB): 'Read speed up to 540MB/s'. Crucial's later X6 flyer is titled 'read speed up to 800 MB/s' for larger/later capacities (500GB stays 540) - that flyer could not be opened (crucial.com/assets.micron.com block automated access), so 800 is NOT confirmed here. No write rating published. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Micron press release 'Micron's Sleek New Crucial X6 Portable SSD...' (25 Aug 2020)",
+   "sourceUrl": "https://investors.micron.com/news/press-release/2020/Microns-Sleek-New-Crucial-X6-Portable-SSD-Delivers-Fast-Instant-Access-to-Digital-Content-08-25-2020/default.aspx"
+  },
+  {
+   "id": "crucial-x9",
+   "brand": "Crucial",
+   "name": "Crucial X9 Portable SSD",
+   "kind": "usb-ssd",
+   "match": [
+    "Crucial X9 SSD",
+    "X9SSD9"
+   ],
+   "interface": "USB-C (USB 3.2 Gen 2 class)",
+   "seqReadMBs": 1050,
+   "notes": "DERIVED: Micron's X10 release says X10 reads 'up to 2,100 MB/s' and is 'twice as fast' measured 'against maximum reported speeds from Crucial X9 SSD' -> 1,050 MB/s. Crucial's X9 flyer (title 'up to 1,050MB/s') could not be opened. No write rating published. Pattern deliberately excludes 'X9 Pro'. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Micron press release 'Lightning-Fast Speeds, Massive Capacities...' (19 May 2025)",
+   "sourceUrl": "https://investors.micron.com/news/press-release/2025/Lightning-Fast-Speeds-Massive-Capacities-Crucial-SSDs-Elevate-Gaming-and-Creative-Endeavors-05-19-2025/default.aspx"
+  },
+  {
+   "id": "crucial-x9-pro",
+   "brand": "Crucial",
+   "name": "Crucial X9 Pro Portable SSD",
+   "kind": "usb-ssd",
+   "match": [
+    "Crucial X9 Pro",
+    "X9PROSSD9"
+   ],
+   "interface": "USB 3.2 Gen 2 (10Gbps)",
+   "seqReadMBs": 1050,
+   "seqWriteMBs": 1050,
+   "notes": "'sequential read and write speeds up to 1,050MB/s' (1-4TB); 'Best speeds available ... on USB 3.2 Gen2 supported devices.' Added beyond the requested list. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Micron press release 'Crucial Expands Portable SSD Portfolio...' (25 Jul 2023)",
+   "sourceUrl": "https://investors.micron.com/news/press-release/2023/Crucial-Expands-Portable-SSD-Portfolio-Unveiling-Revolutionary-New-Storage-Architecture-07-25-2023/default.aspx"
+  },
+  {
+   "id": "crucial-x10",
+   "brand": "Crucial",
+   "name": "Crucial X10 Portable SSD",
+   "kind": "usb-ssd",
+   "match": [
+    "Crucial X10 SSD",
+    "X10SSD9"
+   ],
+   "interface": "USB-C (20Gbps class)",
+   "seqReadMBs": 2100,
+   "notes": "'delivers read speeds of up to 2,100 MB/s' (CrystalDiskMark 8.0.4); write not stated; 4/6/8TB at launch. Interface generation not named in the release (2,100 MB/s exceeds the 10Gbps Gen 2 ceiling). Pattern deliberately excludes 'X10 Pro'. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Micron press release 'Lightning-Fast Speeds, Massive Capacities...' (19 May 2025)",
+   "sourceUrl": "https://investors.micron.com/news/press-release/2025/Lightning-Fast-Speeds-Massive-Capacities-Crucial-SSDs-Elevate-Gaming-and-Creative-Endeavors-05-19-2025/default.aspx"
+  },
+  {
+   "id": "crucial-x10-pro",
+   "brand": "Crucial",
+   "name": "Crucial X10 Pro Portable SSD",
+   "kind": "usb-ssd",
+   "match": [
+    "Crucial X10 Pro",
+    "X10PROSSD9"
+   ],
+   "interface": "USB 3.2 Gen 2x2 (20Gbps)",
+   "seqReadMBs": 2100,
+   "seqWriteMBs": 2000,
+   "notes": "'sequential read/write speeds up to 2,100MB/s and 2,000MB/s respectively' (1-4TB); 'USB 3.2 Gen2 2x2 full performance can only be achieved on USB-C host devices.' Added beyond the requested list. Match string is the usual Windows USB-bridge model string, not taken from a manufacturer document - confirm on a real unit. ",
+   "source": "Micron press release 'Crucial Expands Portable SSD Portfolio...' (25 Jul 2023)",
+   "sourceUrl": "https://investors.micron.com/news/press-release/2023/Crucial-Expands-Portable-SSD-Portfolio-Unveiling-Revolutionary-New-Storage-Architecture-07-25-2023/default.aspx"
+  }
+ ],
+ "interfaces": [
+  {
+   "id": "sata1",
+   "name": "SATA 1.5Gb/s",
+   "lineRateGbps": 1.5,
+   "lanes": 1,
+   "encoding": "8b/10b",
+   "maxMBs": 150,
+   "notes": "1.5 Gb/s x 8/10 / 8 = 150 MB/s line payload (before FIS/protocol overhead). Rates 1.5/3/6 Gb/s and 6Gb/s = 600MB/s per SATA-IO FAQ; 8b/10b per SATA-IO FAQ 2013 ('SATA utilizes 8b/10b encoding ... 6Gb/s equates to 0.6GB/s'): https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "SATA-IO 'About SATA 6Gb/s and the SATA Revision 3.0 Specification' FAQ (May/June 2009)",
+   "sourceUrl": "https://sata-io.org/sites/default/files/documents/SATA-Revision-3.0-FAQ-FINAL.pdf"
+  },
+  {
+   "id": "sata2",
+   "name": "SATA 3Gb/s",
+   "lineRateGbps": 3.0,
+   "lanes": 1,
+   "encoding": "8b/10b",
+   "maxMBs": 300,
+   "notes": "3 Gb/s x 8/10 / 8 = 300 MB/s line payload. HGST OEM spec 7K1000.C also lists interface transfer rate 300 MB/s for SATA 3Gb/s variants. 8b/10b source: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "SATA-IO 'About SATA 6Gb/s and the SATA Revision 3.0 Specification' FAQ (May/June 2009)",
+   "sourceUrl": "https://sata-io.org/sites/default/files/documents/SATA-Revision-3.0-FAQ-FINAL.pdf"
+  },
+  {
+   "id": "sata3",
+   "name": "SATA 6Gb/s",
+   "lineRateGbps": 6.0,
+   "lanes": 1,
+   "encoding": "8b/10b",
+   "maxMBs": 600,
+   "notes": "FAQ: 'The SATA 6Gb/s interface transmits information at 600MB/s, however not all 600MB/s are realized as the user data payload'. 8b/10b source: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "SATA-IO 'About SATA 6Gb/s and the SATA Revision 3.0 Specification' FAQ (May/June 2009)",
+   "sourceUrl": "https://sata-io.org/sites/default/files/documents/SATA-Revision-3.0-FAQ-FINAL.pdf"
+  },
+  {
+   "id": "pcie3x2",
+   "name": "PCIe 3.0 x2",
+   "lineRateGbps": 16,
+   "lanes": 2,
+   "perLaneGTs": 8,
+   "encoding": "128b/130b",
+   "maxMBs": 1969,
+   "notes": "8 GT/s per lane x 2 x 128/130 / 8 = 1969.2 MB/s per direction, before TLP/protocol overhead. Intel formula: ((Transfer Rate * Encoding * # Lanes)/8)/1000 GB/s; Intel table: Gen3 x4 3.94, Gen4 x4 7.88, Gen5 x4 15.75 GB/s. SATA-IO FAQ (2013) also states PCIe 3.0 uses 128b/130b, 8Gb/s per lane = 1GB/s per lane: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "Intel Core Ultra 200S Datasheet Vol.1, 'PCI Express Root Port Support Feature Details' (theoretical max bandwidth table + formula)",
+   "sourceUrl": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/arrow-lake-s/core-ultra-200s-series-processors-datasheet-volume-1-of-2/005/pci-express-root-port-support-feature-details/"
+  },
+  {
+   "id": "pcie3x4",
+   "name": "PCIe 3.0 x4",
+   "lineRateGbps": 32,
+   "lanes": 4,
+   "perLaneGTs": 8,
+   "encoding": "128b/130b",
+   "maxMBs": 3938,
+   "notes": "8 GT/s per lane x 4 x 128/130 / 8 = 3938.5 MB/s per direction, before TLP/protocol overhead. Intel formula: ((Transfer Rate * Encoding * # Lanes)/8)/1000 GB/s; Intel table: Gen3 x4 3.94, Gen4 x4 7.88, Gen5 x4 15.75 GB/s. SATA-IO FAQ (2013) also states PCIe 3.0 uses 128b/130b, 8Gb/s per lane = 1GB/s per lane: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "Intel Core Ultra 200S Datasheet Vol.1, 'PCI Express Root Port Support Feature Details' (theoretical max bandwidth table + formula)",
+   "sourceUrl": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/arrow-lake-s/core-ultra-200s-series-processors-datasheet-volume-1-of-2/005/pci-express-root-port-support-feature-details/"
+  },
+  {
+   "id": "pcie4x2",
+   "name": "PCIe 4.0 x2",
+   "lineRateGbps": 32,
+   "lanes": 2,
+   "perLaneGTs": 16,
+   "encoding": "128b/130b",
+   "maxMBs": 3938,
+   "notes": "16 GT/s per lane x 2 x 128/130 / 8 = 3938.5 MB/s per direction, before TLP/protocol overhead. Intel formula: ((Transfer Rate * Encoding * # Lanes)/8)/1000 GB/s; Intel table: Gen3 x4 3.94, Gen4 x4 7.88, Gen5 x4 15.75 GB/s. SATA-IO FAQ (2013) also states PCIe 3.0 uses 128b/130b, 8Gb/s per lane = 1GB/s per lane: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "Intel Core Ultra 200S Datasheet Vol.1, 'PCI Express Root Port Support Feature Details' (theoretical max bandwidth table + formula)",
+   "sourceUrl": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/arrow-lake-s/core-ultra-200s-series-processors-datasheet-volume-1-of-2/005/pci-express-root-port-support-feature-details/"
+  },
+  {
+   "id": "pcie4x4",
+   "name": "PCIe 4.0 x4",
+   "lineRateGbps": 64,
+   "lanes": 4,
+   "perLaneGTs": 16,
+   "encoding": "128b/130b",
+   "maxMBs": 7877,
+   "notes": "16 GT/s per lane x 4 x 128/130 / 8 = 7876.9 MB/s per direction, before TLP/protocol overhead. Intel formula: ((Transfer Rate * Encoding * # Lanes)/8)/1000 GB/s; Intel table: Gen3 x4 3.94, Gen4 x4 7.88, Gen5 x4 15.75 GB/s. SATA-IO FAQ (2013) also states PCIe 3.0 uses 128b/130b, 8Gb/s per lane = 1GB/s per lane: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "Intel Core Ultra 200S Datasheet Vol.1, 'PCI Express Root Port Support Feature Details' (theoretical max bandwidth table + formula)",
+   "sourceUrl": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/arrow-lake-s/core-ultra-200s-series-processors-datasheet-volume-1-of-2/005/pci-express-root-port-support-feature-details/"
+  },
+  {
+   "id": "pcie5x2",
+   "name": "PCIe 5.0 x2",
+   "lineRateGbps": 64,
+   "lanes": 2,
+   "perLaneGTs": 32,
+   "encoding": "128b/130b",
+   "maxMBs": 7877,
+   "notes": "32 GT/s per lane x 2 x 128/130 / 8 = 7876.9 MB/s per direction, before TLP/protocol overhead. Intel formula: ((Transfer Rate * Encoding * # Lanes)/8)/1000 GB/s; Intel table: Gen3 x4 3.94, Gen4 x4 7.88, Gen5 x4 15.75 GB/s. SATA-IO FAQ (2013) also states PCIe 3.0 uses 128b/130b, 8Gb/s per lane = 1GB/s per lane: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "Intel Core Ultra 200S Datasheet Vol.1, 'PCI Express Root Port Support Feature Details' (theoretical max bandwidth table + formula)",
+   "sourceUrl": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/arrow-lake-s/core-ultra-200s-series-processors-datasheet-volume-1-of-2/005/pci-express-root-port-support-feature-details/"
+  },
+  {
+   "id": "pcie5x4",
+   "name": "PCIe 5.0 x4",
+   "lineRateGbps": 128,
+   "lanes": 4,
+   "perLaneGTs": 32,
+   "encoding": "128b/130b",
+   "maxMBs": 15754,
+   "notes": "32 GT/s per lane x 4 x 128/130 / 8 = 15753.8 MB/s per direction, before TLP/protocol overhead. Intel formula: ((Transfer Rate * Encoding * # Lanes)/8)/1000 GB/s; Intel table: Gen3 x4 3.94, Gen4 x4 7.88, Gen5 x4 15.75 GB/s. SATA-IO FAQ (2013) also states PCIe 3.0 uses 128b/130b, 8Gb/s per lane = 1GB/s per lane: https://sata-io.org/sites/default/files/images/SATA-IO%20FAQ%20-%20071813a%20(3).pdf",
+   "source": "Intel Core Ultra 200S Datasheet Vol.1, 'PCI Express Root Port Support Feature Details' (theoretical max bandwidth table + formula)",
+   "sourceUrl": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/arrow-lake-s/core-ultra-200s-series-processors-datasheet-volume-1-of-2/005/pci-express-root-port-support-feature-details/"
+  },
+  {
+   "id": "usb2",
+   "name": "USB 2.0 Hi-Speed",
+   "lineRateGbps": 0.48,
+   "lanes": 1,
+   "encoding": "NRZI with bit stuffing",
+   "maxMBs": 53.248,
+   "notes": "480 Mbit/s signalling. Max bulk payload: 13 x 512-byte packets per 125 us microframe = 53,248,000 B/s (Microchip table: 'Bulk 512 bytes, up to 13, 53 MByte/s'); real hosts typically reach ~30-45 MB/s.",
+   "source": "Microchip Developer Help, 'High Speed USB' (USB 2.0)",
+   "sourceUrl": "https://developerhelp.microchip.com/xwiki/bin/view/applications/usb/speeds-specs/high-speed/"
+  },
+  {
+   "id": "usb3g1",
+   "name": "USB 3.2 Gen 1 (5Gbps, SuperSpeed USB / USB 3.0)",
+   "lineRateGbps": 5.0,
+   "lanes": 1,
+   "encoding": "8b/10b",
+   "maxMBs": 500,
+   "notes": "5 Gb/s x 8/10 / 8 = 500 MB/s before link/protocol overhead (UASP HDD/SSD bridges typically ~400-450 MB/s). USB-IF-hosted paper: single-lane 5.0 Gb/s 'is listed as 4 Gb/s, taking into account the 8b/10b encoding overhead': https://www.usb.org/sites/default/files/Power%20Savings%20in%20USB%20Hub%20Through%20a%20Proactive%20Scheduling%20Strategy.pdf",
+   "source": "USB-IF USB 3.2 Specification Language Usage Guidelines (2018)",
+   "sourceUrl": "https://www.usb.org/sites/default/files/usb_3_2_language_product_and_packaging_guidelines_final.pdf"
+  },
+  {
+   "id": "usb3g2",
+   "name": "USB 3.2 Gen 2 (10Gbps)",
+   "lineRateGbps": 10.0,
+   "lanes": 1,
+   "encoding": "128b/132b",
+   "maxMBs": 1212,
+   "notes": "10 Gb/s x 128/132 / 8 = 1212.1 MB/s before protocol overhead (~1,050 MB/s is the usual rated SSD figure). 128b/132b for USB 3.1/3.2/USB4 per USB-IF-hosted paper: https://www.usb.org/sites/default/files/Power%20Savings%20in%20USB%20Hub%20Through%20a%20Proactive%20Scheduling%20Strategy.pdf",
+   "source": "USB-IF USB 3.2 Specification Language Usage Guidelines (2018)",
+   "sourceUrl": "https://www.usb.org/sites/default/files/usb_3_2_language_product_and_packaging_guidelines_final.pdf"
+  },
+  {
+   "id": "usb3g2x2",
+   "name": "USB 3.2 Gen 2x2 (20Gbps)",
+   "lineRateGbps": 20.0,
+   "lanes": 2,
+   "encoding": "128b/132b",
+   "maxMBs": 2424,
+   "notes": "'two lanes of 10Gbps operation to realize a 20Gbps data transfer rate'; 20 Gb/s x 128/132 / 8 = 2424.2 MB/s before protocol overhead. Encoding source: https://www.usb.org/sites/default/files/Power%20Savings%20in%20USB%20Hub%20Through%20a%20Proactive%20Scheduling%20Strategy.pdf",
+   "source": "USB-IF USB 3.2 Specification Language Usage Guidelines (2018)",
+   "sourceUrl": "https://www.usb.org/sites/default/files/usb_3_2_language_product_and_packaging_guidelines_final.pdf"
+  },
+  {
+   "id": "usb4",
+   "name": "USB4 40Gbps",
+   "lineRateGbps": 40.0,
+   "lanes": 2,
+   "encoding": "128b/132b",
+   "maxMBs": 4848,
+   "notes": "USB4 40Gbps = 2 lanes x 20 Gb/s; 40 x 128/132 / 8 = 4848.5 MB/s link ceiling. NVMe enclosures are limited further by the PCIe tunnel. Lane/encoding source (USB-IF-hosted paper: 'USB4 UFP which is 2 Lanes of 20 Gb/s', '128b/132b encoding with USB 3.1, USB 3.2, and USB4'): https://www.usb.org/sites/default/files/Power%20Savings%20in%20USB%20Hub%20Through%20a%20Proactive%20Scheduling%20Strategy.pdf",
+   "source": "USB-IF USB4 Specification Language Usage Guidelines",
+   "sourceUrl": "https://www.usb.org/sites/default/files/usb4_language_product_and_packaging_guidelines_final__0.pdf"
+  },
+  {
+   "id": "tb4",
+   "name": "Thunderbolt 4 (40Gbps)",
+   "lineRateGbps": 40.0,
+   "lanes": 2,
+   "encoding": null,
+   "maxMBs": 3938,
+   "notes": "Intel: 'minimum PCIe data requirements have increased from 16Gbps to 32Gbps'. 3938 MB/s assumes the 32 Gbps PCIe tunnel is PCIe 3.0 x4 (32 GT/s x 128/130 / 8) - derived, not an Intel figure.",
+   "source": "Intel, 'What Is Thunderbolt 4?'",
+   "sourceUrl": "https://www.intel.com/content/www/us/en/gaming/resources/upgrade-gaming-accessories-thunderbolt-4.html"
+  }
+ ],
+ "rotationalLatency": [
+  {
+   "rpm": 5400,
+   "avgLatencyMs": 5.56,
+   "revolutionMs": 11.11,
+   "notes": "Toshiba MQ04AB manual: 5,400 rpm, 'Average Latency Time 5.56 ms'. HGST Travelstar 5K1000 spec: 5400 RPM, one revolution 11.1 ms, average latency 5.5 ms; Seagate Mobile HDD manual: 5.6 ms.",
+   "source": "Toshiba MQ04AB Series Product Manual Rev. 01 (Feb 2018)",
+   "sourceUrl": "https://toshiba.semicon-storage.com/content/dam/toshiba-ss-v2/master/en/storage/product/internal-specialty/cHDD-MQ04AB_Product-Manual.pdf"
+  },
+  {
+   "rpm": 5640,
+   "avgLatencyMs": 5.32,
+   "revolutionMs": 10.64,
+   "notes": "Computed as half a revolution (30000 / rpm ms), the definition shown in the HGST spec latency table (7200 RPM: revolution 8.3 ms, average latency 4.17 ms). WD lists 5640 RPM for some WD Blue / Red Plus models.",
+   "source": "HGST Deskstar 7K1000.C / Ultrastar A7K2000 OEM Specification Rev. 2.8 (11 March 2015)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/eol/cinemastar-series/product-manual-cinemastar-deskstar-7k1000-c-ultrastar-a7k2000-oem-spec.pdf"
+  },
+  {
+   "rpm": 5900,
+   "avgLatencyMs": 5.08,
+   "revolutionMs": 10.17,
+   "notes": "Computed as half a revolution. Seagate SkyHawk manual 100804836 lists 5.1 ms average latency for its low-RPM 1-4TB models.",
+   "source": "HGST Deskstar 7K1000.C / Ultrastar A7K2000 OEM Specification Rev. 2.8 (11 March 2015)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/eol/cinemastar-series/product-manual-cinemastar-deskstar-7k1000-c-ultrastar-a7k2000-oem-spec.pdf"
+  },
+  {
+   "rpm": 7200,
+   "avgLatencyMs": 4.17,
+   "revolutionMs": 8.33,
+   "notes": "HGST 7K1000.C spec Table 9: '7200 RPM, time for a revolution 8.3 ms, average latency 4.17 ms'. Seagate manuals print 4.16 ms (truncated), Seagate DS1668.6 prints 4.17 ms.",
+   "source": "HGST Deskstar 7K1000.C / Ultrastar A7K2000 OEM Specification Rev. 2.8 (11 March 2015)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/eol/cinemastar-series/product-manual-cinemastar-deskstar-7k1000-c-ultrastar-a7k2000-oem-spec.pdf"
+  },
+  {
+   "rpm": 10000,
+   "avgLatencyMs": 3.0,
+   "revolutionMs": 6.0,
+   "notes": "Computed as half a revolution (6.0 ms revolution -> 3.0 ms).",
+   "source": "HGST Deskstar 7K1000.C / Ultrastar A7K2000 OEM Specification Rev. 2.8 (11 March 2015)",
+   "sourceUrl": "https://documents.westerndigital.com/content/dam/doc-library/en_us/assets/public/western-digital/product/internal-drives/eol/cinemastar-series/product-manual-cinemastar-deskstar-7k1000-c-ultrastar-a7k2000-oem-spec.pdf"
+  }
+ ]
+}
