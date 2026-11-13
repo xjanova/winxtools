@@ -557,7 +557,10 @@ public partial class DashboardView : Page
     {
         try
         {
-            using var process = Process.Start(new ProcessStartInfo(fileName, arguments)
+            // Full System32 path: this app runs as administrator, and a bare name is looked up
+            // in the app's own folder and the current directory first.
+            string tool = NetX.Core.System.Tweaks.CommandRunner.SystemTool(fileName + ".exe");
+            using var process = Process.Start(new ProcessStartInfo(tool, arguments)
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,

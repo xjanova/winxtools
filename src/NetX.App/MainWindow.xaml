@@ -531,7 +531,7 @@
                                        Style="{StaticResource BodyTextStyle}"
                                        FontSize="10"
                                        HorizontalAlignment="Center"/>
-                            <TextBlock Text="{DynamicResource AppVersion}"
+                            <TextBlock x:Name="SidebarVersion"
                                        Style="{StaticResource BodyTextStyle}"
                                        FontSize="9"
                                        Foreground="{StaticResource TextTertiaryBrush}"

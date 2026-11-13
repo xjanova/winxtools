@@ -438,8 +438,20 @@ public partial class NetworkToolsView : Page
         sb.AppendLine($"IP Conversion for: {input}\n");
         sb.AppendLine("=" + new string('=', 50));
 
-        // Try to parse as IPv4
-        if (input.Contains('.') && !input.Contains(':'))
+        input = input.Trim();
+        // Binary first: 32 ones and zeros, with or without dots/spaces. (It used to be taken
+        // for a dotted IPv4 address or a decimal number, so the documented format never worked.)
+        string bits = input.Replace(".", "").Replace(" ", "");
+        var octets = input.Split('.');
+        if (bits.Length == 32 && bits.All(c => c == '0' || c == '1'))
+        {
+            string dotted = string.Join(".", Enumerable.Range(0, 4).Select(i => Convert.ToInt32(bits.Substring(i * 8, 8), 2)));
+            sb.AppendLine($"\nBinary: {input}");
+            sb.AppendLine($"IPv4: {dotted}");
+            sb.AppendLine($"Decimal: {NetworkTools.IPv4ToDecimal(dotted)}");
+        }
+        // A real dotted IPv4 address: four numbers from 0 to 255.
+        else if (octets.Length == 4 && octets.All(o => o.Length is > 0 and <= 3 && o.All(char.IsDigit) && int.Parse(o) <= 255))
         {
             sb.AppendLine($"\nIPv4: {input}");
             sb.AppendLine($"Decimal: {NetworkTools.IPv4ToDecimal(input)}");
@@ -450,12 +462,6 @@ public partial class NetworkToolsView : Page
         {
             sb.AppendLine($"\nDecimal: {input}");
             sb.AppendLine($"IPv4: {NetworkTools.DecimalToIPv4(input)}");
-        }
-        // Try to parse as binary
-        else if (input.Replace(".", "").Replace(" ", "").All(c => c == '0' || c == '1'))
-        {
-            sb.AppendLine($"\nBinary: {input}");
-            sb.AppendLine($"IPv4: {NetworkTools.BinaryToIPv4(input)}");
         }
         else
         {

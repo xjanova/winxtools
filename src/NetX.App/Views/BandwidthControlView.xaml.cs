@@ -142,8 +142,9 @@ public partial class BandwidthControlView : Page
 
             item.PropertyChanged += InterfaceItem_PropertyChanged;
             _interfaces.Add(item);
-
-            if (ni != null) _networkMonitor.SelectInterface(ni.Id);
+            // This card reads its own adapter from GetInterfaceBandwidth(). The shared monitor is
+            // not narrowed to it: that changed the totals on the Dashboard and the status bar
+            // for the rest of the session.
         }
         catch (Exception ex)
         {

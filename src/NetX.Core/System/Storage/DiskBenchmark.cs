@@ -136,6 +136,8 @@ public static class DiskBenchmark
         long room = volume.FreeBytes - Headroom;
         if (room < MinFileBytes) return null;
         long size = Math.Min(wanted, room);
+        // A FAT32 file can't reach 4 GiB: the 4 GB test wrote for minutes and failed on its last block.
+        if (volume.FileSystem.StartsWith("FAT", StringComparison.OrdinalIgnoreCase)) size = Math.Min(size, (4L << 30) - (64L << 20));
         return size / (1 << 20) * (1 << 20);
     }
 

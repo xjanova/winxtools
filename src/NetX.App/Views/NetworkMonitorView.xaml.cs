@@ -756,6 +756,14 @@ public partial class NetworkMonitorView : Page
     {
         if (sender is Button btn && btn.Tag is string ipAddress)
         {
+            // A listening socket has no remote address ("*"): there is nothing to block.
+            if (!System.Net.IPAddress.TryParse(ipAddress, out var parsed) || System.Net.IPAddress.IsLoopback(parsed) ||
+                parsed.Equals(System.Net.IPAddress.Any) || parsed.Equals(System.Net.IPAddress.IPv6Any))
+            {
+                StatusText.Text = $"This connection has no remote IP address that can be blocked ({ipAddress}).";
+                return;
+            }
+
             var result = MessageBox.Show(
                 $"Block IP address {ipAddress}?",
                 "Block IP",
@@ -764,8 +772,11 @@ public partial class NetworkMonitorView : Page
 
             if (result == MessageBoxResult.Yes)
             {
-                FirewallManager.Instance.BlockIP(ipAddress);
-                StatusText.Text = $"Blocked IP: {ipAddress}";
+                // The real firewall result, not "blocked" whatever happened.
+                bool ok = FirewallManager.Instance.BlockIP(ipAddress);
+                StatusText.Text = ok
+                    ? $"Blocked IP: {ipAddress}"
+                    : $"Failed to block {ipAddress} — Windows Firewall refused the rule.";
 
                 // Refresh connections list
                 if (_selectedProcessId.HasValue)

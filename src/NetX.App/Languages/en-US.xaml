@@ -9,7 +9,6 @@
     <!-- App Info -->
     <system:String x:Key="AppName">WinXTools</system:String>
     <system:String x:Key="AppTagline">Advanced Network &amp; System Manager</system:String>
-    <system:String x:Key="AppVersion">Version 0.1.0-beta</system:String>
     <system:String x:Key="AppCredit">by xman studio</system:String>
 
     <!-- Navigation -->
@@ -1143,6 +1142,9 @@
     <system:String x:Key="Space_HibernateFailed">Windows didn't turn hibernation off.</system:String>
     <system:String x:Key="Space_RestoreDeleted">Deleted {0:N0} older restore points.</system:String>
     <system:String x:Key="Space_BinEmptied">The Recycle Bin is empty.</system:String>
+    <system:String x:Key="Space_BinFailed">Windows couldn't empty the Recycle Bin completely.</system:String>
+    <system:String x:Key="Space_RestoreNone">Windows didn't let any older restore point be deleted.</system:String>
+    <system:String x:Key="Space_NotRecyclable">{0:N0} were kept because the Recycle Bin can't hold them (too big for it, or this drive has none) — to remove them, delete again and choose Yes (permanently).</system:String>
     <system:String x:Key="Space_Gained">{0} more free space.</system:String>
     <system:String x:Key="Space_ActionFailed">That didn't work: {0}</system:String>
     <system:String x:Key="Space_AgeYears">{0:0.#} years old</system:String>

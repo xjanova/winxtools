@@ -718,7 +718,34 @@
                                 CornerRadius="4"
                                 HorizontalAlignment="Left"
                                 Effect="{StaticResource AccentGlow}"/>
+                        <!-- "Working, amount unknown": a short bar that slides, instead of a full bar that looks finished. -->
+                        <Grid x:Name="Busy" ClipToBounds="True" Visibility="Collapsed">
+                            <Border x:Name="BusyBar" Width="90" HorizontalAlignment="Left" CornerRadius="4"
+                                    Background="{TemplateBinding Foreground}">
+                                <Border.RenderTransform>
+                                    <TranslateTransform X="-90"/>
+                                </Border.RenderTransform>
+                            </Border>
+                        </Grid>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsIndeterminate" Value="True">
+                            <Setter TargetName="PART_Indicator" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="Busy" Property="Visibility" Value="Visible"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="BusyAnimation">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="BusyBar"
+                                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                                         From="-90" To="1400" Duration="0:0:2.4"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="BusyAnimation"/>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

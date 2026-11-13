@@ -9,7 +9,6 @@
     <!-- App Info -->
     <system:String x:Key="AppName">WinXTools</system:String>
     <system:String x:Key="AppTagline">จัดการเครือข่ายและระบบขั้นสูง</system:String>
-    <system:String x:Key="AppVersion">เวอร์ชัน 0.1.0-beta</system:String>
     <system:String x:Key="AppCredit">โดย xman studio</system:String>
 
     <!-- Navigation -->
@@ -1143,6 +1142,9 @@
     <system:String x:Key="Space_HibernateFailed">Windows ไม่ยอมปิดไฮเบอร์เนต</system:String>
     <system:String x:Key="Space_RestoreDeleted">ลบจุดคืนค่าเก่าแล้ว {0:N0} จุด</system:String>
     <system:String x:Key="Space_BinEmptied">ล้างถังขยะแล้ว</system:String>
+    <system:String x:Key="Space_BinFailed">Windows ล้างถังขยะได้ไม่หมด</system:String>
+    <system:String x:Key="Space_RestoreNone">Windows ไม่ยอมให้ลบจุดคืนค่าเก่าเลยสักจุด</system:String>
+    <system:String x:Key="Space_NotRecyclable">เก็บไว้ {0:N0} ไฟล์ เพราะถังขยะรับไม่ได้ (ไฟล์ใหญ่เกินขนาดถังขยะ หรือไดรฟ์นี้ไม่มีถังขยะ) — ถ้าต้องการลบ ให้กดลบอีกครั้งแล้วเลือก Yes (ลบถาวร)</system:String>
     <system:String x:Key="Space_Gained">ได้พื้นที่ว่างเพิ่ม {0}</system:String>
     <system:String x:Key="Space_ActionFailed">ทำไม่สำเร็จ: {0}</system:String>
     <system:String x:Key="Space_AgeYears">อายุ {0:0.#} ปี</system:String>

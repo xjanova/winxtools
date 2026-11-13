@@ -652,26 +652,52 @@ public static class NetworkTools
             using var client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(30);
 
-            // Test download speed using a reliable CDN file
+            // Large files from two independent networks; the next one is tried when one
+            // can't be reached. The download stops after MaxSeconds, so a slow line
+            // doesn't pull the whole file and a fast one gets a sample long enough to
+            // measure (10 MB is over in a fraction of a second on a fast line).
             var testUrls = new[]
             {
-                "https://speed.cloudflare.com/__down?bytes=10000000",
-                "https://proof.ovh.net/files/10Mb.dat"
+                "https://speed.cloudflare.com/__down?bytes=100000000",
+                "https://proof.ovh.net/files/100Mb.dat",
+                "https://speed.cloudflare.com/__down?bytes=10000000"
             };
+            const double MaxSeconds = 10;
 
-            string testUrl = testUrls[0];
-            long totalBytes = 0;
-            var stopwatch = Stopwatch.StartNew();
+            HttpResponseMessage? response = null;
+            Exception? lastError = null;
+            foreach (var url in testUrls)
+            {
+                try
+                {
+                    var attempt = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    if (attempt.IsSuccessStatusCode)
+                    {
+                        response = attempt;
+                        break;
+                    }
+                    lastError = new HttpRequestException($"HTTP {(int)attempt.StatusCode}");
+                    attempt.Dispose();
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+                {
+                    lastError = ex;
+                }
+            }
+            if (response == null) throw lastError ?? new HttpRequestException("No speed test server could be reached.");
 
-            var response = await client.GetAsync(testUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
+            using var owned = response;
             using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var buffer = new byte[8192];
+            var buffer = new byte[64 * 1024];
             int bytesRead;
             long lastReportMs = 0;
+            long totalBytes = 0;
+            // Timed from the moment the data starts flowing: looking up the server and
+            // the TLS handshake are not download time.
+            var stopwatch = Stopwatch.StartNew();
 
-            while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+            while (stopwatch.Elapsed.TotalSeconds < MaxSeconds &&
+                   (bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
             {
                 totalBytes += bytesRead;
                 var elapsedMs = stopwatch.ElapsedMilliseconds;
@@ -690,6 +716,8 @@ public static class NetworkTools
             }
 
             stopwatch.Stop();
+            if (totalBytes == 0 || stopwatch.Elapsed.TotalSeconds <= 0)
+                throw new HttpRequestException("The speed test server sent no data.");
             result.DownloadBytes = totalBytes;
             result.DownloadTime = stopwatch.Elapsed.TotalSeconds;
             result.DownloadSpeed = totalBytes / result.DownloadTime;

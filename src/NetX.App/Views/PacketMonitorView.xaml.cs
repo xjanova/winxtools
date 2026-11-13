@@ -132,6 +132,20 @@ public partial class PacketMonitorView : Page
             return;
         }
 
+        // Real capture: start the kernel engine if it isn't already running for
+        // bandwidth limiting, and receive every packet via its event.
+        if (!engine.IsRunning)
+        {
+            if (!engine.Start())
+            {
+                // Don't show a green "capturing" light over an engine that didn't start.
+                StatusText.Text = "The capture engine (WinDivert) couldn't start — another program may be using it. Try again.";
+                CaptureIndicator.Fill = (Brush)FindResource("DangerBrush");
+                return;
+            }
+            _startedEngine = true;
+        }
+
         _isCapturing = true;
         StartStopText.Text = "Stop Capture";
         StartStopIcon.Data = (Geometry)FindResource("StopIcon");
@@ -139,14 +153,6 @@ public partial class PacketMonitorView : Page
         StatusText.Text = "Capturing live packets (WinDivert)...";
 
         _updateTimer.Start();
-
-        // Real capture: start the kernel engine if it isn't already running for
-        // bandwidth limiting, and receive every packet via its event.
-        if (!engine.IsRunning)
-        {
-            engine.Start();
-            _startedEngine = true;
-        }
         engine.OnPacketCaptured += OnEnginePacket;
     }
 
@@ -182,7 +188,7 @@ public partial class PacketMonitorView : Page
         if (!_isCapturing) return;
 
         bool isInbound = !info.IsOutbound;
-        string protocol = info.Protocol switch { 6 => "TCP", 17 => "UDP", 1 => "ICMP", _ => "OTHER" };
+        string protocol = info.Protocol switch { 6 => "TCP", 17 => "UDP", 1 or 58 => "ICMP", _ => "OTHER" }; // 58 = ICMPv6
 
         // Source pairs with the actual packet source address/port.
         string srcPort = (info.IsOutbound ? info.LocalPort : info.RemotePort).ToString();
@@ -235,28 +241,33 @@ public partial class PacketMonitorView : Page
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
+        int total, inbound, outbound, buffered;
         lock (_packetLock)
         {
-            // Calculate packet rate
-            var now = DateTime.Now;
-            var elapsed = (now - _lastRateCheck).TotalSeconds;
-            if (elapsed >= 1)
-            {
-                var rate = (int)((_allPackets.Count - _lastPacketCount) / elapsed);
-                PacketRateText.Text = rate.ToString();
-                _lastPacketCount = _allPackets.Count;
-                _lastRateCheck = now;
-            }
-
-            // Update statistics
-            TotalPacketsText.Text = _allPackets.Count.ToString("N0");
-            InboundPacketsText.Text = _inboundCount.ToString("N0");
-            OutboundPacketsText.Text = _outboundCount.ToString("N0");
-            BufferStatus.Text = $"Buffer: {_allPackets.Count:N0} / {MaxPackets:N0} packets";
-
-            // Apply filters and update display
-            ApplyFilters();
+            // Counted from every packet seen, not from the buffer: the buffer stops
+            // growing at MaxPackets, which froze the total and made the rate read 0.
+            total = _packetNumber;
+            inbound = _inboundCount;
+            outbound = _outboundCount;
+            buffered = _allPackets.Count;
         }
+
+        var now = DateTime.Now;
+        var elapsed = (now - _lastRateCheck).TotalSeconds;
+        if (elapsed >= 1)
+        {
+            var rate = (int)(Math.Max(0, total - _lastPacketCount) / elapsed);
+            PacketRateText.Text = rate.ToString();
+            _lastPacketCount = total;
+            _lastRateCheck = now;
+        }
+
+        TotalPacketsText.Text = total.ToString("N0");
+        InboundPacketsText.Text = inbound.ToString("N0");
+        OutboundPacketsText.Text = outbound.ToString("N0");
+        BufferStatus.Text = $"Buffer: {buffered:N0} / {MaxPackets:N0} packets";
+
+        ApplyFilters();
     }
 
     private void ApplyFilters()
@@ -274,7 +285,13 @@ public partial class PacketMonitorView : Page
             processIdFilter = pid;
         }
 
-        var filtered = _allPackets.Where(p =>
+        // Capture threads add to and trim _allPackets: copy it under the lock (the filter
+        // boxes call this too, not only the timer) and build the view outside it, so the
+        // packet path never waits for the UI.
+        PacketDisplayItem[] snapshot;
+        lock (_packetLock) snapshot = _allPackets.ToArray();
+
+        var filtered = snapshot.Where(p =>
         {
             // Protocol filter
             if (p.Protocol == "TCP" && !showTCP) return false;

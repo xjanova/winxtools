@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NetX.Core.System.Storage;
 
@@ -514,9 +515,14 @@ public static class SpaceAnalyzer
     /// and only the exact file that was listed (a junction swapped in later
     /// can't redirect the delete).
     /// </summary>
-    public static (int Deleted, long Bytes, int Skipped) DeleteFiles(IEnumerable<string> paths, bool toRecycleBin)
+    /// <returns>
+    /// <c>NotRecyclable</c>: files kept because the Recycle Bin can't hold them (too
+    /// big for it, or the drive has none) — the user asked for something that can be
+    /// restored, so they are not deleted for good behind their back.
+    /// </returns>
+    public static (int Deleted, long Bytes, int Skipped, int NotRecyclable) DeleteFiles(IEnumerable<string> paths, bool toRecycleBin)
     {
-        int deleted = 0, skipped = 0;
+        int deleted = 0, skipped = 0, notRecyclable = 0;
         long bytes = 0;
         var list = paths.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (toRecycleBin)
@@ -525,10 +531,11 @@ public static class SpaceAnalyzer
             {
                 if (IsProtectedPath(path) || !File.Exists(path)) { skipped++; continue; }
                 long size = SizeOf(path);
+                if (!FitsRecycleBin(path, size)) { notRecyclable++; continue; }
                 if (RecycleFile(path)) { deleted++; bytes += size; }
                 else skipped++;
             }
-            return (deleted, bytes, skipped);
+            return (deleted, bytes, skipped, notRecyclable);
         }
 
         foreach (var path in list)
@@ -537,8 +544,46 @@ public static class SpaceAnalyzer
             if (SystemCleaner.DeleteFileVerified(path, out long freed)) { deleted++; bytes += freed; }
             else skipped++;
         }
-        return (deleted, bytes, skipped);
+        return (deleted, bytes, skipped, 0);
     }
+
+    /// <summary>
+    /// False when the shell would destroy the file instead of recycling it: the
+    /// drive has no Recycle Bin (USB stick, network), the bin is turned off for
+    /// that drive, or the file is bigger than the bin's maximum size. These are the
+    /// settings of "Recycle Bin → Properties", stored per volume.
+    /// </summary>
+    private static bool FitsRecycleBin(string path, long size)
+    {
+        try
+        {
+            var root = global::System.IO.Path.GetPathRoot(path);
+            if (string.IsNullOrEmpty(root)) return false;
+            if (root.StartsWith(@"\\", StringComparison.Ordinal)) return false; // network share: no Recycle Bin
+            if (new DriveInfo(root).DriveType != DriveType.Fixed) return false;
+
+            var name = new StringBuilder(64);
+            if (!GetVolumeNameForVolumeMountPointW(root, name, name.Capacity)) return true; // unknown: the shell asks (FOF_WANTNUKEWARNING)
+            int open = name.ToString().IndexOf('{'), close = name.ToString().IndexOf('}');
+            if (open < 0 || close < open) return true;
+            string guid = name.ToString()[open..(close + 1)];
+
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Explorer\BitBucket\Volume\" + guid);
+            if (key == null) return true;
+            if (key.GetValue("NukeOnDelete") is int nuke && nuke != 0) return false;
+            if (key.GetValue("MaxCapacity") is int maxMb && maxMb > 0) return size <= (long)maxMb << 20;
+            return true;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetVolumeNameForVolumeMountPointW(string mountPoint, StringBuilder volumeName, int length);
 
     private static bool RecycleFile(string path)
     {
@@ -546,13 +591,16 @@ public static class SpaceAnalyzer
         {
             wFunc = FO_DELETE,
             pFrom = path + "\0\0",
-            fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI
+            // WANTNUKEWARNING: if the shell would destroy the file after all, it asks
+            // instead of doing it silently (NOCONFIRMATION alone answers "yes" to that).
+            fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI | FOF_WANTNUKEWARNING
         };
         return SHFileOperationW(ref op) == 0 && !op.fAnyOperationsAborted && !File.Exists(path);
     }
 
     private const uint FO_DELETE = 3;
-    private const ushort FOF_SILENT = 0x4, FOF_NOCONFIRMATION = 0x10, FOF_ALLOWUNDO = 0x40, FOF_NOERRORUI = 0x400;
+    private const ushort FOF_SILENT = 0x4, FOF_NOCONFIRMATION = 0x10, FOF_ALLOWUNDO = 0x40, FOF_NOERRORUI = 0x400,
+        FOF_WANTNUKEWARNING = 0x4000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct SHFILEOPSTRUCT

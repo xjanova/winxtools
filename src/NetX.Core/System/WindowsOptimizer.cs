@@ -31,6 +31,7 @@ public class WindowsOptimizer : IDisposable
 
         LoadSettings();
         LoadServiceOriginals();
+        LoadRegistryOriginals();
         InitializeOptimizationItems();
     }
 
@@ -257,7 +258,7 @@ public class WindowsOptimizer : IDisposable
             {
                 Id = "seclogon",
                 Name = "Secondary Logon",
-                Description = "Run as different user - keep if you use 'Run as administrator'",
+                Description = "Run as different user - keep it on: WinXTools' own Uninstaller (per-user programs) and 'Restart Explorer' need this service",
                 Category = OptimizationCategory.Security,
                 Type = OptimizationType.Service,
                 RiskLevel = RiskLevel.Medium,
@@ -281,10 +282,11 @@ public class WindowsOptimizer : IDisposable
             {
                 Id = "TabletInputService",
                 Name = "Touch Keyboard and Handwriting",
-                Description = "Tablet/touch input - disable if using keyboard/mouse only",
+                Description = "Tablet/touch input - on Windows 10, typing in Start, Search and Store apps can stop working without it",
                 Category = OptimizationCategory.Hardware,
                 Type = OptimizationType.Service,
-                RiskLevel = RiskLevel.Safe,
+                // Not "Safe": it must not be switched off by the one-click Safe Optimize preset.
+                RiskLevel = RiskLevel.Medium,
                 RamSavingMB = 15
             },
 
@@ -339,10 +341,11 @@ public class WindowsOptimizer : IDisposable
             {
                 Id = "DPS",
                 Name = "Diagnostic Policy Service",
-                Description = "Troubleshooting wizard",
+                Description = "Windows' troubleshooters (network, audio…) stop working without it",
                 Category = OptimizationCategory.Telemetry,
                 Type = OptimizationType.Service,
-                RiskLevel = RiskLevel.Safe,
+                // Not "Safe": it must not be switched off by the one-click Safe Optimize preset.
+                RiskLevel = RiskLevel.Medium,
                 RamSavingMB = 10
             }
         };
@@ -1367,6 +1370,126 @@ public class WindowsOptimizer : IDisposable
 
     #endregion
 
+    #region Registry originals (what a value was before WinXTools changed it)
+
+    public sealed class SavedRegistryValue
+    {
+        /// <summary>False: the value did not exist (Windows was using its built-in default).</summary>
+        public bool Existed { get; set; }
+        public int Kind { get; set; }
+        public string? Data { get; set; }
+    }
+
+    public sealed class RegistryOriginalsState
+    {
+        public Dictionary<string, SavedRegistryValue> Values { get; set; } = new();
+    }
+
+    private const string RegistryOriginalsFileName = "registry_originals.json";
+    private Dictionary<string, SavedRegistryValue> _registryOriginals = new(StringComparer.OrdinalIgnoreCase);
+
+    private void LoadRegistryOriginals()
+    {
+        var state = AdminOnlyStore.Load<RegistryOriginalsState>(RegistryOriginalsFileName);
+        lock (_originalsLock)
+            _registryOriginals = state?.Values != null
+                ? new Dictionary<string, SavedRegistryValue>(state.Values, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, SavedRegistryValue>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string OriginalKey(RegistryPath regPath) => $@"{regPath.Hive}\{regPath.Path}\{regPath.ValueName}";
+
+    private static bool IsDisabledValue(RegistryPath regPath, object? value)
+    {
+        if (value == null) return false;
+        try
+        {
+            int number = Convert.ToInt32(value);
+            return regPath.DisabledAtOrBelow is int max ? number <= max : number == regPath.DisableValue;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Called right before a value is switched off. Keeps the first value seen (a second
+    /// "disable" must not record our own value as the original) and only values of a kind
+    /// that can be written back exactly.
+    /// </summary>
+    private void RememberRegistryOriginal(RegistryPath regPath, RegistryKey key)
+    {
+        string id = OriginalKey(regPath);
+        lock (_originalsLock)
+        {
+            if (_registryOriginals.ContainsKey(id)) return;
+            object? current = key.GetValue(regPath.ValueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            if (IsDisabledValue(regPath, current)) return; // already off (by an older version or by hand): the original is unknown
+
+            SavedRegistryValue saved;
+            if (current == null) saved = new SavedRegistryValue { Existed = false };
+            else
+            {
+                var kind = key.GetValueKind(regPath.ValueName);
+                if (kind is not (RegistryValueKind.DWord or RegistryValueKind.QWord or RegistryValueKind.String or RegistryValueKind.ExpandString))
+                    return;
+                saved = new SavedRegistryValue
+                {
+                    Existed = true,
+                    Kind = (int)kind,
+                    Data = Convert.ToString(current, global::System.Globalization.CultureInfo.InvariantCulture)
+                };
+            }
+            _registryOriginals[id] = saved;
+            PersistRegistryOriginals();
+        }
+    }
+
+    /// <summary>Puts the remembered value back. False when nothing was remembered for it.</summary>
+    private bool RestoreRegistryOriginal(RegistryPath regPath, RegistryKey root)
+    {
+        SavedRegistryValue? saved;
+        lock (_originalsLock)
+            if (!_registryOriginals.TryGetValue(OriginalKey(regPath), out saved)) return false;
+
+        if (!saved.Existed)
+        {
+            using var key = root.OpenSubKey(regPath.Path, true);
+            key?.DeleteValue(regPath.ValueName, throwOnMissingValue: false);
+        }
+        else
+        {
+            using var key = root.CreateSubKey(regPath.Path, true);
+            var kind = (RegistryValueKind)saved.Kind;
+            var culture = global::System.Globalization.CultureInfo.InvariantCulture;
+            object data = kind switch
+            {
+                RegistryValueKind.DWord => int.Parse(saved.Data ?? "0", culture),
+                RegistryValueKind.QWord => long.Parse(saved.Data ?? "0", culture),
+                _ => saved.Data ?? ""
+            };
+            key.SetValue(regPath.ValueName, data, kind);
+        }
+
+        lock (_originalsLock)
+        {
+            _registryOriginals.Remove(OriginalKey(regPath));
+            PersistRegistryOriginals();
+        }
+        return true;
+    }
+
+    // Caller holds _originalsLock.
+    private void PersistRegistryOriginals()
+    {
+        var state = new RegistryOriginalsState { Values = new Dictionary<string, SavedRegistryValue>(_registryOriginals) };
+        if (!AdminOnlyStore.Save(RegistryOriginalsFileName, state))
+            Debug.WriteLine("[WindowsOptimizer] Registry originals not persisted (admin-only store unavailable).");
+    }
+
+    #endregion
+
     #endregion
 
     #region Registry Feature Management
@@ -1391,6 +1514,8 @@ public class WindowsOptimizer : IDisposable
                 using var key = rootKey.CreateSubKey(regPath.Path, true);
                 if (key != null)
                 {
+                    // So "restore" can put back what the user had, not a fixed value.
+                    RememberRegistryOriginal(regPath, key);
                     key.SetValue(regPath.ValueName, regPath.DisableValue, RegistryValueKind.DWord);
                 }
             }
@@ -1424,6 +1549,10 @@ public class WindowsOptimizer : IDisposable
                     RegistryHive.LocalMachine => Registry.LocalMachine,
                     _ => Registry.CurrentUser
                 };
+
+                // The value this PC had before WinXTools switched it off, when it was recorded.
+                // (Without a record — switched off by an older version — the fixed defaults below.)
+                if (RestoreRegistryOriginal(regPath, rootKey)) continue;
 
                 using var key = rootKey.OpenSubKey(regPath.Path, true);
                 if (key != null)

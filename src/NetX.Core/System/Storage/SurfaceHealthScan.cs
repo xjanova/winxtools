@@ -463,7 +463,29 @@ public static class BadClusterRepair
         }
         var result = await run.ConfigureAwait(false);
         var last = result.Output.Split('\n').Select(l => l.Trim()).LastOrDefault(l => l.Length > 0) ?? "";
-        return new Outcome(isSystemDrive && result.ExitCode is 0 or 3, !isSystemDrive && result.ExitCode is 0 or 1, result.ExitCode, last);
+        // chkdsk's exit codes: 0 = no errors, 1 = errors found and fixed, 2 = clean-up done,
+        // 3 = could not check or fix. 3 is also what it returns after offering to check at the
+        // next restart, so "scheduled" is read from where Windows records it, not guessed from
+        // the code (a data drive that couldn't be locked gets scheduled the same way).
+        bool completed = !isSystemDrive && result.ExitCode is 0 or 1 or 2;
+        bool scheduled = !completed && IsCheckScheduled(letter);
+        return new Outcome(scheduled, completed, result.ExitCode, last);
+    }
+
+    /// <summary>True when Windows will check the volume at the next restart ("autocheck autochk /r \??\C:" in BootExecute).</summary>
+    public static bool IsCheckScheduled(char letter)
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager");
+            if (key?.GetValue("BootExecute") is not string[] entries) return false;
+            string volume = $@"\??\{char.ToUpperInvariant(letter)}:";
+            return entries.Any(e => e.Contains(volume, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
 

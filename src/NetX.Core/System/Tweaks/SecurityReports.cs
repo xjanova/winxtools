@@ -38,8 +38,16 @@ public static class SecurityReports
                     string from = (ip is "" or "-" or "::1" or "127.0.0.1")
                         ? (thai ? "เครื่องนี้" : "this PC")
                         : ip + (workstation is "" or "-" ? "" : $" ({workstation})");
-                    uint subStatus = p.Count > 9 && p[9].Value is uint s ? s : 0;
-                    uint status = p.Count > 7 && p[7].Value is uint st ? st : 0;
+                    // Status/SubStatus are "HexInt32" in the event: the reader hands them over as a
+                    // signed Int32 (0xC000006A arrives as a negative number). Matching on "uint"
+                    // never succeeded, so every reason was shown as "-".
+                    static uint Code(object? value)
+                    {
+                        try { return value == null ? 0 : unchecked((uint)Convert.ToInt64(value, CultureInfo.InvariantCulture)); }
+                        catch { return 0; }
+                    }
+                    uint subStatus = p.Count > 9 ? Code(p[9].Value) : 0;
+                    uint status = p.Count > 7 ? Code(p[7].Value) : 0;
                     int logonType = int.TryParse(Prop(10), out var lt) ? lt : 0;
 
                     string when = ev.TimeCreated?.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) ?? "?";

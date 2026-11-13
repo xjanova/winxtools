@@ -29,8 +29,16 @@ public partial class DiskHealthView : Page
     private readonly DispatcherTimer _hudTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private HealthDiskItem? _selected;
     private SurfaceHealthScan? _scan;
-    private bool _isActive, _isAdmin, _repairing;
+    private bool _isActive, _isAdmin;
     private int _shownErrors;
+
+    // "Mark bad sectors" (chkdsk /r) runs for hours and a new page object is made on every
+    // visit, so the run belongs to the app, not to the page that started it: a later page
+    // must still see it running, and its result must reach whoever is on screen.
+    private static bool _repairing;
+    private static string? _repairStatus;
+    private static string? _repairSummary;
+    private static DiskHealthView? _shown;
 
     public DiskHealthView()
     {
@@ -78,11 +86,21 @@ public partial class DiskHealthView : Page
         if (_selected != pick) SelectDisk(pick);
         if (running != null && running.State.DiskNumber == pick.Disk.Number) Attach(running);
         if (!_isAdmin) ShowCenter(Loc.T("Health_NeedsAdmin", "WinXTools must run as administrator to read a disk directly."));
+
+        _shown = this;
+        if (_repairing && _repairStatus != null) StatusText.Text = _repairStatus;
+        else if (_repairSummary != null)
+        {
+            // chkdsk ended while this page was closed.
+            StatusText.Text = _repairSummary;
+            _repairSummary = null;
+        }
         UpdateButtons();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        if (_shown == this) _shown = null;
         _isActive = false;
         _hudTimer.Stop();
         Detach();
@@ -373,14 +391,15 @@ public partial class DiskHealthView : Page
             foreach (var letter in letters)
             {
                 bool isSystem = letter == system;
-                StatusText.Text = isSystem
+                _repairStatus = isSystem
                     ? Loc.F("Health_Scheduling", "Scheduling the check of {0}: for the next restart…", letter)
                     : Loc.F("Health_Marking", "Checking {0}: and marking bad sectors — this takes a while…", letter);
+                if (_shown is { } starting) starting.StatusText.Text = _repairStatus;
                 var progress = new Progress<(string Line, int? Percent)>(p =>
                 {
-                    if (!_isActive) return;
-                    HudPhase.Text = p.Line;
-                    if (p.Percent is int pct) HudPercent.Text = $"{pct}%";
+                    if (_shown is not { } page) return; // whichever page is on screen now
+                    page.HudPhase.Text = p.Line;
+                    if (p.Percent is int pct) page.HudPercent.Text = $"{pct}%";
                 });
                 var outcome = await BadClusterRepair.RunAsync(letter, isSystem, progress, CancellationToken.None);
                 results.Add(outcome.Scheduled
@@ -398,10 +417,18 @@ public partial class DiskHealthView : Page
         finally
         {
             _repairing = false;
-            if (_isActive)
+            _repairStatus = null;
+            string summary = string.Join("\n", results);
+            if (_shown is { } page)
             {
-                StatusText.Text = string.Join("\n", results);
-                UpdateButtons();
+                page.StatusText.Text = summary;
+                page.UpdateButtons();
+            }
+            else
+            {
+                // Nobody is on the page: keep the result for the next visit and say so now.
+                _repairSummary = summary;
+                (Application.Current?.MainWindow as MainWindow)?.ShowToast(summary);
             }
         }
     }

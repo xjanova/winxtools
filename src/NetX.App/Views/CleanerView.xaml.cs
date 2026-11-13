@@ -24,6 +24,7 @@ public partial class CleanerView : Page
     private CancellationTokenSource? _cts;
     private bool _isBusy;
     private bool _hasScan;
+    private bool _cleanedSinceScan;
 
     public CleanerView()
     {
@@ -72,6 +73,7 @@ public partial class CleanerView : Page
         CleanProgress.Value = 0;
 
         foreach (var item in _items) item.ResetForScan();
+        _cleanedSinceScan = false;
 
         try
         {
@@ -146,7 +148,7 @@ public partial class CleanerView : Page
 
         long freeBefore = TotalFreeSpace();
         long totalFreed = 0;
-        int totalDeleted = 0, totalSkipped = 0;
+        int totalDeleted = 0, totalSkipped = 0, totalRecent = 0;
         bool cancelled = false;
 
         try
@@ -163,6 +165,7 @@ public partial class CleanerView : Page
                 totalFreed += result.BytesFreed;
                 totalDeleted += Math.Max(0, result.FilesDeleted);
                 totalSkipped += result.FilesSkipped;
+                totalRecent += result.FilesKeptRecent;
                 CleanProgress.Value = (i + 1) * 100.0 / selected.Count;
             }
         }
@@ -187,6 +190,8 @@ public partial class CleanerView : Page
             FormatSize(totalFreed), totalDeleted, (freeDelta >= 0 ? "+" : "−") + FormatSize(Math.Abs(freeDelta)));
         if (totalSkipped > 0)
             summary += "\n" + Loc.F("Cleaner_SkippedTotal", "{0:N0} files were in use or protected and were left alone.", totalSkipped);
+        if (totalRecent > 0)
+            summary += "\n" + Loc.F("Cleaner_Recent", "{0:N0} recent (kept)", totalRecent);
         if (cancelled)
             summary = Loc.T("Cleaner_Cancelled", "Cancelled") + " — " + summary;
 
@@ -197,6 +202,7 @@ public partial class CleanerView : Page
 
         // Old numbers no longer describe the disk; a new scan is needed.
         _hasScan = false;
+        _cleanedSinceScan = true;
         CleanButton.IsEnabled = false;
 
         MessageBox.Show(summary, Loc.T("Cleaner_Complete", "Cleanup complete"), MessageBoxButton.OK,
@@ -228,6 +234,9 @@ public partial class CleanerView : Page
 
     private void UpdateSummary()
     {
+        // After a clean the scan figures describe files that are gone: the panel keeps
+        // showing what was freed until the next scan instead of the old sizes.
+        if (_cleanedSinceScan) return;
         var scanned = _items.Where(i => i.IsSelected && i.Scan != null).ToList();
         if (scanned.Count == 0)
         {

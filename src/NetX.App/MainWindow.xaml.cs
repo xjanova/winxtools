@@ -25,6 +25,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // The real version of this build (the footer used to show a fixed "0.1.0-beta").
+        SidebarVersion.Text = "v" + NetX.Core.System.AutoUpdateService.GetCurrentVersion();
+
         // Every nav click creates a new page; don't let the frame's back
         // history keep all of them (and their timers/charts) alive.
         MainFrame.Navigated += (s, e) =>

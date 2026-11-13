@@ -90,8 +90,14 @@ public static partial class TrickCatalog
 
         Thread.Sleep(500);
         var after = ram.GetMemoryInfo();
+        // "Available" already counts the cache, so it doesn't move when the cache is cleared;
+        // what changes is the truly free memory and the size of the cache itself.
+        if (before.HasListDetail && after.HasListDetail)
+            return TrickResult.Ok(new LocText(
+                $"Done — cache: {before.StandbyMemoryMB:N0} MB → {after.StandbyMemoryMB:N0} MB, free memory: {before.FreeMemoryMB:N0} MB → {after.FreeMemoryMB:N0} MB.",
+                $"เรียบร้อย — แคช: {before.StandbyMemoryMB:N0} MB → {after.StandbyMemoryMB:N0} MB, หน่วยความจำว่าง: {before.FreeMemoryMB:N0} MB → {after.FreeMemoryMB:N0} MB"));
         return TrickResult.Ok(new LocText(
-            $"Done — free memory: {before.AvailableMemoryMB:N0} MB → {after.AvailableMemoryMB:N0} MB.",
-            $"เรียบร้อย — หน่วยความจำว่าง: {before.AvailableMemoryMB:N0} MB → {after.AvailableMemoryMB:N0} MB"));
+            $"Done — available memory: {before.AvailableMemoryMB:N0} MB → {after.AvailableMemoryMB:N0} MB.",
+            $"เรียบร้อย — หน่วยความจำที่ใช้ได้: {before.AvailableMemoryMB:N0} MB → {after.AvailableMemoryMB:N0} MB"));
     }
 }

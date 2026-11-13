@@ -452,6 +452,13 @@ public sealed class PacketEngine : IDisposable
         string? srcAddr = null, dstAddr = null, tcpFlags = null;
         try
         {
+            // Neither TCP nor UDP: name ICMP, so the packet list can show and filter pings.
+            if (protocol == 0)
+            {
+                if (parse.IcmpV4Header != null) protocol = 1;
+                else if (parse.IcmpV6Header != null) protocol = 58;
+            }
+
             if (parse.IPV4Header != null)
             {
                 srcAddr = parse.IPV4Header->SrcAddr.ToString();

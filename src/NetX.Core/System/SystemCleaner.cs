@@ -75,6 +75,9 @@ public sealed class CleanExecResult
     public long BytesFreed { get; set; }
     public int FilesDeleted { get; set; }
     public int FilesSkipped { get; set; }
+
+    /// <summary>Recent files left alone on purpose (a program may still need them).</summary>
+    public int FilesKeptRecent { get; set; }
     public string? NoteCode { get; set; }
     public string? NoteArg { get; set; }
 }
@@ -954,8 +957,9 @@ public static class SystemCleaner
                     !(KnownTempJunk.IsMatch(file.Name) && file.LastWriteTime < DateTime.Now - KnownJunkKeepWindow &&
                       file.CreationTime < DateTime.Now - KnownJunkKeepWindow))
                 {
+                    // Kept on purpose (newer than the keep window): not "in use or protected".
                     scan.RecentCount++;
-                    if (clean != null) clean.FilesSkipped++;
+                    if (clean != null) clean.FilesKeptRecent++;
                     continue;
                 }
 
@@ -1006,6 +1010,7 @@ public static class SystemCleaner
         into.BytesFreed += part.BytesFreed;
         into.FilesDeleted += part.FilesDeleted;
         into.FilesSkipped += part.FilesSkipped;
+        into.FilesKeptRecent += part.FilesKeptRecent;
     }
 
     private static void VisitSingleFile(string path, CleanScanResult scan, CleanExecResult? clean)
@@ -1275,7 +1280,8 @@ public static class SystemCleaner
         if (before.FileCount == 0) return;
 
         // Windows' own cleanup (it can remove files the service holds open).
-        bool cmdletOk = RunHidden("powershell",
+        // Full path: this runs as administrator, a bare "powershell" is searched for in the app folder first.
+        bool cmdletOk = RunHidden(Tweaks.CommandRunner.PowerShellPath,
             "-NoProfile -NonInteractive -Command \"Delete-DeliveryOptimizationCache -Force -ErrorAction Stop\"",
             TimeSpan.FromMinutes(3), token) == 0;
 

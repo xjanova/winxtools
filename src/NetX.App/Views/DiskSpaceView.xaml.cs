@@ -163,11 +163,14 @@ public partial class DiskSpaceView : Page
         UpButton.IsEnabled = node.Parent != null;
         OpenFolderButton.IsEnabled = true;
 
-        long max = Math.Max(1, node.Children.FirstOrDefault()?.Bytes ?? 1);
+        // What the listed sub-folders don't account for: the files directly in this folder
+        // plus its small sub-folders. (The row used to appear only when there were small
+        // sub-folders, so a folder holding nothing but files opened as an empty list.)
+        long rest = node.Bytes - node.Children.Sum(c => c.Bytes);
+        long max = Math.Max(1, Math.Max(node.Children.FirstOrDefault()?.Bytes ?? 1, rest));
         var rows = node.Children.Select(c => new FolderRow(c, node.Bytes, max)).ToList();
-        if (node.SmallBytes > 0)
-            rows.Add(new FolderRow(null, node.Bytes, max, Loc.T("Space_SmallItems", "(files here and small folders)"),
-                node.SmallBytes + node.Bytes - node.Children.Sum(c => c.Bytes) - node.SmallBytes));
+        if (rest > 0)
+            rows.Add(new FolderRow(null, node.Bytes, max, Loc.T("Space_SmallItems", "(files here and small folders)"), rest));
         FolderList.ItemsSource = rows;
     }
 
@@ -236,7 +239,7 @@ public partial class DiskSpaceView : Page
         try
         {
             var paths = chosen.Select(r => r.File.Path).ToList();
-            var (deleted, bytes, skipped) = await Task.Run(() => SpaceAnalyzer.DeleteFiles(paths, toBin));
+            var (deleted, bytes, skipped, notRecyclable) = await Task.Run(() => SpaceAnalyzer.DeleteFiles(paths, toBin));
             if (!_isActive) return;
             foreach (var p in paths.Where(p => !File.Exists(p))) _deleted.Add(p);
             _fileRows = _fileRows.Where(r => !_deleted.Contains(r.File.Path)).ToList();
@@ -246,6 +249,10 @@ public partial class DiskSpaceView : Page
                 ? Loc.F("Space_Recycled", "Moved {0:N0} files ({1}) to the Recycle Bin.", deleted, CleanerView.FormatSize(bytes))
                 : Loc.F("Space_DeletedDone", "Deleted {0:N0} files — {1} freed.", deleted, CleanerView.FormatSize(bytes));
             if (skipped > 0) msg += " " + Loc.F("Space_SkippedFiles", "{0:N0} were in use or protected and were kept.", skipped);
+            if (notRecyclable > 0)
+                msg += " " + Loc.F("Space_NotRecyclable",
+                    "{0:N0} were kept because the Recycle Bin can't hold them (too big for it, or this drive has none) — to remove them, delete again and choose Yes (permanently).",
+                    notRecyclable);
             StatusText.Text = msg;
             await RefreshDriveCardAsync();
         }
@@ -314,26 +321,33 @@ public partial class DiskSpaceView : Page
         {
             long freeBefore = FreeBytes(_selected.Volume.Letter);
             string done;
+            bool ok; // only a finished action gets its tick; a failed one keeps its button for another try
             switch (f.Kind)
             {
                 case SpaceFindingKind.Hibernation:
-                    bool ok = await SpaceAnalyzer.DisableHibernationAsync(CancellationToken.None);
+                    ok = await SpaceAnalyzer.DisableHibernationAsync(CancellationToken.None);
                     done = ok ? Loc.T("Space_HibernateOff", "Hibernation is off.") : Loc.T("Space_HibernateFailed", "Windows didn't turn hibernation off.");
                     break;
                 case SpaceFindingKind.RestorePoints:
                     var letter = _selected.Volume.Letter;
                     int n = await Task.Run(() => SpaceAnalyzer.DeleteOlderRestorePoints(letter));
-                    done = Loc.F("Space_RestoreDeleted", "Deleted {0:N0} older restore points.", n);
+                    ok = n > 0;
+                    done = ok
+                        ? Loc.F("Space_RestoreDeleted", "Deleted {0:N0} older restore points.", n)
+                        : Loc.T("Space_RestoreNone", "Windows didn't let any older restore point be deleted.");
                     break;
                 default:
                     await Task.Run(() => SystemCleaner.Clean(CleanTarget.RecycleBin));
-                    done = Loc.T("Space_BinEmptied", "The Recycle Bin is empty.");
+                    // Asked again instead of trusting the call: it is empty when nothing is left in it.
+                    var left = await Task.Run(() => SystemCleaner.Scan(CleanTarget.RecycleBin));
+                    ok = left.FileCount == 0;
+                    done = ok ? Loc.T("Space_BinEmptied", "The Recycle Bin is empty.") : Loc.T("Space_BinFailed", "Windows couldn't empty the Recycle Bin completely.");
                     break;
             }
             if (!_isActive) return;
             long gained = FreeBytes(_selected.Volume.Letter) - freeBefore;
             StatusText.Text = done + (gained > 0 ? " " + Loc.F("Space_Gained", "{0} more free space.", CleanerView.FormatSize(gained)) : "");
-            row.MarkDone(done);
+            if (ok) row.MarkDone(done);
             await RefreshDriveCardAsync();
         }
         catch (Exception ex)
