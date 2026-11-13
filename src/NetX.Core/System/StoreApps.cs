@@ -222,7 +222,8 @@ public sealed class StoreAppRemovalResult
 public static class StoreAppCatalog
 {
     /// <summary>Package names, full names and provisioned names that may be put into a command.</summary>
-    private static readonly Regex SafeToken = new(@"^[A-Za-z0-9._\-~]+$", RegexOptions.CultureInvariant);
+    // \z, not $: "$" would also accept a name that ends in a line break.
+    private static readonly Regex SafeToken = new(@"\A[A-Za-z0-9._\-~]+\z", RegexOptions.CultureInvariant);
 
     /// <summary>Windows' own packages (shell, system apps) are published under this id.</summary>
     private const string WindowsPublisherId = "cw5n1h2txyewy";
