@@ -18,7 +18,9 @@ public enum AutostartKind
     /// <summary>A scheduled task that runs a program.</summary>
     ScheduledTask,
     /// <summary>A Windows service.</summary>
-    Service
+    Service,
+    /// <summary>A Microsoft Store app's start-up task (Copilot, Teams, Phone Link…): the switch Task Manager's Startup tab shows for it.</summary>
+    StoreTask
 }
 
 /// <summary>Something that starts a program by itself, and where it is set up.</summary>
@@ -49,6 +51,9 @@ public sealed class AutostartEntry
     public string? DisplayName { get; init; }
     public int ServiceProcessId { get; init; }
 
+    /// <summary>Store start-up tasks: the raw State value (3 and 4 mean a policy decides, not the user).</summary>
+    public int? StoreState { get; init; }
+
     /// <summary>Stable identity for the change journal.</summary>
     public string Key => $"{Kind}|{Location}|{Name}";
 }
@@ -64,9 +69,10 @@ public static class Autostart
     private const string Run = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string Approved = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\";
 
-    public static List<AutostartEntry> Enumerate(bool includeServices = true, bool includeTasks = true)
+    public static List<AutostartEntry> Enumerate(bool includeServices = true, bool includeTasks = true, bool includeStoreTasks = false)
     {
         var list = new List<AutostartEntry>();
+        if (includeStoreTasks) Try(() => ReadStoreTasks(list));
         Try(() => ReadRunKey(list, RegistryHive.CurrentUser, RegistryView.Registry64, "Run", machine: false));
         Try(() => ReadRunKey(list, RegistryHive.LocalMachine, RegistryView.Registry64, "Run", machine: true));
         Try(() => ReadRunKey(list, RegistryHive.LocalMachine, RegistryView.Registry32, "Run32", machine: true));
@@ -148,6 +154,45 @@ public static class Autostart
         using var root = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64);
         using var key = root.OpenSubKey(Approved + approvedName);
         return key?.GetValue(valueName) is not byte[] { Length: > 0 } data || (data[0] & 1) == 0;
+    }
+
+    #endregion
+
+    #region Store apps' start-up tasks
+
+    internal const string StoreTaskRoot = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData";
+
+    /// <summary>
+    /// Store (MSIX) apps start with Windows through a "start-up task" declared in
+    /// their package. Its switch lives per user under SystemAppData\&lt;package
+    /// family&gt;\&lt;task id&gt;\State: 2 = on, 0/1 = off (1 = switched off by the
+    /// user), 3/4 = fixed by a policy. This is what Task Manager's Startup tab
+    /// reads and writes for these apps.
+    /// </summary>
+    private static void ReadStoreTasks(List<AutostartEntry> list)
+    {
+        using var root = Registry.CurrentUser.OpenSubKey(StoreTaskRoot);
+        if (root == null) return;
+        foreach (var family in root.GetSubKeyNames())
+        {
+            using var package = root.OpenSubKey(family);
+            if (package == null) continue;
+            foreach (var task in package.GetSubKeyNames())
+            {
+                using var key = package.OpenSubKey(task);
+                if (key?.GetValue("State") is not int state) continue;
+                list.Add(new AutostartEntry
+                {
+                    Kind = AutostartKind.StoreTask,
+                    Name = $@"{family}\{task}",
+                    Location = "Store app",
+                    Command = family,
+                    MachineWide = false,
+                    Enabled = state is 2 or 4,
+                    StoreState = state
+                });
+            }
+        }
     }
 
     #endregion

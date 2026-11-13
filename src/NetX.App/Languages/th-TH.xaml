@@ -1515,6 +1515,83 @@
     <system:String x:Key="CleanPart_Models">โมเดล AI และชุดข้อมูลที่ดาวน์โหลดไว้</system:String>
     <system:String x:Key="CleanPart_Models_Desc">ไม่ใช่แคช: โปรแกรมที่ใช้ต้องดาวน์โหลดใหม่ (มักหลาย GB)</system:String>
 
+    <!-- Startup Optimize -->
+    <system:String x:Key="Nav_Startup">Startup Optimize</system:String>
+    <system:String x:Key="Startup_Title">Startup Optimize</system:String>
+    <system:String x:Key="Startup_Subtitle">ทุกอย่างที่เปิดพร้อม Windows — โปรแกรม แอปจาก Store, service, งานตั้งเวลา และของที่ Windows ตั้งมาเอง — บอกว่าแต่ละตัวมีไว้ทำอะไร และควรเปิดไว้หรือไม่</system:String>
+    <system:String x:Key="Startup_Refresh">รีเฟรช</system:String>
+    <system:String x:Key="Startup_AlertTitle">ควรดูตอนนี้เลย</system:String>
+    <system:String x:Key="Startup_GameTitle">โปรไฟล์เล่นเกม</system:String>
+    <system:String x:Key="Startup_Lightest">เบาที่สุด: ปิดของเสริมอุปกรณ์ด้วย (ไฟ RGB, โปรแกรมหน้าปัดของผู้ผลิต)</system:String>
+    <system:String x:Key="Startup_GameOn">เปิดใช้อยู่ — ปิดไว้ {0:N0} รายการ เมื่อออกจากโปรไฟล์ ทุกรายการจะกลับมาเหมือนเดิม</system:String>
+    <system:String x:Key="Startup_GameOff">การเริ่มเครื่องแบบพิเศษสำหรับเล่นเกม: {0:N0} รายการที่ไม่มีประโยชน์กับเกมจะไม่ถูกเปิดเลย แรมจึงว่างที่สุด มีผลหลังรีสตาร์ต และกดปุ่มเดียวก็กลับเป็นเหมือนเดิมทั้งหมด</system:String>
+    <system:String x:Key="Startup_GameLeave">กลับสู่การเริ่มเครื่องปกติ</system:String>
+    <system:String x:Key="Startup_GameSetUp">ตั้งโปรไฟล์เล่นเกม…</system:String>
+    <system:String x:Key="Startup_GameApply">ตั้งโปรไฟล์เล่นเกม</system:String>
+    <system:String x:Key="Startup_GameIntro" xml:space="preserve">โปรไฟล์เล่นเกมจะปิดรายการเหล่านี้ไม่ให้เปิดพร้อม Windows: ไม่มีตัวไหนจำเป็นต่อการเล่นเกม ส่วนการ์ดจอ เสียง อุปกรณ์ควบคุม ระบบกันโกง บริการ Xbox และโปรแกรมความปลอดภัย ยังเปิดไว้ตามเดิม เอาเครื่องหมายถูกออกจากตัวที่อยากเก็บไว้ได้ ของเสริมอุปกรณ์ (ไฟ RGB, โปรแกรมหน้าปัดของผู้ผลิต) จะถูกเลือกเฉพาะเมื่อตั้งเป็นเบาที่สุด&#x0a;&#x0a;มีผลหลังรีสตาร์ต ปุ่ม "กลับสู่การเริ่มเครื่องปกติ" จะคืนทุกรายการให้เหมือนเดิม</system:String>
+    <system:String x:Key="Startup_GameNothing">ไม่มีอะไรต้องปิด: ตอนนี้มีแต่ของที่การเล่นเกมต้องใช้เท่านั้นที่เปิดพร้อม Windows</system:String>
+    <system:String x:Key="Startup_GameRestart">โปรไฟล์เล่นเกมจะมีผลตั้งแต่การรีสตาร์ตครั้งถัดไป รีสตาร์ตตอนนี้เลยไหม?</system:String>
+    <system:String x:Key="Startup_GameLeaveConfirm" xml:space="preserve">ออกจากโปรไฟล์เล่นเกมไหม?&#x0a;&#x0a;{0:N0} รายการที่ปิดไว้ จะกลับมาเปิดพร้อม Windows เหมือนเดิมทุกอย่าง</system:String>
+    <system:String x:Key="Startup_LeaveRestart" xml:space="preserve">กลับสู่การเริ่มเครื่องปกติแล้ว โปรแกรมที่ปิดไว้จะเปิดอีกครั้งเมื่อรีสตาร์ต&#x0a;&#x0a;รีสตาร์ตตอนนี้เลยไหม?</system:String>
+    <system:String x:Key="Startup_CloseNow" xml:space="preserve">ยังมี {0:N0} โปรแกรมในรายการนี้เปิดอยู่:&#x0a;&#x0a;{1}&#x0a;&#x0a;ปิดตอนนี้เลยเพื่อคืนแรมไหม? โปรแกรมที่มีหน้าต่างเปิดอยู่จะถูกขอให้ปิด (บันทึกงานก่อน) ส่วนตัวที่ทำงานอยู่เบื้องหลังจะถูกปิดทันที</system:String>
+    <system:String x:Key="Startup_RestartFailed">Windows ไม่ได้เริ่มการรีสตาร์ต: {0}</system:String>
+    <system:String x:Key="Startup_RecommendedTitle">ปิดของที่ไม่มีอะไรต้องใช้</system:String>
+    <system:String x:Key="Startup_RecommendedButton">ดูรายการ…</system:String>
+    <system:String x:Key="Startup_RecommendedSome">มี {0:N0} รายการเปิดพร้อม Windows โดยไม่มีอะไรที่คุณใช้ต้องพึ่งมัน: ตัวอัปเดต ตัวเก็บข้อมูลการใช้งาน และรายการตกค้าง</system:String>
+    <system:String x:Key="Startup_RecommendedNone">ไม่เหลือรายการที่ไม่จำเป็นแบบชัดเจนแล้ว ที่เหลือเลือกได้ทีละตัวตามที่คุณต้องการ</system:String>
+    <system:String x:Key="Startup_RecommendedIntro">รายการเหล่านี้เปิดพร้อม Windows ทั้งที่ไม่มีอะไรที่คุณใช้ต้องพึ่งมัน เอาเครื่องหมายถูกออกจากตัวที่อยากเก็บไว้ ทุกตัวเปิดกลับได้จากรายการในหน้านี้</system:String>
+    <system:String x:Key="Startup_PlanApply">ปิดตัวที่เลือกไว้</system:String>
+    <system:String x:Key="Startup_PlanCancel">ยกเลิก</system:String>
+    <system:String x:Key="Startup_PlanTotal">เลือกไว้ {0:N0} จาก {1:N0} รายการ</system:String>
+    <system:String x:Key="Startup_PlanTotalMemory">เลือกไว้ {0:N0} จาก {1:N0} รายการ — ตอนนี้ใช้แรมอยู่ {2}</system:String>
+    <system:String x:Key="Startup_SummaryTitle">ตอนนี้</system:String>
+    <system:String x:Key="Startup_Summary">มี {0:N0} รายการเปิดพร้อม Windows โดย WinXTools ปิดไว้แล้ว {1:N0} รายการ</system:String>
+    <system:String x:Key="Startup_UndoAll">คืนทุกอย่างกลับ</system:String>
+    <system:String x:Key="Startup_UndoAllConfirm">คืน {0:N0} รายการที่ WinXTools ปิดไว้ทั้งหมดไหม (จากหน้านี้ จาก Smart CPU และจากโปรไฟล์เล่นเกม)?</system:String>
+    <system:String x:Key="Startup_SomeNotRestored" xml:space="preserve">รายการเหล่านี้คืนกลับไม่ได้:&#x0a;&#x0a;{0}</system:String>
+    <system:String x:Key="Startup_FilterAll">แสดงทั้งหมด</system:String>
+    <system:String x:Key="Startup_FilterTurnOff">ควรปิด</system:String>
+    <system:String x:Key="Startup_FilterChoice">แล้วแต่คุณ</system:String>
+    <system:String x:Key="Startup_FilterKeep">ควรเปิดไว้</system:String>
+    <system:String x:Key="Startup_FilterOff">ที่ WinXTools ปิดไว้</system:String>
+    <system:String x:Key="Startup_Scanning">กำลังดูว่ามีอะไรเปิดพร้อม Windows…</system:String>
+    <system:String x:Key="Startup_ScanFailed">อ่านรายการที่เปิดพร้อม Windows ไม่ได้: {0}</system:String>
+    <system:String x:Key="Startup_Status">พบ {0:N0} รายการ สวิตช์ในหน้านี้คือตัวเดียวกับที่ Task Manager, Services และ Task Scheduler ใช้ — ไม่มีการลบอะไรทั้งสิ้น</system:String>
+    <system:String x:Key="Startup_NeedsAdmin">เปิด WinXTools แบบผู้ดูแลระบบ เพื่อดูงานตั้งเวลาและสลับ service ได้</system:String>
+    <system:String x:Key="Startup_ConfirmKeep" xml:space="preserve">{0}&#x0a;&#x0a;{1}&#x0a;&#x0a;ยังจะปิดไหม? เปิดกลับได้จากหน้านี้ทุกเมื่อ</system:String>
+    <system:String x:Key="Startup_SwitchFailed" xml:space="preserve">Windows ไม่ยอมให้เปลี่ยน "{0}":&#x0a;&#x0a;{1}</system:String>
+    <system:String x:Key="Startup_Applying">กำลังปิด…</system:String>
+    <system:String x:Key="Startup_Applied">ปิดแล้ว {0:N0} จาก {1:N0} รายการ</system:String>
+    <system:String x:Key="Startup_AppliedErrors" xml:space="preserve">Windows ไม่ยอมให้ปิดรายการเหล่านี้:&#x0a;{0}</system:String>
+    <system:String x:Key="Startup_Locked">WinXTools ไม่สลับรายการนี้</system:String>
+    <system:String x:Key="Startup_GameKeeps">เปิดไว้ในโปรไฟล์เล่นเกม</system:String>
+    <system:String x:Key="Startup_GameExtra">ปิดในโปรไฟล์เล่นเกมแบบเบาที่สุด</system:String>
+    <system:String x:Key="Startup_ChangeGame">ปิดโดยโปรไฟล์เล่นเกม</system:String>
+    <system:String x:Key="Startup_ChangeOurs">ปิดโดย WinXTools</system:String>
+    <system:String x:Key="Startup_RunningNow">กำลังทำงานอยู่ {0}</system:String>
+    <system:String x:Key="Startup_Verdict_Alert">ตรวจด่วน</system:String>
+    <system:String x:Key="Startup_Verdict_TurnOff">ควรปิด</system:String>
+    <system:String x:Key="Startup_Verdict_YourChoice">แล้วแต่คุณ</system:String>
+    <system:String x:Key="Startup_Verdict_Keep">ควรเปิดไว้</system:String>
+    <system:String x:Key="Startup_Group_Security">ความปลอดภัย</system:String>
+    <system:String x:Key="Startup_Group_Windows">Windows</system:String>
+    <system:String x:Key="Startup_Group_Hardware">ฮาร์ดแวร์และไดรเวอร์</system:String>
+    <system:String x:Key="Startup_Group_DeviceExtra">ของเสริมอุปกรณ์</system:String>
+    <system:String x:Key="Startup_Group_AntiCheat">ระบบกันโกงเกม</system:String>
+    <system:String x:Key="Startup_Group_GameLauncher">ตัวเปิดเกม</system:String>
+    <system:String x:Key="Startup_Group_Updater">ตัวอัปเดต</system:String>
+    <system:String x:Key="Startup_Group_Telemetry">เก็บข้อมูลการใช้งาน</system:String>
+    <system:String x:Key="Startup_Group_RemoteAccess">ควบคุมเครื่องจากระยะไกล</system:String>
+    <system:String x:Key="Startup_Group_App">โปรแกรม</system:String>
+    <system:String x:Key="Startup_Group_Leftover">ของตกค้าง</system:String>
+    <system:String x:Key="Startup_Group_Suspicious">น่าสงสัย</system:String>
+    <system:String x:Key="Startup_Kind_RunKey">เปิดตอนเข้าสู่ระบบ</system:String>
+    <system:String x:Key="Startup_Kind_StartupFolder">โฟลเดอร์ Startup</system:String>
+    <system:String x:Key="Startup_Kind_ScheduledTask">งานตั้งเวลา</system:String>
+    <system:String x:Key="Startup_Kind_Service">Service</system:String>
+    <system:String x:Key="Startup_Kind_StoreTask">แอปจาก Store</system:String>
+    <system:String x:Key="Startup_Kind_Browser">การตั้งค่าเบราว์เซอร์</system:String>
+
     <!-- Smart CPU -->
     <system:String x:Key="Nav_SmartCpu">Smart CPU</system:String>
     <system:String x:Key="Cpu_Title">Smart CPU</system:String>

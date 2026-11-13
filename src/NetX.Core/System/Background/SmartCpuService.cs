@@ -29,6 +29,12 @@ public sealed class SmartCpuChange
     /// <summary>Turn it off again if the program turns it back on (updates often do).</summary>
     public bool KeepOff { get; set; } = true;
     public int TurnedOffAgain { get; set; }
+
+    /// <summary>
+    /// The start-up profile that made this change ("game"), or null when the user
+    /// switched it off one by one. Leaving a profile undoes exactly its own changes.
+    /// </summary>
+    public string? Profile { get; set; }
 }
 
 public sealed class SmartCpuSettings
@@ -147,7 +153,7 @@ public sealed class SmartCpuService
     #region Changes and undo
 
     /// <summary>Turns an autostart entry off where it is set up, and remembers how to undo it. Null on success.</summary>
-    public string? TurnOff(AutostartEntry entry, string display)
+    public string? TurnOff(AutostartEntry entry, string display, string? profile = null)
     {
         if (!entry.Enabled) return null;
         var error = AutostartControl.SetEnabled(entry, enabled: false);
@@ -165,12 +171,31 @@ public sealed class SmartCpuService
                 Display = display,
                 OriginalStartMode = entry.StartMode,
                 OriginalDelayed = entry.DelayedStart,
-                ChangedUtcTicks = DateTime.UtcNow.Ticks
+                ChangedUtcTicks = DateTime.UtcNow.Ticks,
+                Profile = profile
             });
             Save();
             UpdateTimers();
         }
         return null;
+    }
+
+    /// <summary>The changes a start-up profile made and that are still in place.</summary>
+    public IReadOnlyList<SmartCpuChange> ProfileChanges(string profile)
+    {
+        lock (_gate) return _settings.Changes.Where(c => c.Profile == profile).ToList();
+    }
+
+    /// <summary>Leaves a profile: undoes exactly what it switched off. Returns what couldn't be put back.</summary>
+    public List<string> UndoProfile(string profile)
+    {
+        var errors = new List<string>();
+        foreach (var change in ProfileChanges(profile))
+        {
+            var error = Undo(change);
+            if (error != null) errors.Add($"{change.Display}: {error}");
+        }
+        return errors;
     }
 
     /// <summary>Puts things back exactly as they were before the change. Null on success.</summary>
@@ -217,7 +242,7 @@ public sealed class SmartCpuService
     }
 
     /// <summary>Applies WinXTools' recommended value for a browser setting (or removes it), remembering the old one.</summary>
-    public string? SetBrowserSetting(BrowserSetting setting, bool apply)
+    public string? SetBrowserSetting(BrowserSetting setting, bool apply, string? profile = null)
     {
         string key = "Policy|" + setting;
         SmartCpuChange? existing;
@@ -236,7 +261,8 @@ public sealed class SmartCpuService
                 _settings.Changes.Add(new SmartCpuChange
                 {
                     Key = key, Setting = setting, Name = setting.ToString(), Location = "Policies",
-                    Display = setting.ToString(), OriginalPolicy = before, ChangedUtcTicks = DateTime.UtcNow.Ticks, KeepOff = false
+                    Display = setting.ToString(), OriginalPolicy = before, ChangedUtcTicks = DateTime.UtcNow.Ticks, KeepOff = false,
+                    Profile = profile
                 });
             Save();
         }
@@ -259,7 +285,9 @@ public sealed class SmartCpuService
             if (keep.Count == 0) return;
 
             var entries = Autostart.Enumerate(includeServices: keep.Any(c => c.Kind == AutostartKind.Service),
-                includeTasks: keep.Any(c => c.Kind == AutostartKind.ScheduledTask)).ToDictionary(e => e.Key, e => e);
+                includeTasks: keep.Any(c => c.Kind == AutostartKind.ScheduledTask),
+                includeStoreTasks: keep.Any(c => c.Kind == AutostartKind.StoreTask))
+                .GroupBy(e => e.Key).ToDictionary(g => g.Key, g => g.First());
             foreach (var change in keep)
             {
                 if (!entries.TryGetValue(change.Key, out var entry) || !entry.Enabled) continue;

@@ -158,7 +158,7 @@ public partial class MainWindow : Window
 
         // Smart CPU's changes outlive Pro (start-ups stay off, browser policies stay set),
         // so putting them back never needs Pro.
-        int changes = locked && _currentPageTag == "SmartCpu" ? NetX.Core.System.Background.SmartCpuService.Instance.Changes.Count : 0;
+        int changes = locked && _currentPageTag is "SmartCpu" or "Startup" ?NetX.Core.System.Background.SmartCpuService.Instance.Changes.Count : 0;
         ProOverlayUndo.Visibility = changes > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (changes > 0)
             ProOverlayUndoText.Text = Loc.F("Pro_SmartCpuChangesStay", "{0} changes Smart CPU made while you had Pro are still in place.", changes);
@@ -486,6 +486,7 @@ public partial class MainWindow : Window
             "ProxyVpn" => new ProxyVpnView(),
             "RamOptimizer" => new RamOptimizerView(),
             "SmartCpu" => new SmartCpuView(),
+            "Startup" => new StartupView(),
             "Uninstaller" => new UninstallerView(),
             "Cleaner" => new CleanerView(),
             "DiskSpace" => new DiskSpaceView(),
@@ -521,6 +522,7 @@ public partial class MainWindow : Window
             "ProxyVpn" => "Nav_ProxyVpn",
             "RamOptimizer" => "Nav_RamOptimizer",
             "SmartCpu" => "Nav_SmartCpu",
+            "Startup" => "Nav_Startup",
             "Uninstaller" => "Nav_Uninstaller",
             "Cleaner" => "Nav_Cleaner",
             "DiskSpace" => "Nav_DiskSpace",

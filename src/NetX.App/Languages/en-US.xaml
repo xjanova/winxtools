@@ -1515,6 +1515,83 @@
     <system:String x:Key="CleanPart_Models">Downloaded AI models and datasets</system:String>
     <system:String x:Key="CleanPart_Models_Desc">Not a cache: programs that use them must download them again (often many GB).</system:String>
 
+    <!-- Startup Optimize -->
+    <system:String x:Key="Nav_Startup">Startup Optimize</system:String>
+    <system:String x:Key="Startup_Title">Startup Optimize</system:String>
+    <system:String x:Key="Startup_Subtitle">Everything that starts with Windows — programs, Store apps, services, scheduled tasks and what Windows sets up by itself — with what each one is for and whether it is worth keeping.</system:String>
+    <system:String x:Key="Startup_Refresh">Refresh</system:String>
+    <system:String x:Key="Startup_AlertTitle">Look at this now</system:String>
+    <system:String x:Key="Startup_GameTitle">Game profile</system:String>
+    <system:String x:Key="Startup_Lightest">Lightest: also switch off device extras (lights, makers' dashboards)</system:String>
+    <system:String x:Key="Startup_GameOn">On — {0:N0} things are switched off for it. Leaving the profile puts every one of them back.</system:String>
+    <system:String x:Key="Startup_GameOff">A special start-up for playing: {0:N0} things that are of no use in a game don't start at all, so the memory stays free. It is used after a restart, and one button puts everything back.</system:String>
+    <system:String x:Key="Startup_GameLeave">Back to normal start-up</system:String>
+    <system:String x:Key="Startup_GameSetUp">Set up the game profile…</system:String>
+    <system:String x:Key="Startup_GameApply">Set up the game profile</system:String>
+    <system:String x:Key="Startup_GameIntro" xml:space="preserve">The game profile switches these off so they don't start with Windows: nothing here is needed to play. Graphics, sound, input devices, anti-cheat, Xbox services and security software stay on. Untick what you want to keep; device extras (lights, makers' dashboards) are ticked only in the lightest setting.&#x0a;&#x0a;It is used after a restart. "Back to normal start-up" puts every one of them back.</system:String>
+    <system:String x:Key="Startup_GameNothing">Nothing to switch off: only what playing needs starts with Windows already.</system:String>
+    <system:String x:Key="Startup_GameRestart">The game profile is used from the next restart. Restart now?</system:String>
+    <system:String x:Key="Startup_GameLeaveConfirm" xml:space="preserve">Leave the game profile?&#x0a;&#x0a;The {0:N0} things it switched off start with Windows again, exactly as before.</system:String>
+    <system:String x:Key="Startup_LeaveRestart" xml:space="preserve">Back to the normal start-up. Programs that were switched off start again at the next restart.&#x0a;&#x0a;Restart now?</system:String>
+    <system:String x:Key="Startup_CloseNow" xml:space="preserve">{0:N0} of these programs are still open:&#x0a;&#x0a;{1}&#x0a;&#x0a;Close them now to free their memory? Programs with an open window are asked to close (save your work first); the ones running in the background are ended.</system:String>
+    <system:String x:Key="Startup_RestartFailed">Windows didn't start the restart: {0}</system:String>
+    <system:String x:Key="Startup_RecommendedTitle">Switch off what nothing needs</system:String>
+    <system:String x:Key="Startup_RecommendedButton">Show me the list…</system:String>
+    <system:String x:Key="Startup_RecommendedSome">{0:N0} things start with Windows that nothing you use depends on: updaters, usage-data collectors, entries left behind.</system:String>
+    <system:String x:Key="Startup_RecommendedNone">Nothing left that is plainly unneeded. The rest is your choice, item by item.</system:String>
+    <system:String x:Key="Startup_RecommendedIntro">These start with Windows although nothing you use depends on them. Untick what you want to keep. Every one can be switched back on from the list.</system:String>
+    <system:String x:Key="Startup_PlanApply">Switch off the ticked ones</system:String>
+    <system:String x:Key="Startup_PlanCancel">Cancel</system:String>
+    <system:String x:Key="Startup_PlanTotal">Ticked: {0:N0} of {1:N0}</system:String>
+    <system:String x:Key="Startup_PlanTotalMemory">Ticked: {0:N0} of {1:N0} — they hold {2} right now</system:String>
+    <system:String x:Key="Startup_SummaryTitle">Right now</system:String>
+    <system:String x:Key="Startup_Summary">{0:N0} things start with Windows. WinXTools has switched off {1:N0}.</system:String>
+    <system:String x:Key="Startup_UndoAll">Put everything back</system:String>
+    <system:String x:Key="Startup_UndoAllConfirm">Put back all {0:N0} things WinXTools switched off (here, in Smart CPU and by the game profile)?</system:String>
+    <system:String x:Key="Startup_SomeNotRestored" xml:space="preserve">These couldn't be put back:&#x0a;&#x0a;{0}</system:String>
+    <system:String x:Key="Startup_FilterAll">Show everything</system:String>
+    <system:String x:Key="Startup_FilterTurnOff">Should be switched off</system:String>
+    <system:String x:Key="Startup_FilterChoice">Your choice</system:String>
+    <system:String x:Key="Startup_FilterKeep">Should stay on</system:String>
+    <system:String x:Key="Startup_FilterOff">Switched off by WinXTools</system:String>
+    <system:String x:Key="Startup_Scanning">Looking at what starts with Windows…</system:String>
+    <system:String x:Key="Startup_ScanFailed">Couldn't read the start-up list: {0}</system:String>
+    <system:String x:Key="Startup_Status">{0:N0} listed. A switch here is the same one Task Manager, Services and Task Scheduler use — nothing is deleted.</system:String>
+    <system:String x:Key="Startup_NeedsAdmin">Run WinXTools as administrator to see scheduled tasks and to switch services.</system:String>
+    <system:String x:Key="Startup_ConfirmKeep" xml:space="preserve">{0}&#x0a;&#x0a;{1}&#x0a;&#x0a;Switch it off anyway? You can switch it back on here at any time.</system:String>
+    <system:String x:Key="Startup_SwitchFailed" xml:space="preserve">Windows didn't allow changing "{0}":&#x0a;&#x0a;{1}</system:String>
+    <system:String x:Key="Startup_Applying">Switching off…</system:String>
+    <system:String x:Key="Startup_Applied">Switched off {0:N0} of {1:N0}.</system:String>
+    <system:String x:Key="Startup_AppliedErrors" xml:space="preserve">Windows didn't allow these:&#x0a;{0}</system:String>
+    <system:String x:Key="Startup_Locked">WinXTools doesn't switch this one.</system:String>
+    <system:String x:Key="Startup_GameKeeps">stays on in the game profile</system:String>
+    <system:String x:Key="Startup_GameExtra">off in the lightest game profile</system:String>
+    <system:String x:Key="Startup_ChangeGame">switched off by the game profile</system:String>
+    <system:String x:Key="Startup_ChangeOurs">switched off by WinXTools</system:String>
+    <system:String x:Key="Startup_RunningNow">running now, {0}</system:String>
+    <system:String x:Key="Startup_Verdict_Alert">Check now</system:String>
+    <system:String x:Key="Startup_Verdict_TurnOff">Switch off</system:String>
+    <system:String x:Key="Startup_Verdict_YourChoice">Your choice</system:String>
+    <system:String x:Key="Startup_Verdict_Keep">Keep on</system:String>
+    <system:String x:Key="Startup_Group_Security">Security</system:String>
+    <system:String x:Key="Startup_Group_Windows">Windows</system:String>
+    <system:String x:Key="Startup_Group_Hardware">Hardware &amp; drivers</system:String>
+    <system:String x:Key="Startup_Group_DeviceExtra">Device extras</system:String>
+    <system:String x:Key="Startup_Group_AntiCheat">Anti-cheat</system:String>
+    <system:String x:Key="Startup_Group_GameLauncher">Game launchers</system:String>
+    <system:String x:Key="Startup_Group_Updater">Updaters</system:String>
+    <system:String x:Key="Startup_Group_Telemetry">Usage data</system:String>
+    <system:String x:Key="Startup_Group_RemoteAccess">Remote control</system:String>
+    <system:String x:Key="Startup_Group_App">Apps</system:String>
+    <system:String x:Key="Startup_Group_Leftover">Left behind</system:String>
+    <system:String x:Key="Startup_Group_Suspicious">Suspicious</system:String>
+    <system:String x:Key="Startup_Kind_RunKey">Starts at sign-in</system:String>
+    <system:String x:Key="Startup_Kind_StartupFolder">Startup folder</system:String>
+    <system:String x:Key="Startup_Kind_ScheduledTask">Scheduled task</system:String>
+    <system:String x:Key="Startup_Kind_Service">Service</system:String>
+    <system:String x:Key="Startup_Kind_StoreTask">Store app</system:String>
+    <system:String x:Key="Startup_Kind_Browser">Browser setting</system:String>
+
     <!-- Smart CPU -->
     <system:String x:Key="Nav_SmartCpu">Smart CPU</system:String>
     <system:String x:Key="Cpu_Title">Smart CPU</system:String>

@@ -126,6 +126,8 @@ public static class AutostartControl
                     return null;
                 case AutostartKind.ScheduledTask:
                     return ChangeTask(entry.Name, enabled);
+                case AutostartKind.StoreTask:
+                    return WriteStoreTask(entry.Name, enabled);
                 case AutostartKind.Service:
                     if (enabled)
                     {
@@ -162,6 +164,25 @@ public static class AutostartControl
         using var root = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64);
         using var key = root.CreateSubKey(Approved + sub, writable: true);
         key.SetValue(entry.Name, data, RegistryValueKind.Binary);
+    }
+
+    /// <summary>
+    /// A Store app's start-up task, switched the way Task Manager's Startup tab does it:
+    /// State 2 = on, 1 = switched off by the user (with the time it was switched off).
+    /// A State of 3 or 4 is set by a policy and is left alone.
+    /// </summary>
+    private static string? WriteStoreTask(string name, bool enabled)
+    {
+        // "<package family>\<task id>": exactly two parts, nothing that could climb out of the key.
+        var parts = name.Split('\\');
+        if (parts.Length != 2 || parts.Any(p => p.Length == 0 || p.Contains("..") || p.IndexOfAny(new[] { '/', ':', '*', '?', '"' }) >= 0))
+            return "Invalid start-up task name";
+        using var key = Registry.CurrentUser.OpenSubKey($@"{Autostart.StoreTaskRoot}\{parts[0]}\{parts[1]}", writable: true);
+        if (key?.GetValue("State") is not int state) return "The app's start-up task no longer exists";
+        if (state is 3 or 4) return "A policy on this PC decides this one";
+        key.SetValue("State", enabled ? 2 : 1, RegistryValueKind.DWord);
+        if (!enabled) key.SetValue("LastDisabledTime", DateTime.UtcNow.ToFileTimeUtc(), RegistryValueKind.QWord);
+        return null;
     }
 
     private static string? ChangeTask(string taskPath, bool enabled)

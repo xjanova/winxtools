@@ -573,7 +573,7 @@ public class TrialService
     private static readonly HashSet<string> ProOnlyPages = new(StringComparer.OrdinalIgnoreCase)
     {
         "ProxyVpn", "Rules", "Tricks", "NetworkTools", "Network", "Packets",
-        "SmartCpu", "DiskSpace", "DiskSpeed", "DiskHealth"
+        "SmartCpu", "Startup", "DiskSpace", "DiskSpeed", "DiskHealth"
     };
 
     public static bool IsProOnlyPage(string? pageTag) =>
