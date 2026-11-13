@@ -29,7 +29,8 @@ public enum CleanTarget
     DriverPackages,
     LanguagePacks,
     WindowsEsd,
-    CapCut
+    CapCut,
+    AiCoding
 }
 
 public enum CleanRisk
@@ -39,8 +40,37 @@ public enum CleanRisk
     Caution
 }
 
-/// <summary>Display metadata for one cleanup category (text lives in the language files).</summary>
-public sealed record CleanCategory(CleanTarget Target, string Key, CleanRisk Risk, bool DefaultOn);
+/// <summary>
+/// Display metadata for one cleanup category (text lives in the language files).
+/// <paramref name="AskFirst"/>: the category is made of files that programs the user
+/// installed created (CapCut, AI coding tools). After a scan the cleaner shows what
+/// it found, program by program, and asks which of it to include — nothing of it is
+/// cleaned on a default alone.
+/// </summary>
+public sealed record CleanCategory(CleanTarget Target, string Key, CleanRisk Risk, bool DefaultOn, bool AskFirst = false);
+
+/// <summary>What a <see cref="CleanPart"/> is; the UI turns it into words (and a warning for the last two).</summary>
+public static class CleanPartKind
+{
+    /// <summary>Caches, logs, temporary files: the program rebuilds them by itself.</summary>
+    public const string Cache = "Cache";
+    /// <summary>Program versions kept after an update.</summary>
+    public const string OldVersions = "OldVersions";
+    /// <summary>Proxy/preview media a video editor left next to the projects.</summary>
+    public const string Proxies = "Proxies";
+    /// <summary>Download caches of tools the AI ran (npm, Composer…): downloaded again when a build needs them.</summary>
+    public const string Downloads = "Downloads";
+    /// <summary>Records of past conversations (older than 30 days). Not a cache: gone means gone.</summary>
+    public const string History = "History";
+    /// <summary>Downloaded AI models: they come back only by downloading them again.</summary>
+    public const string Models = "Models";
+}
+
+/// <summary>
+/// One piece of an ask-first category that can be chosen on its own: a program and
+/// a kind of its files ("Claude Code" + caches).
+/// </summary>
+public sealed record CleanPart(string Key, string App, string Kind, long Bytes, int FileCount, int InUseCount, long InUseBytes, bool DefaultOn);
 
 public sealed class CleanScanResult
 {
@@ -67,6 +97,23 @@ public sealed class CleanScanResult
     /// <summary>Why something is skipped; the UI maps it to a localized message.</summary>
     public string? NoteCode { get; set; }
     public string? NoteArg { get; set; }
+
+    /// <summary>Ask-first categories: everything that was found, piece by piece (chosen or not).</summary>
+    public List<CleanPart> Parts { get; } = new();
+
+    /// <summary>
+    /// Makes the totals describe the chosen pieces only — what cleaning with that
+    /// choice frees. Does nothing for categories without pieces.
+    /// </summary>
+    public void ApplySelection(IReadOnlySet<string> chosen)
+    {
+        if (Parts.Count == 0) return;
+        var parts = Parts.Where(p => chosen.Contains(p.Key)).ToList();
+        Bytes = parts.Sum(p => p.Bytes);
+        FileCount = parts.Sum(p => p.FileCount);
+        InUseCount = parts.Sum(p => p.InUseCount);
+        InUseBytes = parts.Sum(p => p.InUseBytes);
+    }
 }
 
 public sealed class CleanExecResult
@@ -101,7 +148,8 @@ public static class SystemCleaner
         new(CleanTarget.TempFiles, "Temp", CleanRisk.Safe, true),
         new(CleanTarget.BrowserCache, "Browser", CleanRisk.Safe, true),
         new(CleanTarget.AppCache, "Apps", CleanRisk.Safe, true),
-        new(CleanTarget.CapCut, "CapCut", CleanRisk.Safe, true),
+        new(CleanTarget.CapCut, "CapCut", CleanRisk.Safe, true, AskFirst: true),
+        new(CleanTarget.AiCoding, "AiCoding", CleanRisk.Medium, false, AskFirst: true),
         new(CleanTarget.ErrorReports, "WER", CleanRisk.Safe, true),
         new(CleanTarget.Thumbnails, "Thumbs", CleanRisk.Safe, true),
         new(CleanTarget.LogFiles, "Logs", CleanRisk.Safe, true),
@@ -412,7 +460,228 @@ public static class SystemCleaner
         yield return Path.Combine(home, ".gradle", "caches");
         yield return Path.Combine(home, ".cargo", "registry", "cache");
         yield return Path.Combine(home, ".bun", "install", "cache");
+        yield return Path.Combine(LocalAppData, "uv", "cache"); // Python's uv: environments keep their own copies
     }
+
+    #region Pieces of an ask-first category
+
+    /// <summary>
+    /// Runs one piece. Scanning measures every piece, chosen or not, so the user can
+    /// be shown all of it; cleaning touches only the chosen ones (no choice given =
+    /// the pieces that are on by default, never history or models).
+    /// </summary>
+    private static void VisitPart(CleanScanResult scan, CleanExecResult? clean, IReadOnlySet<string>? only,
+        string key, string app, string kind, bool defaultOn, Action<CleanScanResult, CleanExecResult?> body)
+    {
+        if (clean != null && !(only?.Contains(key) ?? defaultOn)) return;
+
+        var part = new CleanScanResult();
+        body(part, clean);
+        if (part.FileCount == 0 && part.InUseCount == 0) return; // nothing of it on this PC: not listed
+
+        scan.Parts.Add(new CleanPart(key, app, kind, part.Bytes, part.FileCount, part.InUseCount, part.InUseBytes, defaultOn));
+        scan.Bytes += part.Bytes;
+        scan.FileCount += part.FileCount;
+        scan.InUseCount += part.InUseCount;
+        scan.InUseBytes += part.InUseBytes;
+        scan.DeniedCount += part.DeniedCount;
+        // RecentCount is left out: an age limit here is what the piece is ("older than 30 days"),
+        // not files held back from the user.
+    }
+
+    private static IReadOnlySet<string> DefaultParts(CleanScanResult scan) =>
+        scan.Parts.Where(p => p.DefaultOn).Select(p => p.Key).ToHashSet();
+
+    #endregion
+
+    #region AI coding tools
+
+    private static readonly string[] AiProcesses = ["claude", "Code", "Cursor", "Windsurf", "codex", "Trae", "Kiro", "Antigravity", "ollama"];
+    private static readonly string[] ElectronCacheNames =
+        ["Cache", "Code Cache", "GPUCache", "GPUPersistentCache", "DawnCache", "DawnGraphiteCache", "DawnWebGPUCache", "GrShaderCache", "ShaderCache"];
+
+    // Editors built on VS Code keep the same folders under %APPDATA%\<name>.
+    private static readonly (string Id, string Name, string Folder)[] CodeEditors =
+    [
+        ("vscode", "VS Code", "Code"), ("vscode-insiders", "VS Code Insiders", "Code - Insiders"), ("vscodium", "VSCodium", "VSCodium"),
+        ("cursor", "Cursor", "Cursor"), ("windsurf", "Windsurf", "Windsurf"), ("trae", "Trae", "Trae"), ("kiro", "Kiro", "Kiro"),
+        ("antigravity", "Antigravity", "Antigravity"), ("void", "Void", "Void")
+    ];
+
+    private static readonly global::System.Text.RegularExpressions.Regex RotatedLog =
+        new(@"^(app|server)-\d+\.log$", global::System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// What AI coding tools leave on the disk, tool by tool, in three kinds:
+    /// caches/logs/temporary files (rebuilt on their own — on by default once the
+    /// user says yes), conversation records older than 30 days and downloaded
+    /// models (both off unless the user ticks them: they are not caches).
+    /// Never touched: settings, sign-ins, memory files, skills and plugins,
+    /// generated images, work trees with the user's code, and anything newer than a
+    /// day in temporary folders (a running session may be using it).
+    /// </summary>
+    private static void VisitAiCoding(CleanScanResult scan, CleanExecResult? clean, IReadOnlySet<string>? only, CancellationToken token)
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        DateTime day = DateTime.Now - TempKeepWindow;
+        DateTime month = DateTime.Now.AddDays(-30);
+
+        // Claude Code (command line): ~/.claude
+        string claude = Path.Combine(home, ".claude");
+        var claudePackages = StorePackages("Claude_*");
+        VisitPart(scan, clean, only, "claude-code.cache", "Claude Code", CleanPartKind.Cache, true, (s, c) =>
+        {
+            Visit(Path.Combine(claude, "cache"), s, c, token, keepNewerThan: day);
+            Visit(Path.Combine(claude, "shell-snapshots"), s, c, token, keepNewerThan: day);
+            // Its own logs: in the usual place, and inside the Store edition of the Claude app.
+            Visit(Path.Combine(LocalAppData, "claude-cli-nodejs", "Cache"), s, c, token, keepNewerThan: day);
+            foreach (var package in claudePackages)
+                Visit(Path.Combine(package, "Local", "claude-cli-nodejs", "Cache"), s, c, token, keepNewerThan: day);
+        });
+        VisitPart(scan, clean, only, "claude-code.history", "Claude Code", CleanPartKind.History, false, (s, c) =>
+        {
+            // projects\<project>\<session>.jsonl and \<session>\… ; "memory" holds what Claude was asked to remember.
+            foreach (var project in SubFolders(Path.Combine(claude, "projects")))
+            {
+                Visit(project, s, c, token, recursive: false, filter: name => name.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase), keepNewerThan: month);
+                foreach (var session in SubFolders(project))
+                    if (!Path.GetFileName(session).Equals("memory", StringComparison.OrdinalIgnoreCase))
+                        Visit(session, s, c, token, keepNewerThan: month);
+            }
+            Visit(Path.Combine(claude, "file-history"), s, c, token, keepNewerThan: month); // file versions kept for "rewind"
+        });
+
+        // Claude desktop app: %APPDATA%\Claude
+        string claudeApp = Path.Combine(RoamingAppData, "Claude");
+        VisitPart(scan, clean, only, "claude-desktop.cache", "Claude Desktop", CleanPartKind.Cache, true, (s, c) =>
+        {
+            foreach (var name in ElectronCacheNames) Visit(Path.Combine(claudeApp, name), s, c, token);
+            Visit(Path.Combine(claudeApp, "logs"), s, c, token, keepNewerThan: day);
+            Visit(Path.Combine(claudeApp, "Crashpad"), s, c, token, keepNewerThan: day);
+            Visit(Path.Combine(claudeApp, "sentry"), s, c, token, keepNewerThan: day);
+        });
+
+        // Tools started from the Store edition of an AI app (npm, Composer, Electron…) keep their
+        // download caches inside that app's private folder, where nothing else looks for them.
+        VisitPart(scan, clean, only, "claude-desktop.downloads", "Claude Desktop", CleanPartKind.Downloads, false, (s, c) =>
+        {
+            foreach (var dir in claudePackages.SelectMany(PackagedDownloadCaches)) Visit(dir, s, c, token);
+        });
+        VisitPart(scan, clean, only, "codex.downloads", "Codex", CleanPartKind.Downloads, false, (s, c) =>
+        {
+            foreach (var dir in StorePackages("OpenAI.Codex_*").SelectMany(PackagedDownloadCaches)) Visit(dir, s, c, token);
+        });
+
+        // Codex: ~/.codex
+        string codex = Path.Combine(home, ".codex");
+        VisitPart(scan, clean, only, "codex.cache", "Codex", CleanPartKind.Cache, true, (s, c) =>
+        {
+            Visit(Path.Combine(codex, ".tmp"), s, c, token, keepNewerThan: day);
+            Visit(Path.Combine(codex, "tmp"), s, c, token, keepNewerThan: day);
+            Visit(Path.Combine(codex, "cache"), s, c, token, keepNewerThan: day);
+        });
+        VisitPart(scan, clean, only, "codex.history", "Codex", CleanPartKind.History, false, (s, c) =>
+            Visit(Path.Combine(codex, "sessions"), s, c, token, keepNewerThan: month));
+
+        // Gemini CLI: ~/.gemini\tmp holds each project's saved chats and checkpoints.
+        VisitPart(scan, clean, only, "gemini.history", "Gemini CLI", CleanPartKind.History, false, (s, c) =>
+            Visit(Path.Combine(home, ".gemini", "tmp"), s, c, token, keepNewerThan: month));
+
+        // VS Code and the editors built on it.
+        foreach (var (id, name, folder) in CodeEditors)
+        {
+            string root = Path.Combine(RoamingAppData, folder);
+            if (!Directory.Exists(root)) continue;
+            VisitPart(scan, clean, only, id + ".cache", name, CleanPartKind.Cache, true, (s, c) =>
+            {
+                // VS Code's own web caches belong to the "App caches" category already.
+                if (id != "vscode")
+                {
+                    foreach (var sub in ElectronCacheNames) Visit(Path.Combine(root, sub), s, c, token);
+                    Visit(Path.Combine(root, "CachedData"), s, c, token);
+                }
+                Visit(Path.Combine(root, "CachedExtensionVSIXs"), s, c, token); // installers of extensions that are already installed
+                Visit(Path.Combine(root, "logs"), s, c, token, keepNewerThan: day);
+                Visit(Path.Combine(root, "Crashpad"), s, c, token, keepNewerThan: day);
+                if (id == "cursor") Visit(Path.Combine(LocalAppData, "cursor-updater"), s, c, token, keepNewerThan: day);
+            });
+        }
+
+        // Continue: its search index is rebuilt when a project is opened.
+        string cont = Path.Combine(home, ".continue");
+        VisitPart(scan, clean, only, "continue.cache", "Continue", CleanPartKind.Cache, true, (s, c) =>
+        {
+            Visit(Path.Combine(cont, "index"), s, c, token, keepNewerThan: day);
+            Visit(Path.Combine(cont, "logs"), s, c, token, keepNewerThan: day);
+        });
+
+        // Ollama: rotated logs and downloaded updates (never the models: the user chose those).
+        string ollama = Path.Combine(LocalAppData, "Ollama");
+        VisitPart(scan, clean, only, "ollama.cache", "Ollama", CleanPartKind.Cache, true, (s, c) =>
+        {
+            Visit(ollama, s, c, token, recursive: false, filter: name => RotatedLog.IsMatch(name));
+            Visit(Path.Combine(ollama, "updates_v2"), s, c, token, keepNewerThan: day);
+        });
+
+        // Hugging Face: models and datasets that Python tools downloaded. The sign-in token next to them stays.
+        string hf = Path.Combine(home, ".cache", "huggingface");
+        VisitPart(scan, clean, only, "huggingface.models", "Hugging Face", CleanPartKind.Models, false, (s, c) =>
+        {
+            Visit(Path.Combine(hf, "hub"), s, c, token);
+            Visit(Path.Combine(hf, "xet"), s, c, token);
+            Visit(Path.Combine(hf, "datasets"), s, c, token);
+        });
+
+        NoteRunningApps(scan, AiProcesses);
+    }
+
+    /// <summary>
+    /// The "LocalCache" folders of Store (MSIX) apps whose package name matches:
+    /// Windows redirects there whatever a program started by that app writes to AppData.
+    /// </summary>
+    private static List<string> StorePackages(string pattern)
+    {
+        try
+        {
+            return new DirectoryInfo(Path.Combine(LocalAppData, "Packages")).EnumerateDirectories(pattern)
+                .Where(d => (d.Attributes & FileAttributes.ReparsePoint) == 0)
+                .Select(d => Path.Combine(d.FullName, "LocalCache")).Where(Directory.Exists).ToList();
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+
+    /// <summary>The same download caches as the "Developer download caches" category, inside one such folder.</summary>
+    private static IEnumerable<string> PackagedDownloadCaches(string localCache)
+    {
+        string local = Path.Combine(localCache, "Local");
+        yield return Path.Combine(local, "npm-cache");
+        yield return Path.Combine(local, "pip", "Cache");
+        yield return Path.Combine(local, "Yarn", "Cache");
+        yield return Path.Combine(local, "NuGet", "v3-cache");
+        yield return Path.Combine(local, "go-build");
+        yield return Path.Combine(local, "Composer");
+        yield return Path.Combine(local, "uv", "cache");
+        yield return Path.Combine(local, "electron", "Cache");
+    }
+
+    private static List<string> SubFolders(string dir)
+    {
+        try
+        {
+            return new DirectoryInfo(dir).EnumerateDirectories()
+                .Where(d => (d.Attributes & FileAttributes.ReparsePoint) == 0) // never through a junction
+                .Select(d => d.FullName).ToList();
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+
+    #endregion
 
     #region CapCut
 
@@ -431,7 +700,7 @@ public static class SystemCleaner
     /// downloaded materials are never touched. Caches are only cleaned while
     /// CapCut is closed; old versions can go while it runs.
     /// </summary>
-    private static void VisitCapCut(CleanScanResult scan, CleanExecResult? clean, CancellationToken token)
+    private static void VisitCapCut(CleanScanResult scan, CleanExecResult? clean, IReadOnlySet<string>? only, CancellationToken token)
     {
         bool running = CapCutProcesses.Any(name =>
         {
@@ -447,27 +716,32 @@ public static class SystemCleaner
             }
         });
 
-        foreach (var dir in CapCutOldVersions())
+        VisitPart(scan, clean, only, "capcut.old", "CapCut", CleanPartKind.OldVersions, true, (s, c) =>
         {
-            Visit(dir, scan, clean, token);
-            if (clean != null) TryRemoveEmptyFolder(dir);
-        }
+            foreach (var dir in CapCutOldVersions())
+            {
+                Visit(dir, s, c, token);
+                if (c != null) TryRemoveEmptyFolder(dir);
+            }
+        });
 
         var caches = CapCutCaches(out var strays);
-        foreach (var dir in caches)
+        VisitPart(scan, clean, only, "capcut.cache", "CapCut", CleanPartKind.Cache, true, (s, c) =>
         {
-            if (running)
+            foreach (var dir in caches)
             {
-                VisitSizeOnly(dir, scan, token, countAsInUse: true);
-                continue;
+                if (running) VisitSizeOnly(dir, s, token, countAsInUse: true);
+                else Visit(dir, s, c, token);
             }
-            Visit(dir, scan, clean, token);
-        }
+        });
         if (!running)
-            foreach (var dir in strays)
-                Visit(dir, scan, clean, token, recursive: false, filter: name => CapCutProxyName.IsMatch(name));
+            VisitPart(scan, clean, only, "capcut.proxies", "CapCut", CleanPartKind.Proxies, true, (s, c) =>
+            {
+                foreach (var dir in strays)
+                    Visit(dir, s, c, token, recursive: false, filter: name => CapCutProxyName.IsMatch(name));
+            });
 
-        if (running && scan.InUseCount > 0)
+        if (running && scan.Parts.Any(p => p.InUseCount > 0))
         {
             scan.NoteCode = "AppRunning";
             scan.NoteArg = "CapCut";
@@ -776,7 +1050,13 @@ public static class SystemCleaner
                 break;
 
             case CleanTarget.CapCut:
-                VisitCapCut(result, null, token);
+                VisitCapCut(result, null, null, token);
+                result.ApplySelection(DefaultParts(result)); // totals = what Clean() without a choice would free
+                break;
+
+            case CleanTarget.AiCoding:
+                VisitAiCoding(result, null, null, token);
+                result.ApplySelection(DefaultParts(result));
                 break;
 
             case CleanTarget.WindowsSetupFiles or CleanTarget.DefenderFiles or CleanTarget.WindowsMisc or
@@ -806,7 +1086,11 @@ public static class SystemCleaner
 
     #region Clean
 
-    public static CleanExecResult Clean(CleanTarget target, CancellationToken token = default)
+    /// <param name="onlyParts">
+    /// Ask-first categories: the pieces the user chose (see <see cref="CleanScanResult.Parts"/>).
+    /// Null cleans the pieces that are on by default.
+    /// </param>
+    public static CleanExecResult Clean(CleanTarget target, CancellationToken token = default, IReadOnlySet<string>? onlyParts = null)
     {
         var result = new CleanExecResult { Target = target };
         var scanLike = new CleanScanResult { Target = target };
@@ -884,7 +1168,11 @@ public static class SystemCleaner
                 break;
 
             case CleanTarget.CapCut:
-                VisitCapCut(scanLike, result, token);
+                VisitCapCut(scanLike, result, onlyParts, token);
+                break;
+
+            case CleanTarget.AiCoding:
+                VisitAiCoding(scanLike, result, onlyParts, token);
                 break;
 
             case CleanTarget.WindowsSetupFiles or CleanTarget.DefenderFiles or CleanTarget.WindowsMisc or

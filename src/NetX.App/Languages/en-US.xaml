@@ -1184,7 +1184,7 @@
     <system:String x:Key="CleanCat_WinMisc_Title">Other Windows leftovers</system:String>
     <system:String x:Key="CleanCat_WinMisc_Desc">Internet cache, old diagnostics and feedback logs, demo content and similar files Windows marks as removable.</system:String>
     <system:String x:Key="CleanCat_DevCaches_Title">Developer download caches</system:String>
-    <system:String x:Key="CleanCat_DevCaches_Desc">npm, pip, Yarn, NuGet, Gradle, Go, Cargo, Composer and Bun caches. Projects and installed packages stay.</system:String>
+    <system:String x:Key="CleanCat_DevCaches_Desc">npm, pip, uv, Yarn, NuGet, Gradle, Go, Cargo, Composer and Bun caches. Projects and installed packages stay.</system:String>
     <system:String x:Key="CleanCat_DevCaches_Warn">The next build or install downloads these packages again (needs internet, slower once).</system:String>
     <system:String x:Key="CleanCat_UpdateCleanup_Title">Windows Update cleanup (WinSxS)</system:String>
     <system:String x:Key="CleanCat_UpdateCleanup_Desc">Old versions of Windows components replaced by updates. Often several GB; can take a while.</system:String>
@@ -1319,6 +1319,33 @@
     <system:String x:Key="CleanCat_CapCut_Title">CapCut: old versions and caches</system:String>
     <system:String x:Key="CleanCat_CapCut_Desc">Every old CapCut version it keeps after updating (about 1.5–1.8 GB each — only the current one runs), plus its caches wherever its settings put them: effects, images, proxy videos, pre-renders, its built-in browser cache and logs. Your projects, presets, screen recordings and materials are never touched.</system:String>
     <system:String x:Key="CleanCat_CapCut_Warn">Close CapCut to clean its caches (old versions are removed even while it runs). Effects you use are downloaded again the next time, and proxy videos are rebuilt.</system:String>
+    <system:String x:Key="CleanCat_AiCoding_Title">AI coding tools: caches and leftovers</system:String>
+    <system:String x:Key="CleanCat_AiCoding_Desc">What Claude Code, the Claude app, Codex, Gemini CLI, VS Code, Cursor, Windsurf, Ollama and similar tools leave behind. After the scan WinXTools shows what it found, tool by tool, and asks what to include. Settings, sign-ins, memory files and your code are never touched.</system:String>
+    <system:String x:Key="CleanCat_AiCoding_Warn">Caches are rebuilt on their own. Conversation records and downloaded models are removed only if you ticked them.</system:String>
+
+    <!-- Cleaner: asking about files of the user's own programs -->
+    <system:String x:Key="CleanAsk_Title">Files from your programs</system:String>
+    <system:String x:Key="CleanAsk_Intro">The scan found files made by programs you use. Choose what to clean along with the rest — nothing here is removed unless it is ticked.</system:String>
+    <system:String x:Key="CleanAsk_Kept_CapCut">Never touched: your projects (drafts), presets, screen recordings, downloaded materials and exported videos.</system:String>
+    <system:String x:Key="CleanAsk_Kept_AiCoding">Never touched: settings, sign-ins, memory files, skills and plugins, generated images, and work trees with your code.</system:String>
+    <system:String x:Key="CleanAsk_Include">Clean the ticked ones too</system:String>
+    <system:String x:Key="CleanAsk_Skip">Not now</system:String>
+    <system:String x:Key="CleanAsk_Choose">Choose what to include…</system:String>
+    <system:String x:Key="CleanAsk_Chosen">{0} of {1} chosen</system:String>
+    <system:String x:Key="CleanAsk_InUse">in use now — close the program first</system:String>
+    <system:String x:Key="CleanAsk_Total">Ticked: {0}</system:String>
+    <system:String x:Key="CleanPart_Cache">Caches, logs and temporary files</system:String>
+    <system:String x:Key="CleanPart_Cache_Desc">The program rebuilds them by itself.</system:String>
+    <system:String x:Key="CleanPart_OldVersions">Old versions kept after updates</system:String>
+    <system:String x:Key="CleanPart_OldVersions_Desc">Only the current version runs.</system:String>
+    <system:String x:Key="CleanPart_Proxies">Proxy videos left next to the projects</system:String>
+    <system:String x:Key="CleanPart_Proxies_Desc">Rebuilt when a project needs them.</system:String>
+    <system:String x:Key="CleanPart_Downloads">Download caches of tools the AI ran (npm, Composer, Electron…)</system:String>
+    <system:String x:Key="CleanPart_Downloads_Desc">Downloaded again when a build needs them (needs internet, slower once).</system:String>
+    <system:String x:Key="CleanPart_History">Conversation records older than 30 days</system:String>
+    <system:String x:Key="CleanPart_History_Desc">Not a cache: those conversations can no longer be reopened or searched.</system:String>
+    <system:String x:Key="CleanPart_Models">Downloaded AI models and datasets</system:String>
+    <system:String x:Key="CleanPart_Models_Desc">Not a cache: programs that use them must download them again (often many GB).</system:String>
 
     <!-- Smart CPU -->
     <system:String x:Key="Nav_SmartCpu">Smart CPU</system:String>

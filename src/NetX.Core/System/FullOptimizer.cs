@@ -79,13 +79,24 @@ public static class FullOptimizer
         {
             // 1. Junk files: the categories the cleaner ticks by default.
             Report(OptimizeStep.Junk, StepState.Running);
-            var targets = SystemCleaner.Categories.Where(c => c.DefaultOn).Select(c => c.Target).ToList();
+            // Files of the user's own programs (CapCut, AI coding tools) are cleaned here only
+            // with the pieces the user chose when the Cleaner page asked about them; until
+            // they have answered that once, 1-Click leaves those categories alone.
+            var targets = new List<(CleanTarget Target, IReadOnlySet<string>? Parts)>();
+            foreach (var category in SystemCleaner.Categories)
+            {
+                if (category.AskFirst)
+                {
+                    if (CleanerChoices.ForUnattended(category) is { } parts) targets.Add((category.Target, parts));
+                }
+                else if (category.DefaultOn) targets.Add((category.Target, null));
+            }
             for (int i = 0; i < targets.Count; i++)
             {
                 token.ThrowIfCancellationRequested();
-                var target = targets[i];
+                var (target, onlyParts) = targets[i];
                 Report(OptimizeStep.Junk, StepState.Running, i / (double)targets.Count, target.ToString());
-                var cleaned = await Task.Run(() => SystemCleaner.Clean(target, token), token).ConfigureAwait(false);
+                var cleaned = await Task.Run(() => SystemCleaner.Clean(target, token, onlyParts), token).ConfigureAwait(false);
                 result.JunkBytesFreed += Math.Max(0, cleaned.BytesFreed);
                 result.JunkFiles += Math.Max(0, cleaned.FilesDeleted);
                 result.JunkSkipped += cleaned.FilesSkipped;

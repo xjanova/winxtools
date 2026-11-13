@@ -102,6 +102,15 @@
                                                    TextWrapping="Wrap"
                                                    Margin="0,2,0,0"
                                                    Visibility="{Binding NoteVisibility}"/>
+                                        <!-- Files of the user's own programs: what to include is their choice, program by program -->
+                                        <Button Content="{DynamicResource CleanAsk_Choose}"
+                                                Style="{StaticResource SecondaryButtonStyle}"
+                                                FontSize="11"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,6,0,0"
+                                                Visibility="{Binding ChooseVisibility}"
+                                                IsEnabled="{Binding CanToggle}"
+                                                Click="ChooseParts_Click"/>
                                     </StackPanel>
 
                                     <Border Grid.Column="2"

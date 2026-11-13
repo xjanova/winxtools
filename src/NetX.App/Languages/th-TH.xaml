@@ -1184,7 +1184,7 @@
     <system:String x:Key="CleanCat_WinMisc_Title">ไฟล์ค้างอื่น ๆ ของ Windows</system:String>
     <system:String x:Key="CleanCat_WinMisc_Desc">แคชอินเทอร์เน็ต log วินิจฉัยและ feedback เก่า เนื้อหาเดโม และไฟล์อื่นที่ Windows ระบุว่าลบได้</system:String>
     <system:String x:Key="CleanCat_DevCaches_Title">แคชดาวน์โหลดของเครื่องมือนักพัฒนา</system:String>
-    <system:String x:Key="CleanCat_DevCaches_Desc">แคชของ npm, pip, Yarn, NuGet, Gradle, Go, Cargo, Composer และ Bun — โปรเจกต์และแพ็กเกจที่ติดตั้งแล้วยังอยู่ครบ</system:String>
+    <system:String x:Key="CleanCat_DevCaches_Desc">แคชของ npm, pip, uv, Yarn, NuGet, Gradle, Go, Cargo, Composer และ Bun — โปรเจกต์และแพ็กเกจที่ติดตั้งแล้วยังอยู่ครบ</system:String>
     <system:String x:Key="CleanCat_DevCaches_Warn">การ build หรือติดตั้งครั้งถัดไปจะดาวน์โหลดแพ็กเกจเหล่านี้ใหม่ (ต้องใช้เน็ต และช้าลงครั้งแรก)</system:String>
     <system:String x:Key="CleanCat_UpdateCleanup_Title">ล้างไฟล์อัปเดต Windows (WinSxS)</system:String>
     <system:String x:Key="CleanCat_UpdateCleanup_Desc">คอมโพเนนต์ Windows รุ่นเก่าที่ถูกอัปเดตแทนแล้ว มักได้คืนหลาย GB และอาจใช้เวลานาน</system:String>
@@ -1319,6 +1319,33 @@
     <system:String x:Key="CleanCat_CapCut_Title">CapCut: เวอร์ชันเก่าและแคช</system:String>
     <system:String x:Key="CleanCat_CapCut_Desc">CapCut เก็บทุกเวอร์ชันเก่าไว้หลังอัปเดต (ตัวละราว 1.5–1.8 GB และใช้จริงแค่เวอร์ชันล่าสุด) รวมถึงแคชที่อยู่ตามตำแหน่งที่ตั้งไว้ในโปรแกรม ได้แก่ เอฟเฟกต์, รูป, วิดีโอ proxy, ไฟล์ pre-render, แคชเว็บในตัวโปรแกรม และ log ส่วนโปรเจคงานตัดต่อ, preset, ไฟล์อัดหน้าจอ และวัสดุของคุณจะไม่ถูกแตะเลย</system:String>
     <system:String x:Key="CleanCat_CapCut_Warn">ปิด CapCut ก่อนจึงจะล้างแคชได้ (ส่วนเวอร์ชันเก่าลบได้แม้โปรแกรมเปิดอยู่) เอฟเฟกต์ที่ใช้จะดาวน์โหลดใหม่ตอนใช้ครั้งถัดไป และวิดีโอ proxy จะสร้างขึ้นใหม่เอง</system:String>
+    <system:String x:Key="CleanCat_AiCoding_Title">เครื่องมือ AI เขียนโค้ด: แคชและไฟล์ตกค้าง</system:String>
+    <system:String x:Key="CleanCat_AiCoding_Desc">ไฟล์ที่ Claude Code, แอป Claude, Codex, Gemini CLI, VS Code, Cursor, Windsurf, Ollama และเครื่องมือลักษณะเดียวกันทิ้งไว้ หลังสแกน WinXTools จะแสดงสิ่งที่พบแยกทีละเครื่องมือ แล้วถามว่าจะล้างส่วนไหนบ้าง ส่วนการตั้งค่า การล็อกอิน ไฟล์ความจำ และโค้ดของคุณจะไม่ถูกแตะเลย</system:String>
+    <system:String x:Key="CleanCat_AiCoding_Warn">แคชจะถูกสร้างใหม่เอง ส่วนประวัติสนทนาและโมเดลที่ดาวน์โหลดจะถูกลบเฉพาะเมื่อคุณติ๊กเลือกไว้เท่านั้น</system:String>
+
+    <!-- Cleaner: asking about files of the user's own programs -->
+    <system:String x:Key="CleanAsk_Title">ไฟล์จากโปรแกรมของคุณ</system:String>
+    <system:String x:Key="CleanAsk_Intro">การสแกนพบไฟล์ที่โปรแกรมที่คุณใช้สร้างขึ้น เลือกได้ว่าจะล้างส่วนไหนไปพร้อมกับรายการอื่น — รายการในหน้านี้จะไม่ถูกลบถ้าไม่ได้ติ๊ก</system:String>
+    <system:String x:Key="CleanAsk_Kept_CapCut">ไม่แตะเด็ดขาด: โปรเจคงานตัดต่อ (draft), preset, ไฟล์อัดหน้าจอ, วัสดุที่ดาวน์โหลด และวิดีโอที่ export แล้ว</system:String>
+    <system:String x:Key="CleanAsk_Kept_AiCoding">ไม่แตะเด็ดขาด: การตั้งค่า, การล็อกอิน, ไฟล์ความจำ, skill และ plugin, รูปที่สร้างไว้ และ work tree ที่มีโค้ดของคุณ</system:String>
+    <system:String x:Key="CleanAsk_Include">ล้างรายการที่ติ๊กด้วย</system:String>
+    <system:String x:Key="CleanAsk_Skip">ยังไม่ล้าง</system:String>
+    <system:String x:Key="CleanAsk_Choose">เลือกว่าจะล้างอะไรบ้าง…</system:String>
+    <system:String x:Key="CleanAsk_Chosen">เลือกไว้ {0} จาก {1} รายการ</system:String>
+    <system:String x:Key="CleanAsk_InUse">กำลังถูกใช้งานอยู่ — ปิดโปรแกรมก่อน</system:String>
+    <system:String x:Key="CleanAsk_Total">ที่ติ๊กไว้: {0}</system:String>
+    <system:String x:Key="CleanPart_Cache">แคช, log และไฟล์ชั่วคราว</system:String>
+    <system:String x:Key="CleanPart_Cache_Desc">โปรแกรมจะสร้างขึ้นใหม่เอง</system:String>
+    <system:String x:Key="CleanPart_OldVersions">เวอร์ชันเก่าที่ค้างไว้หลังอัปเดต</system:String>
+    <system:String x:Key="CleanPart_OldVersions_Desc">ใช้งานจริงแค่เวอร์ชันล่าสุด</system:String>
+    <system:String x:Key="CleanPart_Proxies">วิดีโอ proxy ที่ค้างอยู่ข้างโฟลเดอร์โปรเจค</system:String>
+    <system:String x:Key="CleanPart_Proxies_Desc">จะถูกสร้างใหม่เมื่อโปรเจคต้องใช้</system:String>
+    <system:String x:Key="CleanPart_Downloads">แคชดาวน์โหลดของเครื่องมือที่ AI รัน (npm, Composer, Electron…)</system:String>
+    <system:String x:Key="CleanPart_Downloads_Desc">จะดาวน์โหลดใหม่เมื่อ build ต้องใช้ (ต้องใช้เน็ต และช้าลงครั้งแรก)</system:String>
+    <system:String x:Key="CleanPart_History">ประวัติสนทนาที่เก่ากว่า 30 วัน</system:String>
+    <system:String x:Key="CleanPart_History_Desc">ไม่ใช่แคช: บทสนทนาเหล่านั้นจะเปิดต่อหรือค้นหาไม่ได้อีก</system:String>
+    <system:String x:Key="CleanPart_Models">โมเดล AI และชุดข้อมูลที่ดาวน์โหลดไว้</system:String>
+    <system:String x:Key="CleanPart_Models_Desc">ไม่ใช่แคช: โปรแกรมที่ใช้ต้องดาวน์โหลดใหม่ (มักหลาย GB)</system:String>
 
     <!-- Smart CPU -->
     <system:String x:Key="Nav_SmartCpu">Smart CPU</system:String>

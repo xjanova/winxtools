@@ -91,6 +91,9 @@ public partial class CleanerView : Page
             }
 
             _hasScan = true;
+            // Files made by the user's own programs (CapCut, AI coding tools): show what was
+            // found and ask, instead of cleaning them on a default.
+            if (IsLoaded) AskAboutPrograms(afterScan: true);
             StatusText.Text = Loc.F("Cleaner_ScanDone", "Scan complete — {0} can be freed.", FormatSize(SelectedBytes()));
         }
         catch (OperationCanceledException)
@@ -107,6 +110,54 @@ public partial class CleanerView : Page
             SetBusy(false);
             UpdateSummary();
         }
+    }
+
+    #endregion
+
+    #region Files of the user's own programs (asked, never assumed)
+
+    // Below this the question isn't worth a dialog; the row's button still opens it.
+    private const long AskThresholdBytes = 1 << 20;
+
+    private void ChooseParts_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy || !_hasScan) return;
+        AskAboutPrograms(afterScan: false);
+    }
+
+    /// <summary>
+    /// Shows what CapCut and the AI coding tools left behind, program by program, and
+    /// applies the answer: the ticked pieces are cleaned with the rest, "Not now"
+    /// leaves the whole category out of this clean.
+    /// </summary>
+    private void AskAboutPrograms(bool afterScan)
+    {
+        var asked = _items.Where(i => i.AskFirst && i.Scan is { Parts.Count: > 0 }).ToList();
+        if (afterScan) asked = asked.Where(i => i.Scan!.Parts.Sum(p => p.Bytes) >= AskThresholdBytes).ToList();
+        if (asked.Count == 0) return;
+
+        var dialog = new Dialogs.CleanAskDialog(asked.Select(i =>
+            (i.Title, i.Key, (IReadOnlyList<CleanPart>)i.Scan!.Parts, (IReadOnlySet<string>)i.SelectedParts)))
+        {
+            Owner = Window.GetWindow(this)
+        };
+        bool include = dialog.ShowDialog() == true;
+
+        foreach (var item in asked)
+        {
+            if (include)
+            {
+                var chosen = dialog.Chosen.Where(key => item.Scan!.Parts.Any(p => p.Key == key)).ToHashSet();
+                CleanerChoices.Save(item.Scan!.Parts, chosen);
+                item.ChooseParts(chosen);
+                item.IsSelected = chosen.Count > 0;
+            }
+            else if (afterScan)
+            {
+                item.IsSelected = false; // the ticks are remembered for the next time it asks
+            }
+        }
+        UpdateSummary();
     }
 
     #endregion
@@ -129,6 +180,8 @@ public partial class CleanerView : Page
         foreach (var item in selected)
         {
             lines.AppendLine($"• {item.Title} — {FormatSize(item.Scan!.Bytes)}");
+            foreach (var part in item.Scan.Parts.Where(p => item.SelectedParts.Contains(p.Key)))
+                lines.AppendLine($"   – {part.App}: {Loc.T($"CleanPart_{part.Kind}", part.Kind)} ({FormatSize(part.Bytes)})");
             var warning = Loc.T($"CleanCat_{item.Key}_Warn", "");
             if (warning.Length > 0) lines.AppendLine($"   ⚠ {warning}");
         }
@@ -159,7 +212,8 @@ public partial class CleanerView : Page
                 StatusText.Text = Loc.F("Cleaner_CleaningItem", "Cleaning {0}…", item.Title);
                 item.SizeText = "…";
 
-                var result = await Task.Run(() => SystemCleaner.Clean(item.Target, token), token);
+                IReadOnlySet<string>? parts = item.AskFirst ? item.SelectedParts : null;
+                var result = await Task.Run(() => SystemCleaner.Clean(item.Target, token, parts), token);
                 item.ApplyClean(result);
 
                 totalFreed += result.BytesFreed;
@@ -356,6 +410,23 @@ public class CleanCategoryItem : INotifyPropertyChanged
 
     public CleanScanResult? Scan { get; private set; }
 
+    /// <summary>The category is made of files of the user's own programs: the cleaner asks what to include.</summary>
+    public bool AskFirst => _category.AskFirst;
+
+    /// <summary>Ask-first categories: the pieces that will be cleaned.</summary>
+    public HashSet<string> SelectedParts { get; private set; } = new();
+
+    public Visibility ChooseVisibility => AskFirst && Scan is { Parts.Count: > 0 } ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Applies the user's answer: the row then shows what cleaning with that choice frees.</summary>
+    public void ChooseParts(IReadOnlySet<string> chosen)
+    {
+        SelectedParts = new HashSet<string>(chosen);
+        if (Scan == null) return;
+        Scan.ApplySelection(SelectedParts);
+        ApplyScan(Scan);
+    }
+
     private bool _isSelected;
     public bool IsSelected
     {
@@ -399,11 +470,20 @@ public class CleanCategoryItem : INotifyPropertyChanged
         SizeText = "--";
         Detail = "";
         Note = "";
+        OnPropertyChanged(nameof(ChooseVisibility));
     }
 
     public void ApplyScan(CleanScanResult scan)
     {
+        // A new scan of an ask-first category starts from the ticks of the last answer
+        // (a piece never seen before starts at its own default).
+        if (scan.Parts.Count > 0 && !ReferenceEquals(scan, Scan))
+        {
+            SelectedParts = CleanerChoices.Resolve(scan.Parts);
+            scan.ApplySelection(SelectedParts);
+        }
         Scan = scan;
+        OnPropertyChanged(nameof(ChooseVisibility));
         if (!scan.Found)
         {
             SizeText = Loc.T("Cleaner_NotFound", "Not found");
@@ -425,6 +505,8 @@ public class CleanCategoryItem : INotifyPropertyChanged
             parts.Add(Loc.F("Cleaner_Recent", "{0:N0} recent (kept)", scan.RecentCount));
         if (scan.DeniedCount > 0)
             parts.Add(Loc.F("Cleaner_Denied", "{0:N0} protected (skipped)", scan.DeniedCount));
+        if (scan.Parts.Count > 0)
+            parts.Add(Loc.F("CleanAsk_Chosen", "{0} of {1} chosen", scan.Parts.Count(p => SelectedParts.Contains(p.Key)), scan.Parts.Count));
         Detail = string.Join(" · ", parts);
         Note = NoteText(scan.NoteCode, scan.NoteArg);
     }
