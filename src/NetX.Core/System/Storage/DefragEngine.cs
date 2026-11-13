@@ -185,8 +185,7 @@ public static partial class DefragEngine
             int version = live.Version;
             if (version == lastVersion) continue;
             lastVersion = version;
-            var line = LastLine(live.GetText());
-            if (line != null) progress?.Report(new DefragProgress(line, ParsePercent(line)));
+            if (ReadProgress(live.GetText()) is { } now) progress?.Report(now);
         }
 
         var result = await run.ConfigureAwait(false);
@@ -203,6 +202,22 @@ public static partial class DefragEngine
             return new DefragRunResult { Outcome = DefragOutcome.Cancelled, Duration = duration, Output = output, ExitCode = result.ExitCode };
         }
 
+        // defrag.exe exits with 0 whatever happened: a refusal or a failure is only
+        // visible as a line of its output that ends in Windows' error code,
+        // "… (0x89000024)". Judging by the exit code alone called every failure "done".
+        if (FindError(output) is { } error)
+        {
+            return new DefragRunResult
+            {
+                // Someone else stopped it (Windows' own maintenance, Optimize Drives' Stop button).
+                Outcome = error.Code == ErrorCancelledByUser ? DefragOutcome.Cancelled : DefragOutcome.Failed,
+                ExitCode = error.Code,
+                Duration = duration,
+                Output = output,
+                Message = error.Message
+            };
+        }
+
         return new DefragRunResult
         {
             Outcome = result.ExitCode == 0 ? DefragOutcome.Completed : DefragOutcome.Failed,
@@ -212,6 +227,52 @@ public static partial class DefragEngine
             Message = LastMeaningfulLine(output) ?? ""
         };
     }
+
+    /// <summary>"The user cancelled the operation." (0x89000006)</summary>
+    private const int ErrorCancelledByUser = unchecked((int)0x89000006);
+
+    /// <summary>
+    /// The error defrag.exe printed, if any: the first line that ends in a failure
+    /// code, such as "The given volume path is invalid. (0x89000001)". The text is
+    /// Windows' own, in the user's language.
+    /// </summary>
+    public static (string Message, int Code)? FindError(string output)
+    {
+        foreach (var raw in output.Split('\n'))
+        {
+            var line = raw.Trim();
+            var match = ErrorCodeRegex().Match(line);
+            if (!match.Success || IsStatisticsRow(line)) continue;
+            uint code = Convert.ToUInt32(match.Groups[1].Value, 16);
+            if ((code & 0x80000000) == 0) continue; // not a failure code
+            return (line, unchecked((int)code));
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// What to show while it runs: the newest progress line ("Defragmentation:
+    /// 45% complete…"), or, before the first one, the newest line that says
+    /// something ("Invoking defragmentation on Data (F:)…"). The rows of the
+    /// reports defrag.exe prints with /V ("Total fragmented space = 3%") also
+    /// contain a percentage, but they are figures about the drive, not progress.
+    /// </summary>
+    public static DefragProgress? ReadProgress(string output)
+    {
+        string? latest = null;
+        for (int end = output.Length; end > 0;)
+        {
+            int start = output.LastIndexOf('\n', end - 1);
+            var line = output[(start + 1)..end].Trim();
+            end = start < 0 ? 0 : start;
+            if (line.Length == 0 || IsStatisticsRow(line)) continue;
+            if (ParsePercent(line) is int percent) return new DefragProgress(line, percent);
+            if (!line.EndsWith(':')) latest ??= line; // not a report heading
+        }
+        return latest == null ? null : new DefragProgress(latest, null);
+    }
+
+    private static bool IsStatisticsRow(string line) => line.Contains('=');
 
     /// <summary>Stops the Optimize Drives service (and with it any running optimization).</summary>
     public static bool StopEngine()
@@ -241,25 +302,13 @@ public static partial class DefragEngine
         return int.TryParse(matches[^1].Groups[1].Value, out int value) ? Math.Clamp(value, 0, 100) : null;
     }
 
-    private static string? LastLine(string text)
-    {
-        for (int end = text.Length; end > 0;)
-        {
-            int start = text.LastIndexOf('\n', end - 1);
-            var line = text[(start + 1)..end].Trim();
-            if (line.Length > 0) return line;
-            end = start < 0 ? 0 : start;
-        }
-        return null;
-    }
-
     /// <summary>The last line that isn't a statistics row (those contain " = ").</summary>
     private static string? LastMeaningfulLine(string text)
     {
         var lines = text.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
         for (int i = lines.Count - 1; i >= 0; i--)
         {
-            if (lines[i].Contains(" = ") || lines[i].EndsWith(':')) continue;
+            if (IsStatisticsRow(lines[i]) || lines[i].EndsWith(':')) continue;
             return lines[i];
         }
         return lines.LastOrDefault();
@@ -267,6 +316,9 @@ public static partial class DefragEngine
 
     [GeneratedRegex(@"(\d{1,3})\s*%")]
     private static partial Regex PercentRegex();
+
+    [GeneratedRegex(@"\(0x([0-9A-Fa-f]{8})\)\.?$")]
+    private static partial Regex ErrorCodeRegex();
 
     #endregion
 }

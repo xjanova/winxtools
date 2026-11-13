@@ -1012,6 +1012,10 @@
     <system:String x:Key="Defrag_Gain">ไฟล์ที่เคยแตกชิ้นอ่านเร็วขึ้น {0:0.0} เท่า ({1:0} → {2:0} MB/s)</system:String>
     <system:String x:Key="Defrag_NoGain">ความเร็วอ่านไฟล์ชุดนั้นแทบไม่เปลี่ยน ({0:0} → {1:0} MB/s) — แปลว่าเดิมก็ไม่ได้ทำให้ไดรฟ์ช้ามาก</system:String>
     <system:String x:Key="Defrag_FragGain">ความกระจัดกระจาย {0}% → {1}%</system:String>
+    <system:String x:Key="Defrag_Improved">ไฟล์ที่แตกชิ้น: {0:N0} → {1:N0} ไฟล์ (ชิ้นส่วนเกิน: {2:N0} → {3:N0})</system:String>
+    <system:String x:Key="Defrag_NothingToDo">Windows ไม่พบอะไรที่ต้องต่อเข้าด้วยกัน: ไม่มีไฟล์ไหนในไดรฟ์นี้แตกเป็นชิ้นเล็ก (ชิ้นที่ใหญ่ตั้งแต่ 64 MB ขึ้นไป Windows จะปล่อยไว้ที่เดิม เพราะอ่านได้เต็มความเร็วอยู่แล้ว)</system:String>
+    <system:String x:Key="Defrag_NotImproved">Windows ต่อไฟล์ที่เหลืออีก {0:N0} ไฟล์เข้าด้วยกันไม่ได้: ไฟล์กำลังถูกใช้งานอยู่ หรือไม่มีช่องว่างที่ใหญ่พอ (ช่องใหญ่สุดคือ {1}) ลองลบไฟล์เพื่อเพิ่มพื้นที่ว่าง หรือติ๊ก "รวมพื้นที่ว่างให้ต่อเนื่องด้วย" แล้วลองใหม่</system:String>
+    <system:String x:Key="Defrag_FreeChange">ช่องว่างที่ใหญ่ที่สุด: {0} → {1}</system:String>
     <system:String x:Key="Defrag_DescSsd">SSD — ไม่มีชิ้นส่วนเคลื่อนไหว ไฟล์แตกชิ้นจึงไม่ทำให้ช้า WinXTools จะสั่ง TRIM แทนการจัดเรียง</system:String>
     <system:String x:Key="Defrag_DescHdd">ฮาร์ดดิสก์แบบจานหมุน — ไฟล์ที่แตกเป็นหลายชิ้นทำให้หัวอ่านต้องกระโดดไปมา กด "วิเคราะห์" เพื่อดูว่ากระจัดกระจายแค่ไหน</system:String>
     <system:String x:Key="Defrag_DescUnknown">Windows ไม่ได้ระบุว่าไดรฟ์นี้เป็นฮาร์ดดิสก์หรือ SSD (พบบ่อยกับไดรฟ์ USB) ตัวปรับแต่งของ Windows จะวัดไดรฟ์แล้วเลือกวิธีที่ถูกต้องเอง</system:String>

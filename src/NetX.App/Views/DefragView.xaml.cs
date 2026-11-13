@@ -29,6 +29,7 @@ public partial class DefragView : Page
         public HotFileReport? Smart;
         public List<SmartProgramRow>? SmartRows;
         public DateTime SmartReadUtc;
+        public string? Advice;
     }
 
     private static readonly Dictionary<char, DriveMemory> Memory = new();
@@ -99,12 +100,16 @@ public partial class DefragView : Page
         _drives.Clear();
         foreach (var v in volumes) _drives.Add(new DefragDriveItem(v));
 
+        // A run that ended while this page was closed is shown once (its result and the
+        // "after" figures). DefragSession.Current keeps the last run for as long as the app
+        // is open, so without this check every later visit analyzed the drive all over again.
         var running = DefragSession.Current;
+        if (running is { IsRunning: false } && !MemoryFor(running.Letter).AwaitingAfter) running = null;
         var smart = SmartPlacementSession.Current;
         char? busyLetter = smart is { IsRunning: true } ? smart.Letter : running?.Letter;
-        var pick = busyLetter != null
-            ? _drives.FirstOrDefault(d => d.Volume.Letter == busyLetter)
-            : _drives.FirstOrDefault(d => d.Volume.Disk?.IsHdd == true) ?? _drives.FirstOrDefault(d => d.Volume.IsSystem) ?? _drives.FirstOrDefault();
+        // The drive being worked on, when it is still there (a USB drive may be gone by now).
+        var pick = (busyLetter != null ? _drives.FirstOrDefault(d => d.Volume.Letter == busyLetter) : null)
+            ?? _drives.FirstOrDefault(d => d.Volume.Disk?.IsHdd == true) ?? _drives.FirstOrDefault(d => d.Volume.IsSystem) ?? _drives.FirstOrDefault();
 
         if (pick == null)
         {
@@ -400,6 +405,7 @@ public partial class DefragView : Page
         if (DriveReference.IsSmr(item.Volume.Disk) == true)
             text += "\n\n" + Loc.T("Defrag_AdviceSmr",
                 "This drive records in overlapping (SMR) tracks: it slows down sharply while writing a lot, so a full defragmentation can take many hours. Windows doesn't take that into account — prefer \"Arrange program files\", which moves only what programs load.");
+        MemoryFor(item.Volume.Letter).Advice = text; // kept per drive: another drive's advice must not stay on screen
         AdviceText.Text = text;
         AdviceText.Visibility = Visibility.Visible;
     }
@@ -605,7 +611,14 @@ public partial class DefragView : Page
         StatusText.Text = summary;
         HudPhase.Text = summary;
 
-        if (_selected?.Volume.Letter != session.Letter || result.Outcome is DefragOutcome.StartFailed) return;
+        if (_selected?.Volume.Letter != session.Letter) return;
+        // Windows refused or failed: nothing was moved, so there is nothing new to measure —
+        // and the reason must stay on screen instead of being replaced by an analysis.
+        if (result.Outcome is DefragOutcome.StartFailed or DefragOutcome.Failed)
+        {
+            ShowCenter(summary);
+            return;
+        }
         if (_selected.Volume.Disk?.IsSsd == true)
         {
             await LoadMapAsync(_loadVersion);
@@ -613,7 +626,9 @@ public partial class DefragView : Page
         }
 
         // "After" figures for the comparison.
-        if (await AnalyzeAsync(isAfterRun: true) && _isActive && mem.BeforeSpeed != null && mem.TestFiles.Count > 0)
+        bool analyzed = await AnalyzeAsync(isAfterRun: true);
+        if (!_isActive) return;
+        if (analyzed && mem.BeforeSpeed != null && mem.TestFiles.Count > 0)
         {
             _busy = true;
             UpdateButtons();
@@ -633,9 +648,40 @@ public partial class DefragView : Page
             }
             if (!_isActive) return;
             UpdateButtons();
-            StatusText.Text = summary;
         }
+
+        // The analysis wrote its own status line ("Analysis done…"), which made a finished run
+        // look as if it had only analyzed. Put the outcome of the run back, with what it changed;
+        // when the analysis failed, its reason stays under it.
+        StatusText.Text = analyzed
+            ? string.Join("\n", new[] { summary, ChangeText(session, mem, result.Outcome) }.Where(t => !string.IsNullOrEmpty(t)))
+            : summary + "\n" + StatusText.Text;
+        HudPhase.Text = summary;
         ShowMemory();
+    }
+
+    /// <summary>What the run changed, from Windows' figures before and after — or why it changed nothing.</summary>
+    private static string? ChangeText(DefragSession session, DriveMemory mem, DefragOutcome outcome)
+    {
+        if (mem is not { Before: { } before, After: { } after }) return null;
+        var lines = new List<string>();
+        if (after.TotalExcessFragments < before.TotalExcessFragments)
+            lines.Add(Loc.F("Defrag_Improved", "Files in pieces: {0:N0} → {1:N0} (extra pieces: {2:N0} → {3:N0}).",
+                before.TotalFragmentedFiles, after.TotalFragmentedFiles, before.TotalExcessFragments, after.TotalExcessFragments));
+        else if (outcome != DefragOutcome.Completed)
+            return null; // stopped before anything was put together: the "stopped" line says it all
+        else if (before.TotalFragmentedFiles == 0)
+            lines.Add(Loc.T("Defrag_NothingToDo",
+                "Windows found nothing to put together: no file on this drive is in small pieces. (Pieces of 64 MB or more are left where they are — they read at full speed.)"));
+        else
+            lines.Add(Loc.F("Defrag_NotImproved",
+                "Windows couldn't put the remaining {0:N0} files together: they are in use, or no free gap is big enough (the largest is {1}). Free up some space, or tick \"Also pack free space together\", and try again.",
+                after.TotalFragmentedFiles, CleanerView.FormatSize(after.LargestFreeExtent)));
+
+        if (session.Operations.Contains(DefragOperation.ConsolidateFreeSpace) && before.LargestFreeExtent > 0 && after.LargestFreeExtent > 0)
+            lines.Add(Loc.F("Defrag_FreeChange", "Largest free gap: {0} → {1}.",
+                CleanerView.FormatSize(before.LargestFreeExtent), CleanerView.FormatSize(after.LargestFreeExtent)));
+        return string.Join("\n", lines);
     }
 
     #endregion
@@ -1126,7 +1172,8 @@ public partial class DefragView : Page
         {
             GainText.Visibility = Visibility.Collapsed;
         }
-        AdviceText.Visibility = mem.Before == null ? Visibility.Collapsed : AdviceText.Visibility;
+        AdviceText.Text = mem.Advice ?? "";
+        AdviceText.Visibility = mem.Advice == null ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private static void Fill(DefragStats? s, TextBlock frag, TextBlock files, TextBlock pieces, TextBlock free, TextBlock largest)

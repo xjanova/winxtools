@@ -1012,6 +1012,10 @@
     <system:String x:Key="Defrag_Gain">Fragmented files now read {0:0.0}× as fast ({1:0} → {2:0} MB/s).</system:String>
     <system:String x:Key="Defrag_NoGain">Read speed of those files barely changed ({0:0} → {1:0} MB/s) — they weren't slowing this drive down much.</system:String>
     <system:String x:Key="Defrag_FragGain">Fragmentation {0}% → {1}%.</system:String>
+    <system:String x:Key="Defrag_Improved">Files in pieces: {0:N0} → {1:N0} (extra pieces: {2:N0} → {3:N0}).</system:String>
+    <system:String x:Key="Defrag_NothingToDo">Windows found nothing to put together: no file on this drive is in small pieces. (Pieces of 64 MB or more are left where they are — they read at full speed.)</system:String>
+    <system:String x:Key="Defrag_NotImproved">Windows couldn't put the remaining {0:N0} files together: they are in use, or no free gap is big enough (the largest is {1}). Free up some space, or tick "Also pack free space together", and try again.</system:String>
+    <system:String x:Key="Defrag_FreeChange">Largest free gap: {0} → {1}.</system:String>
     <system:String x:Key="Defrag_DescSsd">SSD — no moving parts, so fragmentation doesn't slow it down. WinXTools runs TRIM instead of defragmenting.</system:String>
     <system:String x:Key="Defrag_DescHdd">Hard disk with a spinning platter — files in many pieces make the head jump around. Press Analyze to see how fragmented it is.</system:String>
     <system:String x:Key="Defrag_DescUnknown">Windows doesn't say whether this is a hard disk or an SSD (common with USB drives). Its optimizer will measure the drive and do the right thing.</system:String>

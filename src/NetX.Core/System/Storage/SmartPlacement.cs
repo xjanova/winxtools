@@ -420,7 +420,10 @@ public static unsafe class SmartPlacement
         public uint ClusterCount;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    // Windows lays this out in 4-byte steps (FILETIME is two DWORDs). Without Pack = 4 the
+    // 8-byte times are pushed 4 bytes further, and every field after the attributes is
+    // read from the wrong place (the file size came out as "size << 32 | link count").
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     private struct BY_HANDLE_FILE_INFORMATION
     {
         public uint FileAttributes;

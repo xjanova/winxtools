@@ -199,6 +199,7 @@ public sealed class SmartDefragService
     private static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan IdleNeeded = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan OncePer = TimeSpan.FromHours(24);
+    private static readonly TimeSpan RetryAfter = TimeSpan.FromMinutes(30);
 
     private readonly object _gate = new();
     private Settings _settings = new();
@@ -327,6 +328,16 @@ public sealed class SmartDefragService
             {
                 _activityWatch?.Dispose();
                 _activityWatch = null;
+
+                // Interrupted before it was done (the user came back, the power cable was
+                // pulled…): the drive is not "done for today" — try again at a later idle
+                // spell instead of in 24 hours.
+                if (result.Outcome is PlacementOutcome.Stopped)
+                {
+                    _settings.LastAutoRunUtcTicks[s.Letter.ToString()] = DateTime.UtcNow.Ticks - OncePer.Ticks + RetryAfter.Ticks;
+                    AdminOnlyStore.Save(SettingsFile, _settings);
+                    Interlocked.Exchange(ref _nextScanUtcTicks, 0);
+                }
             }
         };
         lock (_gate)
