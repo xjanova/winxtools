@@ -178,7 +178,7 @@ public partial class ConnectionMonitorView : Page
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"Error: {ex.Message}";
+            StatusText.Text = Tr("NetTools_Error", "Error: {0}", ex.Message);
         }
     }
 
@@ -322,7 +322,7 @@ public class ConnectionDisplayItem
                 ? $"{LocalAddress}:{LocalPort}"
                 : RemoteAddress;
 
-    public string LocalPortDisplay => $"Local: {LocalPort}";
+    public string LocalPortDisplay => NetX.App.Helpers.Loc.F("ConnMon_LocalPort", "Local: {0}", LocalPort);
 
     public bool HasHostname => !string.IsNullOrEmpty(RemoteHostname) && RemoteHostname != RemoteAddress;
 

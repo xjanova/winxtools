@@ -99,7 +99,7 @@ public partial class NetworkMonitorView : Page
             new LineSeries<double>
             {
                 Values = _selectedDownloadHistory,
-                Name = "Download",
+                Name = Loc.T("Network_Download", "Download"),
                 Stroke = new SolidColorPaint(SKColor.Parse("#4dc9ff")) { StrokeThickness = 2 },
                 Fill = new SolidColorPaint(SKColor.Parse("#2000a8e8")),
                 GeometryFill = null,
@@ -111,7 +111,7 @@ public partial class NetworkMonitorView : Page
             new LineSeries<double>
             {
                 Values = _selectedUploadHistory,
-                Name = "Upload",
+                Name = Loc.T("Network_Upload", "Upload"),
                 Stroke = new SolidColorPaint(SKColor.Parse("#00d4aa")) { StrokeThickness = 2 },
                 Fill = new SolidColorPaint(SKColor.Parse("#2000d4aa")),
                 GeometryFill = null,
@@ -127,14 +127,14 @@ public partial class NetworkMonitorView : Page
             new ColumnSeries<double>
             {
                 Values = _selectedDownloadHistory,
-                Name = "Download",
+                Name = Loc.T("Network_Download", "Download"),
                 Fill = new SolidColorPaint(SKColor.Parse("#4dc9ff")),
                 AnimationsSpeed = TimeSpan.Zero
             },
             new ColumnSeries<double>
             {
                 Values = _selectedUploadHistory,
-                Name = "Upload",
+                Name = Loc.T("Network_Upload", "Upload"),
                 Fill = new SolidColorPaint(SKColor.Parse("#00d4aa")),
                 AnimationsSpeed = TimeSpan.Zero
             }
@@ -240,7 +240,8 @@ public partial class NetworkMonitorView : Page
             // a few seconds before going back to live totals.
             if (DateTime.Now >= _statusHoldUntil)
             {
-                StatusText.Text = $"↓ {FormatSpeed(stats.TotalDownloadSpeed)} | ↑ {FormatSpeed(stats.TotalUploadSpeed)} | {stats.ActiveProcessCount} apps, {stats.TotalConnections} connections"
+                StatusText.Text = Loc.F("Network_StatusTotals", "↓ {0} | ↑ {1} | {2} apps, {3} connections",
+                        FormatSpeed(stats.TotalDownloadSpeed), FormatSpeed(stats.TotalUploadSpeed), stats.ActiveProcessCount, stats.TotalConnections)
                     + (_networkMonitor.PerAppSpeedsAreEstimated ? "  " + Loc.T("BW_Estimated", "(per-app speeds are estimates)") : "");
             }
 
@@ -264,7 +265,7 @@ public partial class NetworkMonitorView : Page
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"Error: {ex.Message}";
+            StatusText.Text = Loc.F("NetTools_Error", "Error: {0}", ex.Message);
         }
     }
 
@@ -334,7 +335,7 @@ public partial class NetworkMonitorView : Page
         if (PageInfoText == null) return;
 
         CurrentPageText.Text = _currentPage.ToString();
-        PageInfoText.Text = $"Page {_currentPage} of {_totalPages} ({_allFilteredItems.Count} apps)";
+        PageInfoText.Text = Loc.F("Network_PageInfo", "Page {0} of {1} ({2} apps)", _currentPage, _totalPages, _allFilteredItems.Count);
 
         // Enable/disable pagination buttons
         FirstPageBtn.IsEnabled = _currentPage > 1;
@@ -500,7 +501,7 @@ public partial class NetworkMonitorView : Page
             _selectedProcessName = item.ProcessName;
             _chartCache.NetworkMonitorSelectedProcessId = item.ProcessId; // Cache for navigation persistence
             SelectedProcessName.Text = item.ProcessName;
-            SelectedProcessDetails.Text = $"PID: {item.ProcessId} | Connections: {item.ConnectionCount}";
+            SelectedProcessDetails.Text = Loc.F("Network_ProcessDetails", "PID: {0} | Connections: {1}", item.ProcessId, item.ConnectionCount);
 
             // Show process icon in detail panel
             if (item.Icon != null)
@@ -696,7 +697,7 @@ public partial class NetworkMonitorView : Page
         var name = process.ProcessName;
         if (ProcessKiller.IsProtectedProcess(name))
         {
-            MessageBox.Show($"{name} is a protected system process and cannot be blocked.",
+            MessageBox.Show(Loc.F("Network_ProtectedNoBlock", "{0} is a protected system process and cannot be blocked.", name),
                 "WinXTools", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -774,13 +775,13 @@ public partial class NetworkMonitorView : Page
             if (!System.Net.IPAddress.TryParse(ipAddress, out var parsed) || System.Net.IPAddress.IsLoopback(parsed) ||
                 parsed.Equals(System.Net.IPAddress.Any) || parsed.Equals(System.Net.IPAddress.IPv6Any))
             {
-                StatusText.Text = $"This connection has no remote IP address that can be blocked ({ipAddress}).";
+                StatusText.Text = Loc.F("Network_NoBlockableIp", "This connection has no remote IP address that can be blocked ({0}).", ipAddress);
                 return;
             }
 
             var result = MessageBox.Show(
-                $"Block IP address {ipAddress}?",
-                "Block IP",
+                Loc.F("PktMon_BlockConfirm", "Block IP address {0}?", ipAddress),
+                Loc.T("PktMon_BlockTitle", "Block IP"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
@@ -789,8 +790,8 @@ public partial class NetworkMonitorView : Page
                 // The real firewall result, not "blocked" whatever happened.
                 bool ok = FirewallManager.Instance.BlockIP(ipAddress);
                 StatusText.Text = ok
-                    ? $"Blocked IP: {ipAddress}"
-                    : $"Failed to block {ipAddress} — Windows Firewall refused the rule.";
+                    ? Loc.F("PktMon_Blocked", "Blocked IP: {0}", ipAddress)
+                    : Loc.F("PktMon_BlockFailed", "Failed to block {0} — Windows Firewall refused the rule.", ipAddress);
 
                 // Refresh connections list
                 if (_selectedProcessId.HasValue)
@@ -811,16 +812,16 @@ public partial class NetworkMonitorView : Page
             if (ProcessKiller.IsProtectedProcess(processName))
             {
                 MessageBox.Show(
-                    $"Cannot kill {processName}.\n\nThis is a protected system process.",
-                    "Protected Process",
+                    Loc.F("Network_KillProtected", "Cannot kill {0}.\n\nThis is a protected system process.", processName),
+                    Loc.T("Network_ProtectedTitle", "Protected Process"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
             }
 
             var result = MessageBox.Show(
-                $"Kill process {processName} (PID: {processId})?\n\nThis will immediately terminate the process.",
-                "Kill Process",
+                Loc.F("Network_KillConfirm", "Kill process {0} (PID: {1})?\n\nThis will immediately terminate the process.", processName, processId),
+                Loc.T("Network_KillProcess", "Kill Process"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -828,7 +829,7 @@ public partial class NetworkMonitorView : Page
             {
                 if (ProcessKiller.Instance.KillProcess(processId))
                 {
-                    StatusText.Text = $"Killed process: {processName}";
+                    StatusText.Text = Loc.F("Network_Killed", "Killed process: {0}", processName);
                     UpdateProcessList();
                 }
                 else
@@ -836,14 +837,14 @@ public partial class NetworkMonitorView : Page
                     // Try force kill
                     if (ProcessKiller.Instance.ForceKillProcess(processId))
                     {
-                        StatusText.Text = $"Force killed process: {processName}";
+                        StatusText.Text = Loc.F("Network_ForceKilled", "Force killed process: {0}", processName);
                         UpdateProcessList();
                     }
                     else
                     {
                         MessageBox.Show(
-                            $"Failed to kill {processName}.\n\nThe process may be protected or require administrator privileges.",
-                            "Kill Failed",
+                            Loc.F("Network_KillFailed", "Failed to kill {0}.\n\nThe process may be protected or require administrator privileges.", processName),
+                            Loc.T("Network_KillFailedTitle", "Kill Failed"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
                     }
@@ -859,8 +860,8 @@ public partial class NetworkMonitorView : Page
             if (ProcessKiller.IsProtectedProcess(processName))
             {
                 MessageBox.Show(
-                    $"Cannot auto-kill {processName}.\n\nThis is a protected system process.",
-                    "Protected Process",
+                    Loc.F("Network_AutoKillProtected", "Cannot auto-kill {0}.\n\nThis is a protected system process.", processName),
+                    Loc.T("Network_ProtectedTitle", "Protected Process"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -870,25 +871,27 @@ public partial class NetworkMonitorView : Page
             {
                 // Remove from auto-kill list
                 ProcessKiller.Instance.RemoveKillRule(processName);
-                StatusText.Text = $"Removed {processName} from auto-kill list";
+                StatusText.Text = Loc.F("Network_AutoKillRemoved", "Removed {0} from auto-kill list", processName);
             }
             else
             {
                 // Add to auto-kill list
                 var result = MessageBox.Show(
-                    $"Add {processName} to auto-kill list?\n\n" +
-                    "This will:\n" +
-                    "1. Kill the process now\n" +
-                    "2. Automatically kill it if it reopens\n\n" +
-                    "Make sure 'Kill Auto' mode is enabled for this to work.",
-                    "Auto-Kill Process",
+                    Loc.F("Network_AutoKillConfirm",
+                        "Add {0} to auto-kill list?\n\n" +
+                        "This will:\n" +
+                        "1. Kill the process now\n" +
+                        "2. Automatically kill it if it reopens\n\n" +
+                        "Make sure 'Kill Auto' mode is enabled for this to work.",
+                        processName),
+                    Loc.T("Network_AutoKillTitle", "Auto-Kill Process"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 
                 if (result == MessageBoxResult.Yes)
                 {
                     ProcessKiller.Instance.AddKillRule(processName, "User requested auto-kill");
-                    StatusText.Text = $"Added {processName} to auto-kill list";
+                    StatusText.Text = Loc.F("Network_AutoKillAdded", "Added {0} to auto-kill list", processName);
                     UpdateProcessList();
                 }
             }
@@ -916,8 +919,8 @@ public partial class NetworkMonitorView : Page
 
         killer.IsAutoKillEnabled = turnOn;
         ShowStatus(killer.IsAutoKillEnabled
-            ? "Kill Auto mode ENABLED - Blocked processes will be killed automatically"
-            : "Kill Auto mode DISABLED");
+            ? Loc.T("Network_KillAutoOn", "Kill Auto mode ENABLED - Blocked processes will be killed automatically")
+            : Loc.T("Network_KillAutoOff", "Kill Auto mode DISABLED"));
     }
 
     private void SmartKillToggle_Click(object sender, RoutedEventArgs e)
@@ -937,8 +940,8 @@ public partial class NetworkMonitorView : Page
 
         killer.IsSmartKillEnabled = turnOn;
         ShowStatus(killer.IsSmartKillEnabled
-            ? "Smart Kill ENABLED - apps frozen for 60+ s are closed (you get a notice each time)"
-            : "Smart Kill DISABLED");
+            ? Loc.T("Network_SmartKillOn", "Smart Kill ENABLED - apps frozen for 60+ s are closed (you get a notice each time)")
+            : Loc.T("Network_SmartKillOff", "Smart Kill DISABLED"));
     }
 }
 

@@ -64,6 +64,7 @@ public partial class PacketMonitorView : Page
         _outboundIcon = (Geometry)FindResource("OutboundIcon");
 
         PacketList.ItemsSource = _packets;
+        BufferStatus.Text = Tr("PktMon_Buffer", "Buffer: {0:N0} / {1:N0} packets", 0, MaxPackets);
 
         // Load process list (and again whenever the list is opened)
         LoadProcessList();
@@ -163,7 +164,7 @@ public partial class PacketMonitorView : Page
         // Honest failure instead of fabricated packets: no driver = no capture.
         if (!engine.IsDriverLoaded)
         {
-            StatusText.Text = "WinDivert driver unavailable — run WinXTools as Administrator to capture live packets.";
+            StatusText.Text = Tr("PktMon_NoDriver", "WinDivert driver unavailable — run WinXTools as Administrator to capture live packets.");
             CaptureIndicator.Fill = (Brush)FindResource("DangerBrush");
             return;
         }
@@ -175,7 +176,7 @@ public partial class PacketMonitorView : Page
             if (!engine.Start())
             {
                 // Don't show a green "capturing" light over an engine that didn't start.
-                StatusText.Text = "The capture engine (WinDivert) couldn't start — another program may be using it. Try again.";
+                StatusText.Text = Tr("PktMon_EngineFailed", "The capture engine (WinDivert) couldn't start — another program may be using it. Try again.");
                 CaptureIndicator.Fill = (Brush)FindResource("DangerBrush");
                 return;
             }
@@ -183,10 +184,10 @@ public partial class PacketMonitorView : Page
         }
 
         _isCapturing = true;
-        StartStopText.Text = "Stop Capture";
+        StartStopText.Text = Tr("PktMon_StopCapture", "Stop Capture");
         StartStopIcon.Data = (Geometry)FindResource("StopIcon");
         CaptureIndicator.Fill = (Brush)FindResource("SuccessBrush");
-        StatusText.Text = "Capturing live packets (WinDivert)...";
+        StatusText.Text = Tr("PktMon_Capturing", "Capturing live packets (WinDivert)...");
 
         _updateTimer.Start();
         engine.OnPacketCaptured += OnEnginePacket;
@@ -195,10 +196,10 @@ public partial class PacketMonitorView : Page
     private void StopCapture()
     {
         _isCapturing = false;
-        StartStopText.Text = "Start Capture";
+        StartStopText.Text = Tr("PktMon_StartCapture", "Start Capture");
         StartStopIcon.Data = (Geometry)FindResource("StartIcon");
         CaptureIndicator.Fill = (Brush)FindResource("TextTertiaryBrush");
-        StatusText.Text = $"Capture stopped. {_allPackets.Count} packets captured.";
+        StatusText.Text = Tr("PktMon_Stopped", "Capture stopped. {0} packets captured.", _allPackets.Count);
 
         _updateTimer.Stop();
 
@@ -301,7 +302,7 @@ public partial class PacketMonitorView : Page
         TotalPacketsText.Text = total.ToString("N0");
         InboundPacketsText.Text = inbound.ToString("N0");
         OutboundPacketsText.Text = outbound.ToString("N0");
-        BufferStatus.Text = $"Buffer: {buffered:N0} / {MaxPackets:N0} packets";
+        BufferStatus.Text = Tr("PktMon_Buffer", "Buffer: {0:N0} / {1:N0} packets", buffered, MaxPackets);
 
         ApplyFilters();
     }
@@ -410,7 +411,7 @@ public partial class PacketMonitorView : Page
         InboundPacketsText.Text = "0";
         OutboundPacketsText.Text = "0";
         PacketRateText.Text = "0";
-        BufferStatus.Text = "Buffer: 0 / 10,000 packets";
+        BufferStatus.Text = Tr("PktMon_Buffer", "Buffer: {0:N0} / {1:N0} packets", 0, MaxPackets);
 
         NoPacketSelected.Visibility = Visibility.Visible;
         DetailSection.Visibility = Visibility.Collapsed;
@@ -420,7 +421,7 @@ public partial class PacketMonitorView : Page
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Filter = "CSV Files (*.csv)|*.csv|Text Files (*.txt)|*.txt",
+            Filter = $"{Tr("PktMon_CsvFiles", "CSV Files")} (*.csv)|*.csv|{Tr("PktMon_TextFiles", "Text Files")} (*.txt)|*.txt",
             DefaultExt = ".csv",
             FileName = $"packets_{DateTime.Now:yyyyMMdd_HHmmss}"
         };
@@ -442,11 +443,11 @@ public partial class PacketMonitorView : Page
                     }
                 }
 
-                StatusText.Text = $"Exported {_allPackets.Count} packets to {dialog.FileName}";
+                StatusText.Text = Tr("PktMon_Exported", "Exported {0} packets to {1}", _allPackets.Count, dialog.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Export failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Tr("PktMon_ExportFailed", "Export failed: {0}", ex.Message), Tr("Common_Error", "Error"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -469,9 +470,11 @@ public partial class PacketMonitorView : Page
 
         DetailTime.Text = packet.Time.ToString("yyyy-MM-dd HH:mm:ss.fff");
         DetailProtocol.Text = packet.Protocol;
-        DetailDirection.Text = packet.IsInbound ? "Inbound (Received)" : "Outbound (Sent)";
-        DetailSize.Text = $"{packet.Size} bytes";
-        DetailProcess.Text = $"{packet.ProcessName ?? "Unknown"} (PID: {packet.ProcessId})";
+        DetailDirection.Text = packet.IsInbound
+            ? Tr("PktMon_InboundReceived", "Inbound (Received)")
+            : Tr("PktMon_OutboundSent", "Outbound (Sent)");
+        DetailSize.Text = Tr("PktMon_SizeBytes", "{0} bytes", packet.Size);
+        DetailProcess.Text = $"{packet.ProcessName ?? Tr("PktMon_Unknown", "Unknown")} (PID: {packet.ProcessId})";
 
         DetailSource.Text = $"{packet.SourceIP}:{packet.SourcePort}";
         DetailDest.Text = $"{packet.DestIP}:{packet.DestPort}";
@@ -515,7 +518,7 @@ public partial class PacketMonitorView : Page
             (packet.Protocol == "TCP"
                 ? $"TCP flags: {(string.IsNullOrEmpty(packet.TcpFlags) ? "(none)" : packet.TcpFlags)}\n"
                 : "") +
-            "\n(Live headers captured via WinDivert. Raw payload buffering is disabled for performance.)";
+            "\n" + Tr("PktMon_HeaderNote", "(Live headers captured via WinDivert. Raw payload buffering is disabled for performance.)");
     }
 
     private void BlockIP_Click(object sender, RoutedEventArgs e)

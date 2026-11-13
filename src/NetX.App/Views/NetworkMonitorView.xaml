@@ -96,7 +96,7 @@
                             <Path Data="{StaticResource AutoKillIcon}"
                                   Fill="{StaticResource DangerBrush}"
                                   Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
-                            <TextBlock Text="Kill Auto" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource Network_KillAuto}" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </CheckBox>
 
@@ -104,7 +104,7 @@
                     <CheckBox x:Name="SmartKillToggle"
                               Click="SmartKillToggle_Click">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Smart Kill" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource RamOptimizer_SmartKill}" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </CheckBox>
                 </StackPanel>
@@ -185,7 +185,7 @@
                                 Click="SortColumn_Click" Tag="DownloadSpeed"
                                 HorizontalContentAlignment="Right" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="↓ Speed" FontWeight="SemiBold" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                <TextBlock Text="{DynamicResource Network_ColDownSpeed}" FontWeight="SemiBold" Foreground="{StaticResource AccentPrimaryBrush}"/>
                                 <Path x:Name="SortDownload" Width="10" Height="10" Stretch="Uniform" Margin="4,0,0,0"
                                       Fill="{StaticResource AccentPrimaryBrush}" Data="{StaticResource SortDownIcon}"/>
                             </StackPanel>
@@ -196,20 +196,21 @@
                                 Click="SortColumn_Click" Tag="UploadSpeed"
                                 HorizontalContentAlignment="Right" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="↑ Speed" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}"/>
+                                <TextBlock Text="{DynamicResource Network_ColUpSpeed}" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}"/>
                                 <Path x:Name="SortUpload" Width="10" Height="10" Stretch="Uniform" Margin="4,0,0,0"
                                       Fill="{StaticResource TextTertiaryBrush}" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>
 
                         <!-- Limit Header -->
-                        <TextBlock Grid.Column="5" Text="Limit" Style="{StaticResource BodyTextStyle}"
+                        <TextBlock Grid.Column="5" Text="{DynamicResource Network_ColLimit}" Style="{StaticResource BodyTextStyle}"
                                    FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                         <!-- Connections Header -->
                         <Button Grid.Column="6" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="SortColumn_Click" Tag="ConnectionCount"
+                                ToolTip="{DynamicResource Network_Connections}"
                                 HorizontalContentAlignment="Center" Padding="4,6">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Cn" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
@@ -219,7 +220,7 @@
                         </Button>
 
                         <!-- Actions Header -->
-                        <TextBlock Grid.Column="7" Text="Actions" Style="{StaticResource BodyTextStyle}"
+                        <TextBlock Grid.Column="7" Text="{DynamicResource Network_ColActions}" Style="{StaticResource BodyTextStyle}"
                                    FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
 
@@ -334,7 +335,7 @@
                                                 Padding="5,4"
                                                 Click="KillProcess_Click"
                                                 Tag="{Binding ProcessId}"
-                                                ToolTip="Kill Process"
+                                                ToolTip="{DynamicResource Network_KillProcess}"
                                                 Margin="0,0,2,0">
                                             <Path Data="{StaticResource KillIcon}"
                                                   Fill="{StaticResource DangerBrush}"
@@ -345,7 +346,7 @@
                                                 Padding="5,4"
                                                 Click="AutoKillProcess_Click"
                                                 Tag="{Binding ProcessName}"
-                                                ToolTip="Auto-Kill (prevent from reopening)"
+                                                ToolTip="{DynamicResource Network_AutoKillTip}"
                                                 Margin="0,0,2,0">
                                             <Path Data="{StaticResource AutoKillIcon}"
                                                   Fill="{StaticResource WarningBrush}"
@@ -356,7 +357,7 @@
                                                 Padding="5,4"
                                                 Click="BlockProcess_Click"
                                                 Tag="{Binding ProcessId}"
-                                                ToolTip="Block / unblock this app's internet (firewall)">
+                                                ToolTip="{DynamicResource Network_BlockAppTip}">
                                             <Path Data="{StaticResource BlockIcon}"
                                                   Fill="{StaticResource TextTertiaryBrush}"
                                                   Width="10" Height="10" Stretch="Uniform"/>
@@ -382,10 +383,10 @@
                     <!-- Selected Process Info -->
                     <StackPanel Grid.Row="0" Margin="0,0,0,12">
                         <TextBlock x:Name="SelectedProcessName"
-                                   Text="Select a process"
+                                   Text="{DynamicResource Network_SelectProcess}"
                                    Style="{StaticResource SubHeaderTextStyle}"/>
                         <TextBlock x:Name="SelectedProcessDetails"
-                                   Text="Click on a process to view details"
+                                   Text="{DynamicResource Network_SelectProcessHint}"
                                    Style="{StaticResource BodyTextStyle}"
                                    Margin="0,4,0,0"/>
                     </StackPanel>
@@ -425,7 +426,7 @@
                                                FontSize="18" FontWeight="Bold"
                                                Foreground="{StaticResource AccentPrimaryBrush}"
                                                HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Download" FontSize="10"
+                                    <TextBlock Text="{DynamicResource Network_Download}" FontSize="10"
                                                Foreground="{StaticResource TextTertiaryBrush}"
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
@@ -435,7 +436,7 @@
                                                FontSize="18" FontWeight="Bold"
                                                Foreground="{StaticResource SuccessBrush}"
                                                HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Upload" FontSize="10"
+                                    <TextBlock Text="{DynamicResource Network_Upload}" FontSize="10"
                                                Foreground="{StaticResource TextTertiaryBrush}"
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
@@ -464,7 +465,7 @@
                                         VerticalAlignment="Center"/>
 
                                 <TextBlock x:Name="DownloadLimitText" Grid.Column="2"
-                                           Text="Unlimited"
+                                           Text="{DynamicResource BW_Unlimited}"
                                            Foreground="{StaticResource AccentPrimaryBrush}"
                                            FontWeight="SemiBold" FontSize="11"
                                            VerticalAlignment="Center"
@@ -494,7 +495,7 @@
                                         VerticalAlignment="Center"/>
 
                                 <TextBlock x:Name="UploadLimitText" Grid.Column="2"
-                                           Text="Unlimited"
+                                           Text="{DynamicResource BW_Unlimited}"
                                            Foreground="{StaticResource SuccessBrush}"
                                            FontWeight="SemiBold" FontSize="11"
                                            VerticalAlignment="Center"
@@ -535,7 +536,7 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Active Connections"
+                        <TextBlock Grid.Row="0" Text="{DynamicResource Network_ActiveConnections}"
                                    FontWeight="SemiBold" FontSize="13"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Margin="0,0,0,8"/>
@@ -564,7 +565,7 @@
                                             </StackPanel>
                                             <Button Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
                                                     Padding="6,4" Click="BlockConnection_Click"
-                                                    Tag="{Binding RemoteAddress}" ToolTip="Block IP">
+                                                    Tag="{Binding RemoteAddress}" ToolTip="{DynamicResource PktMon_BlockTitle}">
                                                 <Path Data="M12,2C17.5,2 22,6.5 22,12C22,17.5 17.5,22 12,22C6.5,22 2,17.5 2,12C2,6.5 6.5,2 12,2M12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C16.42,20 20,16.42 20,12C20,7.58 16.42,4 12,4M16.24,7.76L7.76,16.24L16.24,7.76Z"
                                                       Fill="{StaticResource DangerBrush}"
                                                       Width="10" Height="10" Stretch="Uniform"/>
@@ -588,22 +589,22 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" x:Name="StatusText"
-                           Text="Monitoring network activity..."
+                           Text="{DynamicResource Network_Monitoring}"
                            Style="{StaticResource BodyTextStyle}"
                            VerticalAlignment="Center"/>
 
                 <!-- Pagination Controls -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="PageInfoText" Text="Page 1 of 1"
+                    <TextBlock x:Name="PageInfoText" Text=""
                                Foreground="{StaticResource TextSecondaryBrush}"
                                VerticalAlignment="Center" Margin="0,0,16,0"/>
 
                     <Button x:Name="FirstPageBtn" Style="{StaticResource SecondaryButtonStyle}"
-                            Padding="8,4" Click="FirstPage_Click" ToolTip="First Page">
+                            Padding="8,4" Click="FirstPage_Click" ToolTip="{DynamicResource Network_FirstPage}">
                         <TextBlock Text="««" FontWeight="Bold"/>
                     </Button>
                     <Button x:Name="PrevPageBtn" Style="{StaticResource SecondaryButtonStyle}"
-                            Padding="8,4" Margin="4,0" Click="PrevPage_Click" ToolTip="Previous Page">
+                            Padding="8,4" Margin="4,0" Click="PrevPage_Click" ToolTip="{DynamicResource Network_PrevPage}">
                         <TextBlock Text="«" FontWeight="Bold"/>
                     </Button>
 
@@ -614,18 +615,18 @@
                     </Border>
 
                     <Button x:Name="NextPageBtn" Style="{StaticResource SecondaryButtonStyle}"
-                            Padding="8,4" Margin="4,0" Click="NextPage_Click" ToolTip="Next Page">
+                            Padding="8,4" Margin="4,0" Click="NextPage_Click" ToolTip="{DynamicResource Network_NextPage}">
                         <TextBlock Text="»" FontWeight="Bold"/>
                     </Button>
                     <Button x:Name="LastPageBtn" Style="{StaticResource SecondaryButtonStyle}"
-                            Padding="8,4" Click="LastPage_Click" ToolTip="Last Page">
+                            Padding="8,4" Click="LastPage_Click" ToolTip="{DynamicResource Network_LastPage}">
                         <TextBlock Text="»»" FontWeight="Bold"/>
                     </Button>
 
                     <Border Width="1" Background="{StaticResource BorderBrush}" Margin="12,4"/>
 
                     <!-- Items Per Page -->
-                    <TextBlock Text="Show:" Foreground="{StaticResource TextSecondaryBrush}"
+                    <TextBlock Text="{DynamicResource Network_ShowLabel}" Foreground="{StaticResource TextSecondaryBrush}"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <ComboBox x:Name="ItemsPerPageCombo" SelectedIndex="0"
                               SelectionChanged="ItemsPerPage_Changed"

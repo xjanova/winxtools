@@ -39,7 +39,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Path x:Name="StartStopIcon" Data="{StaticResource StartIcon}"
                                   Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,8,0"/>
-                            <TextBlock x:Name="StartStopText" Text="Start Capture"/>
+                            <TextBlock x:Name="StartStopText" Text="{DynamicResource PktMon_StartCapture}"/>
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource SecondaryButtonStyle}"
@@ -47,7 +47,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Path Data="{StaticResource ClearIcon}"
                                   Fill="{StaticResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
-                            <TextBlock Text="Clear"/>
+                            <TextBlock Text="{DynamicResource PktMon_Clear}"/>
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource SecondaryButtonStyle}"
@@ -55,7 +55,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Path Data="{StaticResource ExportIcon}"
                                   Fill="{StaticResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
-                            <TextBlock Text="Export"/>
+                            <TextBlock Text="{DynamicResource PktMon_Export}"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -64,7 +64,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="8" Padding="16,8" Margin="0,0,16,0">
                         <StackPanel>
-                            <TextBlock Text="Total Packets" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
+                            <TextBlock Text="{DynamicResource PktMon_TotalPackets}" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
                             <TextBlock x:Name="TotalPacketsText" Text="0" FontSize="18" FontWeight="Bold"
                                        Foreground="{StaticResource TextPrimaryBrush}"/>
                         </StackPanel>
@@ -74,7 +74,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <Path Data="{StaticResource InboundIcon}" Fill="{StaticResource AccentPrimaryBrush}"
                                       Width="10" Height="10" Stretch="Uniform" Margin="0,0,4,0"/>
-                                <TextBlock Text="Inbound" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                <TextBlock Text="{DynamicResource PktMon_Inbound}" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
                             </StackPanel>
                             <TextBlock x:Name="InboundPacketsText" Text="0" FontSize="18" FontWeight="Bold"
                                        Foreground="{StaticResource AccentPrimaryBrush}"/>
@@ -85,7 +85,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <Path Data="{StaticResource OutboundIcon}" Fill="{StaticResource AccentSecondaryBrush}"
                                       Width="10" Height="10" Stretch="Uniform" Margin="0,0,4,0"/>
-                                <TextBlock Text="Outbound" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                <TextBlock Text="{DynamicResource PktMon_Outbound}" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
                             </StackPanel>
                             <TextBlock x:Name="OutboundPacketsText" Text="0" FontSize="18" FontWeight="Bold"
                                        Foreground="{StaticResource AccentSecondaryBrush}"/>
@@ -96,7 +96,7 @@
                 <!-- Capture Rate -->
                 <Border Grid.Column="2" Background="{StaticResource BgTertiaryBrush}" CornerRadius="8" Padding="16,8">
                     <StackPanel>
-                        <TextBlock Text="Packets/sec" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
+                        <TextBlock Text="{DynamicResource PktMon_PacketsPerSec}" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
                         <TextBlock x:Name="PacketRateText" Text="0" FontSize="18" FontWeight="Bold"
                                    Foreground="{StaticResource WarningBrush}"/>
                     </StackPanel>
@@ -128,9 +128,9 @@
                     <Border Width="1" Background="{StaticResource BorderBrush}" Margin="0,0,16,0"/>
 
                     <!-- Direction Filters -->
-                    <CheckBox x:Name="FilterInbound" Content="Inbound" IsChecked="True" Margin="0,0,16,0"
+                    <CheckBox x:Name="FilterInbound" Content="{DynamicResource PktMon_Inbound}" IsChecked="True" Margin="0,0,16,0"
                               Foreground="{StaticResource TextSecondaryBrush}" Click="Filter_Changed"/>
-                    <CheckBox x:Name="FilterOutbound" Content="Outbound" IsChecked="True" Margin="0,0,16,0"
+                    <CheckBox x:Name="FilterOutbound" Content="{DynamicResource PktMon_Outbound}" IsChecked="True" Margin="0,0,16,0"
                               Foreground="{StaticResource TextSecondaryBrush}" Click="Filter_Changed"/>
                 </StackPanel>
 
@@ -138,16 +138,15 @@
                 <TextBox Grid.Column="1" x:Name="FilterExpression"
                          Style="{StaticResource ModernTextBoxStyle}"
                          Text="" Margin="20,0"
-                         TextChanged="FilterExpression_Changed">
-                    <TextBox.Tag>Filter: ip.addr == 192.168.1.1 or port == 443</TextBox.Tag>
-                </TextBox>
+                         Tag="{DynamicResource PktMon_FilterHint}"
+                         TextChanged="FilterExpression_Changed"/>
 
                 <!-- Process Filter -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <TextBlock Text="Process:" VerticalAlignment="Center" Margin="0,0,8,0"
+                    <TextBlock Text="{DynamicResource PktMon_ProcessLabel}" VerticalAlignment="Center" Margin="0,0,8,0"
                                Foreground="{StaticResource TextSecondaryBrush}"/>
                     <ComboBox x:Name="ProcessFilter" Width="180" SelectionChanged="ProcessFilter_Changed">
-                        <ComboBoxItem Content="All Processes" IsSelected="True"/>
+                        <ComboBoxItem Content="{DynamicResource PktMon_AllProcesses}" IsSelected="True"/>
                     </ComboBox>
                 </StackPanel>
             </Grid>
@@ -185,14 +184,14 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" Text="#" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="1" Text="Time" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="2" Text="Dir" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="3" Text="Proto" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="4" Text="Source" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="5" Text="Port" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="6" Text="Destination" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="7" Text="Port" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="8" Text="Size" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource PktMon_ColTime}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="2" Text="{DynamicResource PktMon_ColDir}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="3" Text="{DynamicResource PktMon_ColProto}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="4" Text="{DynamicResource PktMon_Source}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="5" Text="{DynamicResource PktMon_ColPort}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="6" Text="{DynamicResource PktMon_Destination}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="7" Text="{DynamicResource PktMon_ColPort}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="8" Text="{DynamicResource PktMon_ColSize}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                     </Border>
 
@@ -284,19 +283,19 @@
 
                     <!-- Detail Header -->
                     <Border Grid.Row="0" Background="{StaticResource BgTertiaryBrush}" CornerRadius="10,10,0,0" Padding="16,12">
-                        <TextBlock Text="Packet Details" FontWeight="SemiBold" FontSize="14"
+                        <TextBlock Text="{DynamicResource PktMon_Details}" FontWeight="SemiBold" FontSize="14"
                                    Foreground="{StaticResource TextPrimaryBrush}"/>
                     </Border>
 
                     <!-- Detail Content -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="PacketDetailsPanel" Margin="16">
-                            <TextBlock x:Name="NoPacketSelected" Text="Select a packet to view details"
+                            <TextBlock x:Name="NoPacketSelected" Text="{DynamicResource PktMon_SelectHint}"
                                        Foreground="{StaticResource TextTertiaryBrush}" FontStyle="Italic"/>
 
                             <!-- General Info -->
                             <StackPanel x:Name="DetailSection" Visibility="Collapsed">
-                                <TextBlock Text="General" FontWeight="SemiBold" FontSize="12"
+                                <TextBlock Text="{DynamicResource PktMon_General}" FontWeight="SemiBold" FontSize="12"
                                            Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
@@ -311,40 +310,40 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Time:" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource PktMon_TimeLabel}" Foreground="{StaticResource TextTertiaryBrush}"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" x:Name="DetailTime" Foreground="{StaticResource TextSecondaryBrush}"/>
 
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Protocol:" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource PktMon_ProtocolLabel}" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
                                     <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DetailProtocol" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
 
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Direction:" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource PktMon_DirectionLabel}" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
                                     <TextBlock Grid.Row="2" Grid.Column="1" x:Name="DetailDirection" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
 
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource PktMon_SizeLabel}" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
                                     <TextBlock Grid.Row="3" Grid.Column="1" x:Name="DetailSize" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
 
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Process:" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource PktMon_ProcessLabel}" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
                                     <TextBlock Grid.Row="4" Grid.Column="1" x:Name="DetailProcess" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                                 </Grid>
 
                                 <!-- Source/Destination -->
-                                <TextBlock Text="Endpoints" FontWeight="SemiBold" FontSize="12"
+                                <TextBlock Text="{DynamicResource PktMon_Endpoints}" FontWeight="SemiBold" FontSize="12"
                                            Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
                                 <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
                                     <StackPanel>
-                                        <TextBlock Text="Source" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                        <TextBlock Text="{DynamicResource PktMon_Source}" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
                                         <TextBlock x:Name="DetailSource" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,16">
                                     <StackPanel>
-                                        <TextBlock Text="Destination" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                        <TextBlock Text="{DynamicResource PktMon_Destination}" FontSize="10" Foreground="{StaticResource TextTertiaryBrush}"/>
                                         <TextBlock x:Name="DetailDest" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Flags/Info -->
-                                <TextBlock Text="TCP Flags" FontWeight="SemiBold" FontSize="12"
+                                <TextBlock Text="{DynamicResource PktMon_TcpFlags}" FontWeight="SemiBold" FontSize="12"
                                            Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,0,0,8"
                                            x:Name="FlagsHeader"/>
                                 <WrapPanel x:Name="FlagsPanel" Margin="0,0,0,16">
@@ -352,7 +351,7 @@
                                 </WrapPanel>
 
                                 <!-- Hex View -->
-                                <TextBlock Text="Payload (Hex)" FontWeight="SemiBold" FontSize="12"
+                                <TextBlock Text="{DynamicResource PktMon_Payload}" FontWeight="SemiBold" FontSize="12"
                                            Foreground="{StaticResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
                                 <Border Background="{StaticResource BgTertiaryBrush}" CornerRadius="8" Padding="12">
                                     <TextBlock x:Name="HexView" FontFamily="Consolas" FontSize="11"
@@ -364,11 +363,11 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                                     <Button Style="{StaticResource SecondaryButtonStyle}" Padding="12,8"
                                             Margin="0,0,8,0" Click="BlockIP_Click">
-                                        <TextBlock Text="Block Source IP"/>
+                                        <TextBlock Text="{DynamicResource PktMon_BlockSourceIp}"/>
                                     </Button>
                                     <Button Style="{StaticResource SecondaryButtonStyle}" Padding="12,8"
                                             Click="CopyPacket_Click">
-                                        <TextBlock Text="Copy Details"/>
+                                        <TextBlock Text="{DynamicResource PktMon_CopyDetails}"/>
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
@@ -383,10 +382,10 @@
             <Grid>
                 <StackPanel Orientation="Horizontal">
                     <Ellipse x:Name="CaptureIndicator" Width="8" Height="8" Fill="{StaticResource TextTertiaryBrush}" Margin="0,0,8,0"/>
-                    <TextBlock x:Name="StatusText" Text="Ready to capture"
+                    <TextBlock x:Name="StatusText" Text="{DynamicResource PktMon_Ready}"
                                Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
                 </StackPanel>
-                <TextBlock x:Name="BufferStatus" Text="Buffer: 0 / 10,000 packets"
+                <TextBlock x:Name="BufferStatus" Text=""
                            Foreground="{StaticResource TextTertiaryBrush}" FontSize="12"
                            HorizontalAlignment="Right"/>
             </Grid>

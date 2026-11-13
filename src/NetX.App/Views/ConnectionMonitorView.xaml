@@ -27,11 +27,11 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0">
-                <TextBlock Text="Connection Monitor"
+                <TextBlock Text="{DynamicResource ConnMon_Title}"
                            Style="{StaticResource HeaderTextStyle}"
                            FontSize="28"/>
                 <TextBlock x:Name="StatusText"
-                           Text="Monitoring active connections..."
+                           Text="{DynamicResource ConnMon_Monitoring}"
                            Style="{StaticResource BodyTextStyle}"
                            Margin="0,4,0,0"/>
             </StackPanel>
@@ -45,7 +45,7 @@
                         <Path Data="{StaticResource RefreshIcon}"
                               Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
-                        <TextBlock Text="Refresh"/>
+                        <TextBlock Text="{DynamicResource Common_Refresh}"/>
                     </StackPanel>
                 </Button>
 
@@ -53,7 +53,7 @@
                           IsChecked="True"
                           Click="AutoRefresh_Changed"
                           VerticalAlignment="Center"
-                          Content="Auto Refresh"
+                          Content="{DynamicResource ConnMon_AutoRefresh}"
                           Foreground="{StaticResource TextSecondaryBrush}"/>
             </StackPanel>
         </Grid>
@@ -73,7 +73,7 @@
                     <TextBlock x:Name="TotalConnectionsText"
                                Text="0"
                                Style="{StaticResource StatValueStyle}"/>
-                    <TextBlock Text="Total Connections"
+                    <TextBlock Text="{DynamicResource ConnMon_Total}"
                                Style="{StaticResource StatLabelStyle}"/>
                 </StackPanel>
             </Border>
@@ -86,7 +86,7 @@
                                    Text="0"
                                    Style="{StaticResource StatValueStyle}"
                                    Foreground="{StaticResource AuroraCyanBrush}"/>
-                        <TextBlock Text="Incoming"
+                        <TextBlock Text="{DynamicResource ConnMon_Incoming}"
                                    Style="{StaticResource StatLabelStyle}"/>
                     </StackPanel>
                     <Path Data="{StaticResource IncomingIcon}"
@@ -105,7 +105,7 @@
                                    Text="0"
                                    Style="{StaticResource StatValueStyle}"
                                    Foreground="{StaticResource AuroraGreenBrush}"/>
-                        <TextBlock Text="Outgoing"
+                        <TextBlock Text="{DynamicResource ConnMon_Outgoing}"
                                    Style="{StaticResource StatLabelStyle}"/>
                     </StackPanel>
                     <Path Data="{StaticResource OutgoingIcon}"
@@ -124,7 +124,7 @@
                                    Text="0"
                                    Style="{StaticResource StatValueStyle}"
                                    Foreground="{StaticResource DangerBrush}"/>
-                        <TextBlock Text="Blocked IPs"
+                        <TextBlock Text="{DynamicResource ConnMon_BlockedIps}"
                                    Style="{StaticResource StatLabelStyle}"/>
                     </StackPanel>
                     <Path Data="{StaticResource BlockIcon}"
@@ -160,7 +160,7 @@
                                  HorizontalAlignment="Left">
                             <TextBox.Style>
                                 <Style TargetType="TextBox" BasedOn="{StaticResource ModernTextBoxStyle}">
-                                    <Setter Property="Tag" Value="Search IP, hostname, or port..."/>
+                                    <Setter Property="Tag" Value="{DynamicResource ConnMon_SearchHint}"/>
                                 </Style>
                             </TextBox.Style>
                         </TextBox>
@@ -171,9 +171,9 @@
                                   SelectionChanged="Filter_Changed"
                                   Margin="10,0"
                                   Width="140">
-                            <ComboBoxItem Content="All Directions"/>
-                            <ComboBoxItem Content="Incoming Only"/>
-                            <ComboBoxItem Content="Outgoing Only"/>
+                            <ComboBoxItem Content="{DynamicResource ConnMon_DirAll}"/>
+                            <ComboBoxItem Content="{DynamicResource ConnMon_DirIncoming}"/>
+                            <ComboBoxItem Content="{DynamicResource ConnMon_DirOutgoing}"/>
                         </ComboBox>
 
                         <ComboBox x:Name="ProtocolFilter"
@@ -181,7 +181,7 @@
                                   SelectedIndex="0"
                                   SelectionChanged="Filter_Changed"
                                   Width="100">
-                            <ComboBoxItem Content="All"/>
+                            <ComboBoxItem Content="{DynamicResource ConnMon_ProtoAll}"/>
                             <ComboBoxItem Content="TCP"/>
                             <ComboBoxItem Content="UDP"/>
                         </ComboBox>
@@ -296,7 +296,7 @@
                                             Margin="0,0,5,0"
                                             Click="BlockConnection_Click"
                                             Tag="{Binding RemoteAddress}"
-                                            ToolTip="Block this IP"
+                                            ToolTip="{DynamicResource ConnMon_BlockTip}"
                                             Visibility="{Binding CanBlock, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <Path Data="{StaticResource BlockIcon}"
                                               Fill="{StaticResource DangerBrush}"
@@ -306,7 +306,7 @@
                                             Padding="8,6"
                                             Click="UnblockConnection_Click"
                                             Tag="{Binding UnblockKey}"
-                                            ToolTip="Unblock this IP"
+                                            ToolTip="{DynamicResource ConnMon_UnblockTip}"
                                             Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <Path Data="{StaticResource AllowIcon}"
                                               Fill="{StaticResource SuccessBrush}"
@@ -324,10 +324,10 @@
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Visibility="Collapsed">
-                    <TextBlock Text="No connections found"
+                    <TextBlock Text="{DynamicResource ConnMon_Empty}"
                                Style="{StaticResource SubHeaderTextStyle}"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="Active network connections will appear here"
+                    <TextBlock Text="{DynamicResource ConnMon_EmptyHint}"
                                Style="{StaticResource BodyTextStyle}"
                                HorizontalAlignment="Center"
                                Margin="0,8,0,0"/>

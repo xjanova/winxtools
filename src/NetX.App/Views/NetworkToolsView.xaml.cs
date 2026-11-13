@@ -76,27 +76,27 @@ public partial class NetworkToolsView : Page
     {
         return _currentTool switch
         {
-            "Ping" => "Enter a hostname or IP address and click Execute to ping.",
-            "Traceroute" => "Enter a hostname or IP to trace the route to.",
-            "DNS Lookup" => "Enter a domain name to look up its addresses, or an IP address to find the name it points back to (reverse DNS).",
-            "Port Scanner" => "Enter a hostname or IP: the common ports are scanned.\nAdd a range to scan it instead, e.g. 192.168.1.1 1-1024",
-            "Whois" => "Enter a domain name to lookup its registration info.",
-            "SSL Checker" => "Enter a hostname to check its SSL/TLS certificate.",
-            "HTTP Headers" => "Enter a URL to view HTTP response headers and security info.",
-            "My IP" => "Click Execute to see your local and public IP addresses.",
-            "Subnet Calculator" => "Enter IP/CIDR (e.g., 192.168.1.0/24) to calculate subnet info.",
-            "IP Converter" => "Enter an IPv4 address to convert to different formats.",
-            "ARP Table" => "Click Execute to view the ARP cache.",
-            "Route Table" => "Click Execute to view the routing table.",
-            "Network Stats" => "Click Execute to view TCP/UDP/ICMP statistics.",
-            "Wake-on-LAN" => "Enter a MAC address to send a Wake-on-LAN magic packet.",
-            "Speed Test" => "Click Execute to measure latency, jitter, download and upload speed (about 25 seconds, uses up to ~150 MB of data).",
-            "Packet Sender" => "Send custom packets. Format: PROTOCOL:HOST:PORT:DATA\n" +
+            "Ping" => Tr("NetTools_DescPing", "Enter a hostname or IP address and click Execute to ping."),
+            "Traceroute" => Tr("NetTools_DescTraceroute", "Enter a hostname or IP to trace the route to."),
+            "DNS Lookup" => Tr("NetTools_DescDns", "Enter a domain name to look up its addresses, or an IP address to find the name it points back to (reverse DNS)."),
+            "Port Scanner" => Tr("NetTools_DescPortScan", "Enter a hostname or IP: the common ports are scanned.\nAdd a range to scan it instead, e.g. 192.168.1.1 1-1024"),
+            "Whois" => Tr("NetTools_DescWhois", "Enter a domain name to lookup its registration info."),
+            "SSL Checker" => Tr("NetTools_DescSsl", "Enter a hostname to check its SSL/TLS certificate."),
+            "HTTP Headers" => Tr("NetTools_DescHttpHeaders", "Enter a URL to view HTTP response headers and security info."),
+            "My IP" => Tr("NetTools_DescMyIp", "Click Execute to see your local and public IP addresses."),
+            "Subnet Calculator" => Tr("NetTools_DescSubnet", "Enter IP/CIDR (e.g., 192.168.1.0/24) to calculate subnet info."),
+            "IP Converter" => Tr("NetTools_DescIpConverter", "Enter an IPv4 address to convert to different formats."),
+            "ARP Table" => Tr("NetTools_DescArp", "Click Execute to view the ARP cache."),
+            "Route Table" => Tr("NetTools_DescRoute", "Click Execute to view the routing table."),
+            "Network Stats" => Tr("NetTools_DescNetStats", "Click Execute to view TCP/UDP/ICMP statistics."),
+            "Wake-on-LAN" => Tr("NetTools_DescWol", "Enter a MAC address to send a Wake-on-LAN magic packet."),
+            "Speed Test" => Tr("NetTools_DescSpeedTest", "Click Execute to measure latency, jitter, download and upload speed (about 25 seconds, uses up to ~150 MB of data)."),
+            "Packet Sender" => Tr("NetTools_DescPacketSender", "Send custom packets. Format: PROTOCOL:HOST:PORT:DATA") + "\n" +
                                "  - TCP:google.com:80:GET / HTTP/1.1\\r\\n\\r\\n\n" +
                                "  - UDP:8.8.8.8:53:hex:AA BB CC DD\n" +
                                "  - ICMP:google.com:Hello World\n" +
                                "  - FLOOD:TCP:host:port:count:delay:data",
-            _ => "Select a tool from the left panel."
+            _ => Tr("NetTools_DescDefault", "Select a tool from the left panel.")
         };
     }
 
@@ -228,7 +228,7 @@ public partial class NetworkToolsView : Page
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Pinging {host}...\n");
+        sb.AppendLine(Tr("NetTools_Pinging", "Pinging {0}...", host) + "\n");
         OutputText.Text = sb.ToString();
 
         var results = await NetworkTools.PingMultipleAsync(host, 4, 5000, token);
@@ -278,7 +278,7 @@ public partial class NetworkToolsView : Page
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Tracing route to {host}...\n");
+        sb.AppendLine(Tr("NetTools_Tracing", "Tracing route to {0}...", host) + "\n");
         sb.AppendLine("Hop    Address                         Time      Hostname");
         sb.AppendLine("---    -------                         ----      --------");
         OutputText.Text = sb.ToString();
@@ -297,7 +297,7 @@ public partial class NetworkToolsView : Page
 
         await NetworkTools.TracerouteAsync(host, 30, 3000, progress, token);
 
-        sb.AppendLine("\nTrace complete.");
+        sb.AppendLine("\n" + Tr("NetTools_TraceComplete", "Trace complete."));
         OutputText.Text = sb.ToString();
     }
 
@@ -353,7 +353,7 @@ public partial class NetworkToolsView : Page
         }
         else
         {
-            sb.AppendLine($"Lookup failed: {result.ErrorMessage}");
+            sb.AppendLine(Tr("NetTools_LookupFailed", "Lookup failed: {0}", result.ErrorMessage ?? ""));
         }
 
         OutputText.Text = sb.ToString();
@@ -384,7 +384,7 @@ public partial class NetworkToolsView : Page
             return;
         }
 
-        sb.AppendLine($"Scanning common ports on {host}...\n");
+        sb.AppendLine(Tr("NetTools_ScanningCommon", "Scanning common ports on {0}...", host) + "\n");
         sb.AppendLine("Port      Service         Status      Response Time");
         sb.AppendLine("----      -------         ------      -------------");
         OutputText.Text = sb.ToString();
@@ -401,7 +401,7 @@ public partial class NetworkToolsView : Page
 
         var openPorts = results.Count(r => r.IsOpen);
         sb.AppendLine();
-        sb.AppendLine($"Scan complete. {openPorts} open ports found out of {results.Count} scanned.");
+        sb.AppendLine(Tr("NetTools_ScanComplete", "Scan complete. {0} open ports found out of {1} scanned.", openPorts, results.Count));
 
         OutputText.Text = sb.ToString();
     }
@@ -410,7 +410,7 @@ public partial class NetworkToolsView : Page
     private async Task ExecutePortRangeScanAsync(string host, int first, int last, StringBuilder sb, CancellationToken token)
     {
         int total = last - first + 1, done = 0, open = 0;
-        sb.AppendLine($"Scanning ports {first}-{last} on {host}...\n");
+        sb.AppendLine(Tr("NetTools_ScanningRange", "Scanning ports {0}-{1} on {2}...", first, last, host) + "\n");
         sb.AppendLine("Port      Service         Status      Response Time");
         sb.AppendLine("----      -------         ------      -------------");
         string table = sb.ToString();
@@ -437,7 +437,7 @@ public partial class NetworkToolsView : Page
         var listing = new StringBuilder();
         foreach (var r in results.Where(r => r.IsOpen))
             listing.AppendLine($"{r.Port,-9} {r.ServiceName,-15} {"OPEN",-11} {r.ResponseTime}ms");
-        OutputText.Text = table + listing + "\n" + $"Scan complete. {openPorts} open ports found out of {results.Count} scanned.";
+        OutputText.Text = table + listing + "\n" + Tr("NetTools_ScanComplete", "Scan complete. {0} open ports found out of {1} scanned.", openPorts, results.Count);
     }
 
     private async Task ExecuteWhoisAsync(string domain, CancellationToken token)
@@ -448,7 +448,7 @@ public partial class NetworkToolsView : Page
             return;
         }
 
-        OutputText.Text = $"Looking up whois for {domain}...\n";
+        OutputText.Text = Tr("NetTools_WhoisLooking", "Looking up whois for {0}...", domain) + "\n";
 
         var result = await NetworkTools.WhoisAsync(domain, token);
         OutputText.Text = result;
@@ -491,11 +491,11 @@ public partial class NetworkToolsView : Page
 
         OutputText.Text = sb.ToString();
 
-        sb.AppendLine("\nGetting public IP...");
+        sb.AppendLine("\n" + Tr("NetTools_GettingPublicIp", "Getting public IP..."));
         OutputText.Text = sb.ToString();
 
         var publicIp = await NetworkTools.GetPublicIPAsync(token);
-        sb.AppendLine($"Public IP: {publicIp ?? "Could not determine"}");
+        sb.AppendLine($"Public IP: {publicIp ?? Tr("NetTools_PublicIpUnknown", "Could not determine")}");
 
         OutputText.Text = sb.ToString();
     }
@@ -516,7 +516,7 @@ public partial class NetworkToolsView : Page
     {
         if (string.IsNullOrEmpty(input))
         {
-            OutputText.Text = "Please enter an IP address.";
+            OutputText.Text = Tr("NetTools_EnterIp", "Please enter an IP address.");
             return;
         }
 
@@ -551,8 +551,8 @@ public partial class NetworkToolsView : Page
         }
         else
         {
-            sb.AppendLine("Could not recognize input format.");
-            sb.AppendLine("Supported formats:");
+            sb.AppendLine(Tr("NetTools_ConvertUnknown", "Could not recognize input format."));
+            sb.AppendLine(Tr("NetTools_ConvertFormats", "Supported formats:"));
             sb.AppendLine("  - IPv4: 192.168.1.1");
             sb.AppendLine("  - Decimal: 3232235777");
             sb.AppendLine("  - Binary: 11000000.10101000.00000001.00000001");
@@ -577,7 +577,7 @@ public partial class NetworkToolsView : Page
             sb.AppendLine($"{entry.IpAddress,-21} {entry.MacAddress,-23} {entry.Type,-11} {(maker == "Unknown" ? "" : maker)}");
         }
 
-        sb.AppendLine($"\nTotal entries: {entries.Count}");
+        sb.AppendLine("\n" + Tr("NetTools_ArpTotal", "Total entries: {0}", entries.Count));
 
         OutputText.Text = sb.ToString();
     }
@@ -650,7 +650,7 @@ public partial class NetworkToolsView : Page
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Checking SSL certificate for {host}...\n");
+        sb.AppendLine(Tr("NetTools_SslChecking", "Checking SSL certificate for {0}...", host) + "\n");
         OutputText.Text = sb.ToString();
 
         var result = await NetworkTools.CheckSslCertificateAsync(host, 443, token);
@@ -701,7 +701,7 @@ public partial class NetworkToolsView : Page
         }
         else
         {
-            sb.AppendLine($"\nSSL check failed: {result.ErrorMessage}");
+            sb.AppendLine("\n" + Tr("NetTools_SslFailed", "SSL check failed: {0}", result.ErrorMessage ?? ""));
         }
 
         OutputText.Text = sb.ToString();
@@ -716,7 +716,7 @@ public partial class NetworkToolsView : Page
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Fetching HTTP headers for {url}...\n");
+        sb.AppendLine(Tr("NetTools_HttpFetching", "Fetching HTTP headers for {0}...", url) + "\n");
         OutputText.Text = sb.ToString();
 
         var result = await NetworkTools.GetHttpHeadersAsync(url, token);
@@ -744,7 +744,7 @@ public partial class NetworkToolsView : Page
         }
         else
         {
-            sb.AppendLine($"\nFailed to fetch headers: {result.ErrorMessage}");
+            sb.AppendLine("\n" + Tr("NetTools_HttpFailed", "Failed to fetch headers: {0}", result.ErrorMessage ?? ""));
         }
 
         OutputText.Text = sb.ToString();
@@ -790,8 +790,8 @@ public partial class NetworkToolsView : Page
                 NetworkTools.SubnetErrorFormat => Tr("NetTools_SubnetFormat", "Invalid format. Use: 192.168.1.0/24"),
                 _ => result.ErrorMessage
             };
-            sb.AppendLine($"\nError: {msg}");
-            sb.AppendLine("\nExpected format: 192.168.1.0/24");
+            sb.AppendLine("\n" + Tr("NetTools_Error", "Error: {0}", msg ?? ""));
+            sb.AppendLine("\n" + Tr("NetTools_SubnetExpected", "Expected format: 192.168.1.0/24"));
         }
 
         OutputText.Text = sb.ToString();
@@ -831,7 +831,7 @@ public partial class NetworkToolsView : Page
         }
         else
         {
-            sb.AppendLine($"\nFailed to get statistics: {stats.ErrorMessage}");
+            sb.AppendLine("\n" + Tr("NetTools_StatsFailed", "Failed to get statistics: {0}", stats.ErrorMessage ?? ""));
         }
 
         OutputText.Text = sb.ToString();
@@ -841,12 +841,12 @@ public partial class NetworkToolsView : Page
     {
         if (string.IsNullOrEmpty(macAddress))
         {
-            OutputText.Text = "Please enter a MAC address (e.g., 00:1A:2B:3C:4D:5E).";
+            OutputText.Text = Tr("NetTools_EnterMac", "Please enter a MAC address (e.g., 00:1A:2B:3C:4D:5E).");
             return;
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Sending Wake-on-LAN magic packet...\n");
+        sb.AppendLine(Tr("NetTools_WolSending", "Sending Wake-on-LAN magic packet...") + "\n");
         sb.AppendLine($"MAC Address: {macAddress}");
         OutputText.Text = sb.ToString();
 
@@ -855,17 +855,17 @@ public partial class NetworkToolsView : Page
         sb.AppendLine();
         if (success)
         {
-            sb.AppendLine("Magic packet sent successfully!");
-            sb.AppendLine("\nNote: The target device must:");
-            sb.AppendLine("  - Have Wake-on-LAN enabled in BIOS");
-            sb.AppendLine("  - Have WoL enabled in network adapter settings");
-            sb.AppendLine("  - Be connected via Ethernet (not WiFi)");
-            sb.AppendLine("  - Be on the same local network");
+            sb.AppendLine(Tr("NetTools_WolSent", "Magic packet sent successfully!"));
+            sb.AppendLine("\n" + Tr("NetTools_WolNote",
+                "Note: The target device must:\n" +
+                "  - Have Wake-on-LAN enabled in BIOS\n" +
+                "  - Have WoL enabled in network adapter settings\n" +
+                "  - Be connected via Ethernet (not WiFi)\n" +
+                "  - Be on the same local network"));
         }
         else
         {
-            sb.AppendLine("Failed to send magic packet.");
-            sb.AppendLine("Please check the MAC address format.");
+            sb.AppendLine(Tr("NetTools_WolFailed", "Failed to send magic packet.\nPlease check the MAC address format."));
         }
 
         OutputText.Text = sb.ToString();
@@ -891,7 +891,7 @@ public partial class NetworkToolsView : Page
 
             if (parts.Length < 2)
             {
-                OutputText.Text = "Invalid format. Use: PROTOCOL:HOST:PORT:DATA\n\n" + GetToolDescription();
+                OutputText.Text = Tr("NetTools_PacketFormat", "Invalid format. Use: PROTOCOL:HOST:PORT:DATA") + "\n\n" + GetToolDescription();
                 return;
             }
 
@@ -919,7 +919,7 @@ public partial class NetworkToolsView : Page
                 // TCP/UDP:HOST:PORT:DATA
                 if (parts.Length < 3 || !int.TryParse(parts[2].Split(':')[0], out port))
                 {
-                    OutputText.Text = "Invalid format. TCP/UDP requires port number.\n\n" + GetToolDescription();
+                    OutputText.Text = Tr("NetTools_PacketNeedPort", "Invalid format. TCP/UDP requires port number.") + "\n\n" + GetToolDescription();
                     return;
                 }
 
@@ -955,7 +955,7 @@ public partial class NetworkToolsView : Page
             sb.AppendLine($"Target: {host}" + (port > 0 ? $":{port}" : ""));
             sb.AppendLine($"Data size: {data.Length} bytes");
             sb.AppendLine();
-            sb.AppendLine("Sending packet...");
+            sb.AppendLine(Tr("NetTools_PacketSending", "Sending packet..."));
             OutputText.Text = sb.ToString();
 
             PacketSendResult result;
@@ -973,7 +973,7 @@ public partial class NetworkToolsView : Page
                     result = await NetworkTools.SendIcmpPacketAsync(host, data, 5000).WaitAsync(token);
                     break;
                 default:
-                    OutputText.Text = $"Unknown protocol: {protocol}. Use TCP, UDP, or ICMP.";
+                    OutputText.Text = Tr("NetTools_PacketUnknownProtocol", "Unknown protocol: {0}. Use TCP, UDP, or ICMP.", protocol);
                     return;
             }
 
@@ -1027,7 +1027,7 @@ public partial class NetworkToolsView : Page
         }
         catch (Exception ex)
         {
-            sb.AppendLine($"\nError: {ex.Message}");
+            sb.AppendLine("\n" + Tr("NetTools_Error", "Error: {0}", ex.Message));
         }
 
         OutputText.Text = sb.ToString();
@@ -1103,7 +1103,7 @@ public partial class NetworkToolsView : Page
         sb.AppendLine($"Delay between packets: {delayMs}ms");
         sb.AppendLine($"Data size: {data.Length} bytes");
         sb.AppendLine();
-        sb.AppendLine("Sending packets... (press Cancel to stop)");
+        sb.AppendLine(Tr("NetTools_FloodSending", "Sending packets... (press Cancel to stop)"));
         sb.AppendLine();
         sb.AppendLine("Seq      Status    Time      Bytes Sent/Recv");
         sb.AppendLine("---      ------    ----      ---------------");

@@ -45,7 +45,7 @@
             <Border Grid.Column="0" Style="{StaticResource GlassCardStyle}" Padding="8">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="Diagnostics" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="{DynamicResource NetTools_GroupDiagnostics}" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource AccentPrimaryBrush}"
                                    Margin="12,4,0,4"/>
                         <RadioButton x:Name="ToolPing" Content="Ping" GroupName="Tools"
@@ -64,7 +64,7 @@
                                      Checked="Tool_Changed"
                                      Style="{StaticResource ToolRadioStyle}"/>
 
-                        <TextBlock Text="Security" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="{DynamicResource NetTools_GroupSecurity}" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource WarningBrush}"
                                    Margin="12,12,0,4"/>
                         <RadioButton x:Name="ToolSslCheck" Content="SSL Checker" GroupName="Tools"
@@ -74,7 +74,7 @@
                                      Checked="Tool_Changed"
                                      Style="{StaticResource ToolRadioStyle}"/>
 
-                        <TextBlock Text="Network Info" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="{DynamicResource NetTools_GroupNetworkInfo}" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource SuccessBrush}"
                                    Margin="12,12,0,4"/>
                         <RadioButton x:Name="ToolIpInfo" Content="My IP" GroupName="Tools"
@@ -96,14 +96,14 @@
                                      Checked="Tool_Changed"
                                      Style="{StaticResource ToolRadioStyle}"/>
 
-                        <TextBlock Text="Packet Tools" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="{DynamicResource NetTools_GroupPacketTools}" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource AuroraPinkBrush}"
                                    Margin="12,12,0,4"/>
                         <RadioButton x:Name="ToolPacketSender" Content="Packet Sender" GroupName="Tools"
                                      Checked="Tool_Changed"
                                      Style="{StaticResource ToolRadioStyle}"/>
 
-                        <TextBlock Text="Utilities" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="{DynamicResource NetTools_GroupUtilities}" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource AuroraCyanBrush}"
                                    Margin="12,12,0,4"/>
                         <RadioButton x:Name="ToolWol" Content="Wake-on-LAN" GroupName="Tools"
@@ -177,7 +177,7 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Auto">
                             <TextBlock x:Name="OutputText"
-                                       Text="Enter a host and click Execute to run the tool."
+                                       Text="{DynamicResource NetTools_InitialHint}"
                                        FontFamily="{StaticResource MonoFont}"
                                        FontSize="12"
                                        Foreground="{StaticResource TextSecondaryBrush}"
