@@ -39,7 +39,8 @@ public static class NetworkTools
         {
             result.Success = false;
             result.Status = "Error";
-            result.ErrorMessage = ex.Message;
+            // PingException only says "an exception occurred"; the reason ("No such host is known") is inside it.
+            result.ErrorMessage = (ex.InnerException ?? ex).Message;
         }
 
         return result;
@@ -163,14 +164,14 @@ public static class NetworkTools
 
     #region DNS Lookup
 
-    public static async Task<DnsResult> DnsLookupAsync(string hostname)
+    public static async Task<DnsResult> DnsLookupAsync(string hostname, CancellationToken cancellationToken = default)
     {
         var result = new DnsResult { Hostname = hostname };
 
         try
         {
             var stopwatch = Stopwatch.StartNew();
-            var hostEntry = await Dns.GetHostEntryAsync(hostname);
+            var hostEntry = await Dns.GetHostEntryAsync(hostname, cancellationToken);
             stopwatch.Stop();
 
             result.Success = true;
@@ -183,6 +184,10 @@ public static class NetworkTools
             result.Aliases = hostEntry.Aliases.ToList();
             result.CanonicalName = hostEntry.HostName;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw; // the user pressed Cancel
+        }
         catch (Exception ex)
         {
             result.Success = false;
@@ -192,13 +197,19 @@ public static class NetworkTools
         return result;
     }
 
-    public static async Task<string?> ReverseDnsLookupAsync(string ipAddress)
+    /// <summary>The name an IP address points back to (its PTR record), or null when it has none.</summary>
+    public static async Task<string?> ReverseDnsLookupAsync(string ipAddress, CancellationToken cancellationToken = default)
     {
         try
         {
-            var ip = IPAddress.Parse(ipAddress);
-            var hostEntry = await Dns.GetHostEntryAsync(ip);
-            return hostEntry.HostName;
+            if (!IPAddress.TryParse(ipAddress, out _)) return null;
+            var hostEntry = await Dns.GetHostEntryAsync(ipAddress, cancellationToken);
+            // Without a PTR record the resolver hands the address itself back.
+            return string.IsNullOrEmpty(hostEntry.HostName) || hostEntry.HostName == ipAddress ? null : hostEntry.HostName;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
@@ -210,31 +221,38 @@ public static class NetworkTools
 
     #region Port Scanner
 
-    public static async Task<PortScanResult> ScanPortAsync(string host, int port, int timeout = 2000)
+    public static async Task<PortScanResult> ScanPortAsync(string host, int port, int timeout = 2000,
+        CancellationToken cancellationToken = default)
     {
-        var result = new PortScanResult { Host = host, Port = port };
+        // The service is the port's usual one whether or not it answers (closed rows had an empty column).
+        var result = new PortScanResult { Host = host, Port = port, ServiceName = GetServiceName(port) };
 
         try
         {
             using var client = new TcpClient();
             var stopwatch = Stopwatch.StartNew();
 
-            var connectTask = client.ConnectAsync(host, port);
-            var timeoutTask = Task.Delay(timeout);
-
-            if (await Task.WhenAny(connectTask, timeoutTask) == connectTask)
+            // One token for both "took too long" and "the user pressed Cancel": the connection
+            // attempt is really abandoned, not left running behind a timer.
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            limit.CancelAfter(timeout);
+            try
             {
-                await connectTask;
+                await client.ConnectAsync(host, port, limit.Token);
                 stopwatch.Stop();
                 result.IsOpen = true;
                 result.ResponseTime = stopwatch.ElapsedMilliseconds;
-                result.ServiceName = GetServiceName(port);
             }
-            else
+            catch (OperationCanceledException)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 result.IsOpen = false;
                 result.Status = "Timeout";
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (SocketException ex)
         {
@@ -269,7 +287,7 @@ public static class NetworkTools
                 await semaphore.WaitAsync(cancellationToken);
                 try
                 {
-                    var result = await ScanPortAsync(host, currentPort, timeout);
+                    var result = await ScanPortAsync(host, currentPort, timeout, cancellationToken);
                     lock (results)
                     {
                         results.Add(result);
@@ -297,7 +315,7 @@ public static class NetworkTools
         var tasks = commonPorts.Select(port => Task.Run(async () =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var result = await ScanPortAsync(host, port, timeout);
+            var result = await ScanPortAsync(host, port, timeout, cancellationToken);
             lock (results)
             {
                 results.Add(result);
@@ -337,7 +355,34 @@ public static class NetworkTools
             8080 => "HTTP-Alt",
             8443 => "HTTPS-Alt",
             27017 => "MongoDB",
-            _ => "Unknown"
+            67 or 68 => "DHCP",
+            69 => "TFTP",
+            123 => "NTP",
+            137 or 138 => "NetBIOS",
+            161 or 162 => "SNMP",
+            389 => "LDAP",
+            465 or 587 => "SMTP",
+            514 => "Syslog",
+            636 => "LDAPS",
+            853 => "DNS-TLS",
+            1194 => "OpenVPN",
+            1723 => "PPTP",
+            1883 => "MQTT",
+            2049 => "NFS",
+            2375 or 2376 => "Docker",
+            3000 => "Dev server",
+            5000 => "UPnP/Dev",
+            5173 => "Vite",
+            5353 => "mDNS",
+            5357 => "WSD",
+            5985 or 5986 => "WinRM",
+            7680 => "Delivery Opt.",
+            8000 or 8888 => "HTTP-Alt",
+            9000 => "HTTP-Alt",
+            9200 => "Elasticsearch",
+            11434 => "Ollama",
+            25565 => "Minecraft",
+            _ => "-"
         };
     }
 
@@ -452,29 +497,27 @@ public static class NetworkTools
         return info;
     }
 
-    public static async Task<string?> GetPublicIPAsync()
+    public static async Task<string?> GetPublicIPAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            using var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(5);
-            var response = await client.GetStringAsync("https://api.ipify.org");
-            return response.Trim();
-        }
-        catch
+        foreach (var url in new[] { "https://api.ipify.org", "https://icanhazip.com" })
         {
             try
             {
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(5);
-                var response = await client.GetStringAsync("https://icanhazip.com");
+                var response = await client.GetStringAsync(url, cancellationToken);
                 return response.Trim();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw; // the user pressed Cancel
             }
             catch
             {
-                return null;
+                // that service didn't answer: the next one
             }
         }
+        return null;
     }
 
     #endregion
@@ -558,7 +601,8 @@ public static class NetworkTools
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "arp",
+                // Full System32 path: the app runs as administrator, a bare name is looked up in its own folder first.
+                FileName = Path.Combine(Environment.SystemDirectory, "arp.exe"),
                 Arguments = "-a",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -617,7 +661,7 @@ public static class NetworkTools
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "route",
+                FileName = Path.Combine(Environment.SystemDirectory, "route.exe"), // full path, as for arp
                 Arguments = "print",
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
@@ -652,7 +696,14 @@ public static class NetworkTools
             using var client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(30);
 
-            // Large files from two independent networks; the next one is tried when one
+            // 1. Latency and jitter first, while the line is idle.
+            if (await MeasureLatencyAsync(client, cancellationToken) is { } latency)
+            {
+                result.LatencyMs = latency.Median;
+                result.JitterMs = latency.Jitter;
+            }
+
+            // 2. Download. Large files from two independent networks; the next one is tried when one
             // can't be reached. The download stops after MaxSeconds, so a slow line
             // doesn't pull the whole file and a fast one gets a sample long enough to
             // measure (10 MB is over in a fraction of a second on a fast line).
@@ -722,6 +773,13 @@ public static class NetworkTools
             result.DownloadTime = stopwatch.Elapsed.TotalSeconds;
             result.DownloadSpeed = totalBytes / result.DownloadTime;
             result.Success = true;
+
+            // 3. Upload. The figures above stand even when the upload can't be measured.
+            await MeasureUploadAsync(client, result, progress, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw; // the user pressed Cancel: not a failed test
         }
         catch (Exception ex)
         {
@@ -730,6 +788,98 @@ public static class NetworkTools
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Round-trip time of small requests on an open connection (the first one, which
+    /// pays for the name lookup and TLS, is thrown away). Jitter is the average
+    /// change from one sample to the next.
+    /// </summary>
+    private static async Task<(double Median, double Jitter)?> MeasureLatencyAsync(HttpClient client, CancellationToken token)
+    {
+        try
+        {
+            var samples = new List<double>();
+            for (int i = 0; i < 9; i++)
+            {
+                var stopwatch = Stopwatch.StartNew();
+                using var response = await client.GetAsync("https://speed.cloudflare.com/__down?bytes=0",
+                    HttpCompletionOption.ResponseHeadersRead, token);
+                stopwatch.Stop();
+                if (i > 0 && response.IsSuccessStatusCode) samples.Add(stopwatch.Elapsed.TotalMilliseconds);
+            }
+            if (samples.Count < 3) return null;
+
+            double jitter = 0;
+            for (int i = 1; i < samples.Count; i++) jitter += Math.Abs(samples[i] - samples[i - 1]);
+            jitter /= samples.Count - 1;
+
+            var sorted = samples.OrderBy(s => s).ToList();
+            return (sorted[sorted.Count / 2], jitter);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Sends random (incompressible) data for about 8 seconds. Each request is four
+    /// times the size of the one before while they finish quickly, so a slow line is
+    /// measured with a small upload and a fast one with a large one.
+    /// </summary>
+    private static async Task MeasureUploadAsync(HttpClient client, SpeedTestResult result,
+        IProgress<SpeedTestProgress>? progress, CancellationToken token)
+    {
+        const double MaxSeconds = 8;
+        const int FirstSize = 1 << 20, MaxSize = 32 << 20;
+        try
+        {
+            var payload = new byte[MaxSize];
+            Random.Shared.NextBytes(payload);
+
+            int size = FirstSize;
+            long bytes = 0;
+            double seconds = 0;
+            var clock = Stopwatch.StartNew();
+            while (clock.Elapsed.TotalSeconds < MaxSeconds)
+            {
+                using var content = new ByteArrayContent(payload, 0, size);
+                var stopwatch = Stopwatch.StartNew();
+                using var response = await client.PostAsync("https://speed.cloudflare.com/__up", content, token);
+                stopwatch.Stop();
+                if (!response.IsSuccessStatusCode) throw new HttpRequestException($"HTTP {(int)response.StatusCode}");
+
+                double took = stopwatch.Elapsed.TotalSeconds;
+                // A first request that was over in a moment mostly measured opening the connection: it only sizes the next one.
+                if (size > FirstSize || took >= 1)
+                {
+                    bytes += size;
+                    seconds += took;
+                    progress?.Report(new SpeedTestProgress { BytesTransferred = bytes, Speed = bytes / seconds, IsDownload = false });
+                }
+                if (took < 1.5 && size < MaxSize) size = Math.Min(MaxSize, size * 4);
+            }
+
+            if (bytes > 0 && seconds > 0)
+            {
+                result.UploadBytes = bytes;
+                result.UploadTime = seconds;
+                result.UploadSpeed = bytes / seconds;
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            result.UploadError = ex.Message;
+        }
     }
 
     #endregion
@@ -828,10 +978,15 @@ public static class NetworkTools
     {
         var result = new SslCertificateInfo { Hostname = hostname, Port = port };
 
+        // A server that accepts the connection but never finishes the handshake used to
+        // leave this waiting forever (and the Execute button disabled with it).
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(TimeSpan.FromSeconds(10));
+
         try
         {
             using var client = new TcpClient();
-            await client.ConnectAsync(hostname, port, cancellationToken);
+            await client.ConnectAsync(hostname, port, limit.Token);
 
             using var sslStream = new global::System.Net.Security.SslStream(
                 client.GetStream(),
@@ -891,10 +1046,17 @@ public static class NetworkTools
                     return true;
                 });
 
-            await sslStream.AuthenticateAsClientAsync(hostname);
+            await sslStream.AuthenticateAsClientAsync(
+                new global::System.Net.Security.SslClientAuthenticationOptions { TargetHost = hostname }, limit.Token);
             result.Protocol = sslStream.SslProtocol.ToString();
             result.CipherAlgorithm = sslStream.NegotiatedCipherSuite.ToString();
             result.Success = true;
+        }
+        catch (OperationCanceledException)
+        {
+            cancellationToken.ThrowIfCancellationRequested(); // the user pressed Cancel
+            result.Success = false;
+            result.ErrorMessage = "The server did not answer within 10 seconds.";
         }
         catch (Exception ex)
         {
@@ -1625,6 +1787,15 @@ public class SpeedTestResult
     public long UploadBytes { get; set; }
     public double UploadTime { get; set; }
     public double UploadSpeed { get; set; }
+
+    /// <summary>Why the upload couldn't be measured (the download result is still valid), or null.</summary>
+    public string? UploadError { get; set; }
+
+    /// <summary>Median round trip of a small request, in ms; 0 when it couldn't be measured.</summary>
+    public double LatencyMs { get; set; }
+
+    /// <summary>Average change between consecutive round trips, in ms.</summary>
+    public double JitterMs { get; set; }
     public string? ErrorMessage { get; set; }
 }
 

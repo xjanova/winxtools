@@ -80,7 +80,8 @@ public class ConnectionMonitor
                     RemoteAddress = "*",
                     RemotePort = 0,
                     State = "Open",
-                    Direction = ConnectionDirection.Incoming,
+                    // An open UDP port is not a connection and has no direction.
+                    Direction = ConnectionDirection.Unknown,
                     Timestamp = DateTime.Now
                 });
             }
@@ -93,37 +94,97 @@ public class ConnectionMonitor
         return connections;
     }
 
+    /// <summary>
+    /// The TCP connections one process owns, read straight from Windows' owner
+    /// tables for IPv4 and IPv6. (It used to read the IPv4 table only and match
+    /// rows by port numbers, so an app talking over IPv6 showed an empty list.)
+    /// </summary>
     public List<ConnectionInfo> GetConnectionsByProcess(int processId)
     {
-        var allConnections = GetActiveConnections();
-        var processConnections = new List<ConnectionInfo>();
-
-        try
+        var connections = new List<ConnectionInfo>();
+        foreach (bool ipv6 in new[] { false, true })
         {
-            // Use netstat-like approach to get process connections
-            var tcpTable = GetExtendedTcpTable();
-            foreach (var row in tcpTable)
+            try
             {
-                if (row.ProcessId == processId)
+                ReadTcpOwnerTable(ipv6, (local, localPort, remote, remotePort, state, pid) =>
                 {
-                    var conn = allConnections.FirstOrDefault(c =>
-                        c.LocalPort == row.LocalPort &&
-                        c.RemotePort == row.RemotePort);
-
-                    if (conn != null)
+                    if (pid != processId) return;
+                    bool listening = state == 2; // MIB_TCP_STATE_LISTEN
+                    var info = new ConnectionInfo
                     {
-                        conn.ProcessId = processId;
-                        processConnections.Add(conn);
-                    }
-                }
+                        Protocol = "TCP",
+                        ProcessId = processId,
+                        LocalAddress = local.ToString(),
+                        LocalPort = localPort,
+                        RemoteAddress = listening ? "*" : remote.ToString(),
+                        RemotePort = listening ? 0 : remotePort,
+                        State = listening ? "Listening" : ((TcpState)state).ToString(),
+                        Direction = listening ? ConnectionDirection.Incoming : DetermineDirection(localPort, remotePort),
+                        Timestamp = DateTime.Now
+                    };
+                    if (!listening) info.RemoteHostname = ResolveHostname(info.RemoteAddress);
+                    connections.Add(info);
+                });
+            }
+            catch (Exception ex)
+            {
+                global::System.Diagnostics.Debug.WriteLine($"Error reading the {(ipv6 ? "IPv6" : "IPv4")} connection table: {ex.Message}");
             }
         }
-        catch
-        {
-            // Fallback: return all connections if we can't get process info
-        }
+        return connections;
+    }
 
-        return processConnections;
+    /// <summary>Walks MIB_TCPTABLE_OWNER_PID (24-byte rows) or MIB_TCP6TABLE_OWNER_PID (56-byte rows).</summary>
+    private static void ReadTcpOwnerTable(bool ipv6, Action<IPAddress, int, IPAddress, int, int, int> row)
+    {
+        int family = ipv6 ? 23 : 2; // AF_INET6 : AF_INET
+        int size = 0;
+        GetExtendedTcpTable(IntPtr.Zero, ref size, true, family, TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_ALL, 0);
+        if (size <= 0) return;
+        size += 4096; // the table can grow between the two calls
+
+        IntPtr table = Marshal.AllocHGlobal(size);
+        try
+        {
+            if (GetExtendedTcpTable(table, ref size, true, family, TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_ALL, 0) != 0) return;
+
+            int count = Marshal.ReadInt32(table);
+            int rowSize = ipv6 ? 56 : 24;
+            var localBytes = new byte[ipv6 ? 16 : 4];
+            var remoteBytes = new byte[ipv6 ? 16 : 4];
+            static int Port(int raw) => (ushort)IPAddress.NetworkToHostOrder((short)raw);
+
+            for (int i = 0; i < count; i++)
+            {
+                IntPtr p = table + 4 + i * rowSize;
+                int state, localPort, remotePort, pid;
+                if (ipv6)
+                {
+                    // ucLocalAddr[16], dwLocalScopeId, dwLocalPort, ucRemoteAddr[16], dwRemoteScopeId, dwRemotePort, dwState, dwOwningPid
+                    Marshal.Copy(p, localBytes, 0, 16);
+                    localPort = Port(Marshal.ReadInt32(p, 20));
+                    Marshal.Copy(p + 24, remoteBytes, 0, 16);
+                    remotePort = Port(Marshal.ReadInt32(p, 44));
+                    state = Marshal.ReadInt32(p, 48);
+                    pid = Marshal.ReadInt32(p, 52);
+                }
+                else
+                {
+                    // dwState, dwLocalAddr, dwLocalPort, dwRemoteAddr, dwRemotePort, dwOwningPid
+                    state = Marshal.ReadInt32(p, 0);
+                    Marshal.Copy(p + 4, localBytes, 0, 4);
+                    localPort = Port(Marshal.ReadInt32(p, 8));
+                    Marshal.Copy(p + 12, remoteBytes, 0, 4);
+                    remotePort = Port(Marshal.ReadInt32(p, 16));
+                    pid = Marshal.ReadInt32(p, 20);
+                }
+                row(new IPAddress(localBytes), localPort, new IPAddress(remoteBytes), remotePort, state, pid);
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(table);
+        }
     }
 
     private ConnectionDirection DetermineDirection(int localPort, int remotePort)

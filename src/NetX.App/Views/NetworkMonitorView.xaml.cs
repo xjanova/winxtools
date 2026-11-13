@@ -256,6 +256,10 @@ public partial class NetworkMonitorView : Page
                 // Update real-time speed display
                 CurrentDownloadSpeed.Text = currentStats.DownloadSpeedText;
                 CurrentUploadSpeed.Text = currentStats.UploadSpeedText;
+
+                // Its connections change while it stays selected: keep the list current
+                // (it used to be read once, when the row was clicked).
+                LoadProcessConnections(_selectedProcessId.Value);
             }
         }
         catch (Exception ex)
@@ -546,14 +550,24 @@ public partial class NetworkMonitorView : Page
         }
     }
 
+    private string _shownConnections = "";
+
     private void LoadProcessConnections(int processId)
     {
-        var connections = ConnectionMonitor.Instance.GetConnectionsByProcess(processId);
-        ConnectionsList.ItemsSource = connections.Select(c => new
-        {
-            c.RemoteAddress,
-            Status = $":{c.RemotePort} - {c.State}"
-        }).ToList();
+        var rows = ConnectionMonitor.Instance.GetConnectionsByProcess(processId)
+            .OrderBy(c => c.RemoteAddress == "*" ? 1 : 0).ThenBy(c => c.RemoteAddress, StringComparer.Ordinal).ThenBy(c => c.RemotePort)
+            .Select(c => new
+            {
+                c.RemoteAddress,
+                // A listening socket has no remote side: show the port it listens on.
+                Status = c.RemoteAddress == "*" ? $":{c.LocalPort} - {c.State}" : $":{c.RemotePort} - {c.State}"
+            }).ToList();
+
+        // Rebuilt only when something changed, so the list doesn't jump back to the top on every refresh.
+        string signature = processId + "|" + string.Join("|", rows.Select(r => r.RemoteAddress + r.Status));
+        if (signature == _shownConnections) return;
+        _shownConnections = signature;
+        ConnectionsList.ItemsSource = rows;
     }
 
     // Current slider values in bytes/second (RateLimit.Unlimited / Blocked / rate).

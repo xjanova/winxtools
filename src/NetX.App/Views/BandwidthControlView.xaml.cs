@@ -80,7 +80,7 @@ public partial class BandwidthControlView : Page
             if (_applyDebounce.IsEnabled)
             {
                 _applyDebounce.Stop();
-                _ = ApplyWholePcLimitAsync();
+                _ = ApplyWholePcLimitAsync(leaving: true);
             }
         };
     }
@@ -194,13 +194,48 @@ public partial class BandwidthControlView : Page
         _applyDebounce.Start();
     }
 
-    private async Task ApplyWholePcLimitAsync()
+    /// <param name="leaving">The page is closing: nobody can be asked, so a block that wasn't confirmed is not applied.</param>
+    private async Task ApplyWholePcLimitAsync(bool leaving = false)
     {
         var item = _interfaces.FirstOrDefault();
         if (item == null) return;
 
         int dlKbps = SliderToKbps(item.DownloadSliderValue);
         int ulKbps = SliderToKbps(item.UploadSliderValue);
+
+        // The left end of a slider cuts the whole PC off — and the cut is saved, so it is still
+        // there after a restart. That needs a yes, like "Block All" on the Dashboard; a thumb
+        // resting at the end (or the Home key) is not one.
+        var current = _limiter.GlobalRule;
+        bool newDownloadBlock = dlKbps == 0 && (current?.DownloadBps ?? RateLimit.Unlimited) != RateLimit.Blocked;
+        bool newUploadBlock = ulKbps == 0 && (current?.UploadBps ?? RateLimit.Unlimited) != RateLimit.Blocked;
+        if (newDownloadBlock || newUploadBlock)
+        {
+            string what = newDownloadBlock && newUploadBlock
+                ? Loc.T("BW_BlockBoth", "download and upload")
+                : newDownloadBlock ? Loc.T("BW_BlockDownload", "download") : Loc.T("BW_BlockUpload", "upload");
+            bool confirmed = !leaving && MessageBox.Show(
+                Loc.F("BW_BlockAllConfirm",
+                    "Block ALL {0} traffic on this PC?\n\nEvery program goes offline, a remote-desktop session included. The block is saved: it stays on after WinXTools or the PC restarts, until you move the slider back.",
+                    what),
+                Loc.T("BW_BlockAllTitle", "Block the whole PC"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
+            if (!confirmed)
+            {
+                // Back to what is really in force.
+                _suppressApply = true;
+                try
+                {
+                    item.DownloadSliderValue = KbpsToSlider(BpsToKbps(current?.DownloadBps ?? RateLimit.Unlimited));
+                    item.UploadSliderValue = KbpsToSlider(BpsToKbps(current?.UploadBps ?? RateLimit.Unlimited));
+                    item.UpdateLimitText(SliderToKbps(item.DownloadSliderValue), SliderToKbps(item.UploadSliderValue));
+                }
+                finally
+                {
+                    _suppressApply = false;
+                }
+                return;
+            }
+        }
 
         var result = await _limiter.SetGlobalLimitAsync(KbpsToBps(dlKbps), KbpsToBps(ulKbps));
         if (!result.Success)

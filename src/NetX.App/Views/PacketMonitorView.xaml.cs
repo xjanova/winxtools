@@ -65,8 +65,9 @@ public partial class PacketMonitorView : Page
 
         PacketList.ItemsSource = _packets;
 
-        // Load process list
+        // Load process list (and again whenever the list is opened)
         LoadProcessList();
+        ProcessFilter.DropDownOpened += ProcessFilter_DropDownOpened;
 
         // Setup update timer
         _updateTimer = new DispatcherTimer
@@ -82,31 +83,66 @@ public partial class PacketMonitorView : Page
         };
     }
 
+    /// <summary>
+    /// The process filter lists programs by name: the ones seen in the capture first
+    /// (those are the ones worth filtering on), then every other running program.
+    /// One entry per program, whatever its number of processes. Rebuilt each time the
+    /// list is opened, so programs started later are in it. (It used to hold the first
+    /// 100 process ids in alphabetical order, read once — "steam" or "svchost" never
+    /// made the cut.)
+    /// </summary>
     private void LoadProcessList()
     {
         try
         {
+            string? selected = (ProcessFilter.SelectedItem as ComboBoxItem)?.Tag as string;
+
+            List<string> captured;
+            lock (_packetLock)
+                captured = _allPackets.Where(p => p.ProcessId != 0 && !string.IsNullOrEmpty(p.ProcessName))
+                    .Select(p => p.ProcessName!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            var running = new List<string>();
+            foreach (var process in Process.GetProcesses())
+            {
+                using (process)
+                {
+                    try { if (!string.IsNullOrEmpty(process.ProcessName)) running.Add(process.ProcessName); }
+                    catch { /* exited meanwhile */ }
+                }
+            }
+
+            var names = captured.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .Concat(running.Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Where(n => !captured.Contains(n, StringComparer.OrdinalIgnoreCase))
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            _loadingProcessList = true;
             ProcessFilter.Items.Clear();
-            ProcessFilter.Items.Add(new ComboBoxItem { Content = "All Processes", IsSelected = true });
-
-            var processes = Process.GetProcesses()
-                .Where(p => !string.IsNullOrEmpty(p.ProcessName))
-                .OrderBy(p => p.ProcessName)
-                .Select(p => new { p.ProcessName, p.Id })
-                .Distinct()
-                .Take(100);
-
-            foreach (var proc in processes)
+            ProcessFilter.Items.Add(new ComboBoxItem { Content = Tr("PktMon_AllProcesses", "All Processes"), IsSelected = selected == null });
+            foreach (var name in names)
             {
                 ProcessFilter.Items.Add(new ComboBoxItem
                 {
-                    Content = $"{proc.ProcessName} ({proc.Id})",
-                    Tag = proc.Id
+                    Content = captured.Contains(name, StringComparer.OrdinalIgnoreCase) ? $"● {name}" : name,
+                    Tag = name,
+                    IsSelected = string.Equals(name, selected, StringComparison.OrdinalIgnoreCase)
                 });
             }
+            // The program that was selected has exited and sent nothing: back to "all".
+            if (ProcessFilter.SelectedItem == null) ProcessFilter.SelectedIndex = 0;
         }
         catch { }
+        finally
+        {
+            _loadingProcessList = false;
+        }
     }
+
+    private bool _loadingProcessList;
+
+    private void ProcessFilter_DropDownOpened(object? sender, EventArgs e) => LoadProcessList();
 
     private void StartStop_Click(object sender, RoutedEventArgs e)
     {
@@ -279,11 +315,8 @@ public partial class PacketMonitorView : Page
         var showOutbound = FilterOutbound.IsChecked == true;
         var filterText = FilterExpression.Text?.ToLower() ?? "";
 
-        int? processIdFilter = null;
-        if (ProcessFilter.SelectedItem is ComboBoxItem item && item.Tag is int pid)
-        {
-            processIdFilter = pid;
-        }
+        // By program name: one program can have many processes.
+        string? processFilter = (ProcessFilter.SelectedItem as ComboBoxItem)?.Tag as string;
 
         // Capture threads add to and trim _allPackets: copy it under the lock (the filter
         // boxes call this too, not only the timer) and build the view outside it, so the
@@ -303,7 +336,7 @@ public partial class PacketMonitorView : Page
             if (!p.IsInbound && !showOutbound) return false;
 
             // Process filter
-            if (processIdFilter.HasValue && p.ProcessId != processIdFilter.Value) return false;
+            if (processFilter != null && !string.Equals(p.ProcessName, processFilter, StringComparison.OrdinalIgnoreCase)) return false;
 
             // Text filter (simple implementation)
             if (!string.IsNullOrEmpty(filterText))
@@ -355,6 +388,7 @@ public partial class PacketMonitorView : Page
 
     private void ProcessFilter_Changed(object sender, SelectionChangedEventArgs e)
     {
+        if (_loadingProcessList) return; // the list is being rebuilt, not chosen from
         ApplyFilters();
     }
 

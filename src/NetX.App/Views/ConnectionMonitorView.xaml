@@ -305,7 +305,7 @@
                                     <Button Style="{StaticResource SecondaryButtonStyle}"
                                             Padding="8,6"
                                             Click="UnblockConnection_Click"
-                                            Tag="{Binding RemoteAddress}"
+                                            Tag="{Binding UnblockKey}"
                                             ToolTip="Unblock this IP"
                                             Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <Path Data="{StaticResource AllowIcon}"

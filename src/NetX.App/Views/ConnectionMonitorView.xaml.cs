@@ -119,13 +119,23 @@ public partial class ConnectionMonitorView : Page
                 })
                 .ToList();
 
-            // Stats reflect the live connections only (before synthetic rows).
-            var incoming = _allConnections.Count(c => c.Direction == ConnectionDirection.Incoming);
-            var outgoing = _allConnections.Count(c => c.Direction == ConnectionDirection.Outgoing);
-            TotalConnectionsText.Text = _allConnections.Count.ToString();
+            // Stats count real TCP connections only (before synthetic rows). An open UDP port is
+            // not a connection and has no direction: counting those made "Incoming" mostly idle
+            // sockets, and the total disagreed with what a "connection count" rule evaluates.
+            int tcpCount = _allConnections.Count(c => c.Protocol == "TCP");
+            int udpCount = _allConnections.Count - tcpCount;
+            var incoming = _allConnections.Count(c => c.Protocol == "TCP" && c.Direction == ConnectionDirection.Incoming);
+            var outgoing = _allConnections.Count(c => c.Protocol == "TCP" && c.Direction == ConnectionDirection.Outgoing);
+            TotalConnectionsText.Text = tcpCount.ToString();
             IncomingText.Text = incoming.ToString();
             OutgoingText.Text = outgoing.ToString();
-            BlockedText.Text = blockedIPs.Count.ToString();
+
+            // Ports blocked by an automation rule: listed too, each with a way to unblock it
+            // (they used to be invisible here, and stayed blocked after the rule was deleted).
+            var blockedPorts = _firewallManager.GetNetXRules()
+                .Where(r => r.Action == FirewallAction.Block && string.IsNullOrEmpty(r.IPAddress) && r.Port > 0)
+                .ToList();
+            BlockedText.Text = (blockedIPs.Count + blockedPorts.Count).ToString();
 
             // Surface every blocked IP as a row even when it has no active
             // connection right now (e.g. just after a restart), so the user always
@@ -148,9 +158,23 @@ public partial class ConnectionMonitorView : Page
                 }
             }
 
+            foreach (var rule in blockedPorts)
+            {
+                _allConnections.Add(new ConnectionDisplayItem
+                {
+                    Protocol = rule.Protocol,
+                    BlockedPort = rule.Port,
+                    State = "Blocked",
+                    Direction = ConnectionDirection.Unknown,
+                    IsBlocked = true,
+                    Timestamp = DateTime.MinValue
+                });
+            }
+
             ApplyFilters();
 
-            StatusText.Text = $"Monitoring {_allConnections.Count} active connections • Last updated: {DateTime.Now:HH:mm:ss}";
+            StatusText.Text = Tr("ConnMon_Status", "Monitoring {0} connections and {1} open UDP ports • Last updated: {2}",
+                tcpCount, udpCount, DateTime.Now.ToString("HH:mm:ss"));
         }
         catch (Exception ex)
         {
@@ -254,9 +278,14 @@ public partial class ConnectionMonitorView : Page
 
     private void UnblockConnection_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string ipAddress)
+        if (sender is Button btn && btn.Tag is string key)
         {
-            if (_firewallManager.UnblockIP(ipAddress))
+            // "port:TCP:8080" = a port blocked by an automation rule; anything else is an IP address.
+            var parts = key.Split(':');
+            bool ok = parts.Length == 3 && parts[0] == "port" && int.TryParse(parts[2], out int port)
+                ? _firewallManager.UnblockPort(port, parts[1])
+                : _firewallManager.UnblockIP(key);
+            if (ok)
             {
                 UpdateConnectionList();
             }
@@ -277,13 +306,21 @@ public class ConnectionDisplayItem
     public bool IsBlocked { get; set; }
     public DateTime Timestamp { get; set; }
 
+    /// <summary>Set on the row of a port that an automation rule blocked (not a connection).</summary>
+    public int BlockedPort { get; set; }
+
+    /// <summary>What the Unblock button acts on: the blocked port, or the IP address.</summary>
+    public string UnblockKey => BlockedPort > 0 ? $"port:{Protocol}:{BlockedPort}" : RemoteAddress;
+
     // Real remote -> remote:port; listener/UDP endpoint -> local:port; a persisted
     // blocked IP with no live connection (both ports 0) -> just the address.
-    public string DisplayEndpoint => RemotePort > 0
-        ? $"{RemoteAddress}:{RemotePort}"
-        : LocalPort > 0
-            ? $"{LocalAddress}:{LocalPort}"
-            : RemoteAddress;
+    public string DisplayEndpoint => BlockedPort > 0
+        ? $"Port {BlockedPort} ({Protocol})"
+        : RemotePort > 0
+            ? $"{RemoteAddress}:{RemotePort}"
+            : LocalPort > 0
+                ? $"{LocalAddress}:{LocalPort}"
+                : RemoteAddress;
 
     public string LocalPortDisplay => $"Local: {LocalPort}";
 

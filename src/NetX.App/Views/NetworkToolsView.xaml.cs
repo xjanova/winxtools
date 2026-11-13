@@ -78,8 +78,8 @@ public partial class NetworkToolsView : Page
         {
             "Ping" => "Enter a hostname or IP address and click Execute to ping.",
             "Traceroute" => "Enter a hostname or IP to trace the route to.",
-            "DNS Lookup" => "Enter a domain name to lookup its DNS records.",
-            "Port Scanner" => "Enter a hostname or IP. Common ports will be scanned.",
+            "DNS Lookup" => "Enter a domain name to look up its addresses, or an IP address to find the name it points back to (reverse DNS).",
+            "Port Scanner" => "Enter a hostname or IP: the common ports are scanned.\nAdd a range to scan it instead, e.g. 192.168.1.1 1-1024",
             "Whois" => "Enter a domain name to lookup its registration info.",
             "SSL Checker" => "Enter a hostname to check its SSL/TLS certificate.",
             "HTTP Headers" => "Enter a URL to view HTTP response headers and security info.",
@@ -90,7 +90,7 @@ public partial class NetworkToolsView : Page
             "Route Table" => "Click Execute to view the routing table.",
             "Network Stats" => "Click Execute to view TCP/UDP/ICMP statistics.",
             "Wake-on-LAN" => "Enter a MAC address to send a Wake-on-LAN magic packet.",
-            "Speed Test" => "Click Execute to test your download speed.",
+            "Speed Test" => "Click Execute to measure latency, jitter, download and upload speed (about 25 seconds, uses up to ~150 MB of data).",
             "Packet Sender" => "Send custom packets. Format: PROTOCOL:HOST:PORT:DATA\n" +
                                "  - TCP:google.com:80:GET / HTTP/1.1\\r\\n\\r\\n\n" +
                                "  - UDP:8.8.8.8:53:hex:AA BB CC DD\n" +
@@ -130,6 +130,9 @@ public partial class NetworkToolsView : Page
         CancelBtn.IsEnabled = true;
         CancelBtn.Visibility = Visibility.Visible;
         OutputText.Text = "";
+        // The tool list is locked while one runs: switching used to put this tool's
+        // output under another tool's title.
+        SetToolListEnabled(false);
 
         try
         {
@@ -144,7 +147,7 @@ public partial class NetworkToolsView : Page
                     await ExecuteTracerouteAsync(input, token);
                     break;
                 case "DNS Lookup":
-                    await ExecuteDnsLookupAsync(input);
+                    await ExecuteDnsLookupAsync(input, token);
                     break;
                 case "Port Scanner":
                     await ExecutePortScanAsync(input, token);
@@ -159,7 +162,7 @@ public partial class NetworkToolsView : Page
                     await ExecuteHttpHeadersAsync(input, token);
                     break;
                 case "My IP":
-                    await ExecuteMyIpAsync();
+                    await ExecuteMyIpAsync(token);
                     break;
                 case "Subnet Calculator":
                     ExecuteSubnetCalculator(input);
@@ -168,16 +171,16 @@ public partial class NetworkToolsView : Page
                     ExecuteIpConverter(input);
                     break;
                 case "ARP Table":
-                    await ExecuteArpAsync();
+                    await ExecuteArpAsync(token);
                     break;
                 case "Route Table":
-                    await ExecuteRouteAsync();
+                    await ExecuteRouteAsync().WaitAsync(token);
                     break;
                 case "Network Stats":
                     ExecuteNetworkStats();
                     break;
                 case "Wake-on-LAN":
-                    await ExecuteWolAsync(input);
+                    await ExecuteWolAsync(input).WaitAsync(token);
                     break;
                 case "Speed Test":
                     await ExecuteSpeedTestAsync(token);
@@ -202,7 +205,18 @@ public partial class NetworkToolsView : Page
             ExecuteBtn.Content = Tr("Common_Execute", "Execute");
             CancelBtn.Visibility = Visibility.Collapsed;
             CancelBtn.IsEnabled = true;
+            SetToolListEnabled(true);
         }
+    }
+
+    private void SetToolListEnabled(bool enabled)
+    {
+        foreach (var tool in new[]
+                 {
+                     ToolPing, ToolTraceroute, ToolDns, ToolPortScan, ToolWhois, ToolSslCheck, ToolHttpHeaders, ToolIpInfo,
+                     ToolSubnet, ToolIpConverter, ToolArp, ToolRoute, ToolNetStats, ToolPacketSender, ToolWol, ToolSpeedTest
+                 })
+            tool.IsEnabled = enabled;
     }
 
     private async Task ExecutePingAsync(string host, CancellationToken token)
@@ -232,7 +246,13 @@ public partial class NetworkToolsView : Page
             }
             else
             {
-                sb.AppendLine($"Request timed out. ({result.Status})");
+                // What really happened: "timed out" only when it did; an unknown host or an
+                // unreachable network says so instead.
+                sb.AppendLine(!string.IsNullOrEmpty(result.ErrorMessage)
+                    ? Tr("NetTools_PingError", "Ping failed: {0}", result.ErrorMessage)
+                    : result.Status == "TimedOut"
+                        ? Tr("NetTools_PingTimedOut", "Request timed out.")
+                        : Tr("NetTools_PingStatus", "No reply: {0}", result.Status));
             }
         }
 
@@ -281,7 +301,7 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecuteDnsLookupAsync(string hostname)
+    private async Task ExecuteDnsLookupAsync(string hostname, CancellationToken token)
     {
         if (string.IsNullOrEmpty(hostname))
         {
@@ -289,7 +309,23 @@ public partial class NetworkToolsView : Page
             return;
         }
 
-        var result = await NetworkTools.DnsLookupAsync(hostname);
+        // An IP address is looked up the other way round: which name points back to it.
+        if (System.Net.IPAddress.TryParse(hostname, out _))
+        {
+            OutputText.Text = Tr("NetTools_ReverseLooking", "Looking up the name of {0}…", hostname);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var name = await NetworkTools.ReverseDnsLookupAsync(hostname, token);
+            var reverse = new StringBuilder();
+            reverse.AppendLine($"Reverse DNS (PTR) for: {hostname}");
+            reverse.AppendLine($"Lookup time: {clock.ElapsedMilliseconds}ms\n");
+            reverse.AppendLine(name != null
+                ? $"Hostname: {name}"
+                : Tr("NetTools_ReverseNone", "No name is registered for this address (no PTR record)."));
+            OutputText.Text = reverse.ToString();
+            return;
+        }
+
+        var result = await NetworkTools.DnsLookupAsync(hostname, token);
 
         var sb = new StringBuilder();
         sb.AppendLine($"DNS Lookup for: {hostname}");
@@ -332,6 +368,22 @@ public partial class NetworkToolsView : Page
         }
 
         var sb = new StringBuilder();
+
+        // "host 1-1024" (or "host 8080") scans that range; a host alone scans the common ports.
+        var pieces = host.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        if (pieces.Length >= 2)
+        {
+            var range = pieces[1].Split('-', 2);
+            bool ok = int.TryParse(range[0], out int first) & int.TryParse(range.Length > 1 ? range[1] : range[0], out int last);
+            if (!ok || first < 1 || last > 65535 || first > last)
+            {
+                OutputText.Text = Tr("NetTools_PortRangeBad", "The port range must look like 1-1024 (ports 1 to 65535).");
+                return;
+            }
+            await ExecutePortRangeScanAsync(pieces[0], first, last, sb, token);
+            return;
+        }
+
         sb.AppendLine($"Scanning common ports on {host}...\n");
         sb.AppendLine("Port      Service         Status      Response Time");
         sb.AppendLine("----      -------         ------      -------------");
@@ -354,6 +406,40 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
+    /// <summary>A range can be thousands of ports: only the open ones are listed, with a running count.</summary>
+    private async Task ExecutePortRangeScanAsync(string host, int first, int last, StringBuilder sb, CancellationToken token)
+    {
+        int total = last - first + 1, done = 0, open = 0;
+        sb.AppendLine($"Scanning ports {first}-{last} on {host}...\n");
+        sb.AppendLine("Port      Service         Status      Response Time");
+        sb.AppendLine("----      -------         ------      -------------");
+        string table = sb.ToString();
+        var found = new StringBuilder();
+        OutputText.Text = table;
+
+        var lastPaint = System.Diagnostics.Stopwatch.StartNew();
+        var progress = new Progress<PortScanResult>(result =>
+        {
+            done++;
+            if (result.IsOpen)
+            {
+                open++;
+                found.AppendLine($"{result.Port,-9} {result.ServiceName,-15} {"OPEN",-11} {result.ResponseTime}ms");
+            }
+            // Repainting for every one of thousands of ports would freeze the page.
+            if (!result.IsOpen && lastPaint.ElapsedMilliseconds < 200 && done < total) return;
+            lastPaint.Restart();
+            OutputText.Text = table + found + "\n" + Tr("NetTools_PortProgress", "{0:N0} of {1:N0} ports checked, {2:N0} open…", done, total, open);
+        });
+
+        var results = await NetworkTools.ScanPortRangeAsync(host, first, last, 1000, 200, progress, token);
+        int openPorts = results.Count(r => r.IsOpen);
+        var listing = new StringBuilder();
+        foreach (var r in results.Where(r => r.IsOpen))
+            listing.AppendLine($"{r.Port,-9} {r.ServiceName,-15} {"OPEN",-11} {r.ResponseTime}ms");
+        OutputText.Text = table + listing + "\n" + $"Scan complete. {openPorts} open ports found out of {results.Count} scanned.";
+    }
+
     private async Task ExecuteWhoisAsync(string domain, CancellationToken token)
     {
         if (string.IsNullOrEmpty(domain))
@@ -368,7 +454,7 @@ public partial class NetworkToolsView : Page
         OutputText.Text = result;
     }
 
-    private async Task ExecuteMyIpAsync()
+    private async Task ExecuteMyIpAsync(CancellationToken token)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Network Interface Information\n");
@@ -408,7 +494,7 @@ public partial class NetworkToolsView : Page
         sb.AppendLine("\nGetting public IP...");
         OutputText.Text = sb.ToString();
 
-        var publicIp = await NetworkTools.GetPublicIPAsync();
+        var publicIp = await NetworkTools.GetPublicIPAsync(token);
         sb.AppendLine($"Public IP: {publicIp ?? "Could not determine"}");
 
         OutputText.Text = sb.ToString();
@@ -475,18 +561,20 @@ public partial class NetworkToolsView : Page
         OutputText.Text = sb.ToString();
     }
 
-    private async Task ExecuteArpAsync()
+    private async Task ExecuteArpAsync(CancellationToken token)
     {
         var sb = new StringBuilder();
         sb.AppendLine("ARP Cache\n");
-        sb.AppendLine("IP Address            MAC Address             Type");
-        sb.AppendLine("---------             -----------             ----");
+        sb.AppendLine("IP Address            MAC Address             Type        Maker");
+        sb.AppendLine("---------             -----------             ----        -----");
 
-        var entries = await NetworkTools.GetArpTableAsync();
+        var entries = await NetworkTools.GetArpTableAsync().WaitAsync(token);
 
         foreach (var entry in entries)
         {
-            sb.AppendLine($"{entry.IpAddress,-21} {entry.MacAddress,-23} {entry.Type}");
+            // Who made the network card, from the first half of its address (a built-in list of common makers).
+            var maker = NetworkTools.LookupMacVendor(entry.MacAddress);
+            sb.AppendLine($"{entry.IpAddress,-21} {entry.MacAddress,-23} {entry.Type,-11} {(maker == "Unknown" ? "" : maker)}");
         }
 
         sb.AppendLine($"\nTotal entries: {entries.Count}");
@@ -506,23 +594,45 @@ public partial class NetworkToolsView : Page
 
         // One live line instead of ~1,200 appended lines; float math avoids the
         // integer-truncation that made every size read x.00.
+        string downloadLine = "";
         var progress = new Progress<SpeedTestProgress>(p =>
         {
             var mb = p.BytesTransferred / 1_048_576.0;
             var mbps = p.Speed * 8 / 1_000_000.0;
-            OutputText.Text = header + Tr("NetTools_SpeedProgress",
-                "Downloaded {0:F1} MB — {1:F1} Mbps", mb, mbps);
+            if (p.IsDownload)
+            {
+                downloadLine = Tr("NetTools_SpeedProgress", "Downloaded {0:F1} MB — {1:F1} Mbps", mb, mbps);
+                OutputText.Text = header + downloadLine;
+            }
+            else
+            {
+                OutputText.Text = header + downloadLine + "\n" + Tr("NetTools_SpeedUpProgress", "Uploaded {0:F1} MB — {1:F1} Mbps", mb, mbps);
+            }
         });
 
         var result = await NetworkTools.SpeedTestAsync(progress, token);
 
         if (result.Success)
         {
-            var downloadMbps = result.DownloadSpeed * 8 / 1_000_000.0;
             var sb = new StringBuilder(header);
-            sb.AppendLine($"Download Speed: {downloadMbps:F2} Mbps");
-            sb.AppendLine($"Downloaded:     {result.DownloadBytes / 1_048_576.0:F2} MB");
-            sb.AppendLine($"Time:           {result.DownloadTime:F2} s");
+            if (result.LatencyMs > 0)
+            {
+                sb.AppendLine($"Latency:        {result.LatencyMs:F0} ms");
+                sb.AppendLine($"Jitter:         {result.JitterMs:F1} ms");
+                sb.AppendLine();
+            }
+            sb.AppendLine($"Download Speed: {result.DownloadSpeed * 8 / 1_000_000.0:F2} Mbps");
+            sb.AppendLine($"Downloaded:     {result.DownloadBytes / 1_048_576.0:F2} MB in {result.DownloadTime:F2} s");
+            sb.AppendLine();
+            if (result.UploadSpeed > 0)
+            {
+                sb.AppendLine($"Upload Speed:   {result.UploadSpeed * 8 / 1_000_000.0:F2} Mbps");
+                sb.AppendLine($"Uploaded:       {result.UploadBytes / 1_048_576.0:F2} MB in {result.UploadTime:F2} s");
+            }
+            else
+            {
+                sb.AppendLine(Tr("NetTools_SpeedUpFailed", "Upload could not be measured: {0}", result.UploadError ?? "-"));
+            }
             OutputText.Text = sb.ToString();
         }
         else
@@ -852,14 +962,15 @@ public partial class NetworkToolsView : Page
 
             switch (protocol)
             {
+                // WaitAsync: Cancel takes effect at once instead of after the reply timeout.
                 case "TCP":
-                    result = await NetworkTools.SendTcpPacketAsync(host, port, data, 10000);
+                    result = await NetworkTools.SendTcpPacketAsync(host, port, data, 10000).WaitAsync(token);
                     break;
                 case "UDP":
-                    result = await NetworkTools.SendUdpPacketAsync(host, port, data, 5000);
+                    result = await NetworkTools.SendUdpPacketAsync(host, port, data, 5000).WaitAsync(token);
                     break;
                 case "ICMP":
-                    result = await NetworkTools.SendIcmpPacketAsync(host, data, 5000);
+                    result = await NetworkTools.SendIcmpPacketAsync(host, data, 5000).WaitAsync(token);
                     break;
                 default:
                     OutputText.Text = $"Unknown protocol: {protocol}. Use TCP, UDP, or ICMP.";
@@ -909,6 +1020,10 @@ public partial class NetworkToolsView : Page
                 sb.AppendLine($"Status: FAILED");
                 sb.AppendLine($"Error: {result.ErrorMessage}");
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // Cancel: handled by the caller like every other tool
         }
         catch (Exception ex)
         {
