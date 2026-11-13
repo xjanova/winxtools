@@ -94,11 +94,28 @@
         </Grid>
 
         <!-- Everything that starts with Windows -->
-        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="ItemList" Focusable="False">
+        <!-- The list scrolls by itself and only builds the rows in view; rows carry no shadow (dozens of shadows make scrolling stutter) -->
+        <ItemsControl Grid.Row="4" x:Name="ItemList" Focusable="False"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      VirtualizingPanel.ScrollUnit="Pixel"
+                      ScrollViewer.CanContentScroll="True">
+            <ItemsControl.Template>
+                <ControlTemplate TargetType="ItemsControl">
+                    <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                        <ItemsPresenter/>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource GlassCardStyle}" Margin="0,0,0,8" Padding="14,10">
+                        <Border Background="{StaticResource CardGradientBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                CornerRadius="10" Margin="0,0,0,8" Padding="14,10">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -138,7 +155,6 @@
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        </ItemsControl>
     </Grid>
 </Page>

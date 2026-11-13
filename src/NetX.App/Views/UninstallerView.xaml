@@ -261,13 +261,14 @@
         </DataTemplate>
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <!-- No ScrollViewer around the page: the list scrolls by itself. Inside a page-wide ScrollViewer
+         the list got unlimited height, so every row was built at once and the mouse wheel did nothing. -->
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="220"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -411,15 +412,16 @@
         </Border>
 
         <!-- Programs List -->
-        <Border Grid.Row="3" Style="{StaticResource GlassCardStyle}">
+        <!-- No shadow on this card: a shadow redraws the whole card whenever a row inside changes (hover, a size arriving) -->
+        <Border Grid.Row="3" Style="{StaticResource GlassCardStyle}" Effect="{x:Null}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Column Headers -->
-                <Grid Grid.Row="0" Margin="0,0,0,12">
+                <!-- Column Headers (8 px on the right = the list's scroll bar) -->
+                <Grid Grid.Row="0" Margin="0,0,8,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
@@ -437,7 +439,14 @@
                 <ListView Grid.Row="1"
                           x:Name="ProgramsList"
                           Background="Transparent"
-                          BorderThickness="0">
+                          BorderThickness="0"
+                          Padding="0"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          VirtualizingPanel.ScrollUnit="Pixel"
+                          ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.VerticalScrollBarVisibility="Visible"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -630,5 +639,4 @@
             </Grid>
         </Border>
     </Grid>
-    </ScrollViewer>
 </Page>
