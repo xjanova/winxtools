@@ -907,6 +907,69 @@
     <system:String x:Key="Uninstall_FailChanged">skipped for safety — the folder changed after the scan</system:String>
     <system:String x:Key="Uninstall_FailCode">Windows error 0x{0:X}</system:String>
 
+    <!-- Uninstaller: Windows apps (Microsoft Store) -->
+    <system:String x:Key="Uninstall_FilterLabel">Show</system:String>
+    <system:String x:Key="Uninstall_FilterAll">Everything</system:String>
+    <system:String x:Key="Uninstall_FilterDesktop">Desktop programs</system:String>
+    <system:String x:Key="Uninstall_FilterStore">Windows apps (Store)</system:String>
+    <system:String x:Key="Uninstall_FilterPreinstalled">Comes with Windows</system:String>
+    <system:String x:Key="Uninstall_FilterSafe">Safe to remove</system:String>
+    <system:String x:Key="Uninstall_BadgeStore">Windows app</system:String>
+    <system:String x:Key="Uninstall_BadgePreinstalled">Comes with Windows</system:String>
+    <system:String x:Key="Uninstall_VerdictSafe">Safe to remove</system:String>
+    <system:String x:Key="Uninstall_VerdictYourCall">Your call</system:String>
+    <system:String x:Key="Uninstall_VerdictHardware">Hardware app</system:String>
+    <system:String x:Key="Uninstall_StoreNotMine">Not installed for your account</system:String>
+    <system:String x:Key="Uninstall_StoreRemove">Remove</system:String>
+    <system:String x:Key="Uninstall_SelectSafe">Select all safe to remove</system:String>
+    <system:String x:Key="Uninstall_RemoveSelected">Remove selected ({0})</system:String>
+    <system:String x:Key="Uninstall_StoreLoading">Reading Windows apps…</system:String>
+    <system:String x:Key="Uninstall_StoreSummary">{0:N0} Windows apps · {1:N0} safe to remove · {2:N0} system packages are protected and not listed</system:String>
+    <system:String x:Key="Uninstall_StoreOnlyThisAccount">only your account could be read</system:String>
+    <system:String x:Key="Uninstall_StoreFailed">Windows apps couldn't be read ({0}). Desktop programs are listed as usual — click Refresh to try again.</system:String>
+    <system:String x:Key="Uninstall_StoreTimedOut">Windows apps couldn't be read: Windows PowerShell did not answer within 60 seconds. Desktop programs are listed as usual — click Refresh to try again.</system:String>
+    <system:String x:Key="Uninstall_StoreBadAnswer">Windows PowerShell gave an unexpected answer</system:String>
+    <system:String x:Key="Uninstall_StoreNoPowerShell">Windows PowerShell could not be started</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmTitleOne">Remove {0}?</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmTitleMany">Remove {0:N0} Windows apps?</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmMsg">Everything listed below is removed for every account on this PC, together with the copy Windows keeps for new accounts, so it does not come back for a new user or after a feature update. Windows deletes each app's own data with it.</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmRemoveMany">Remove all {0:N0}</system:String>
+    <system:String x:Key="Uninstall_StoreReinstallYes">Can be installed again from the Microsoft Store</system:String>
+    <system:String x:Key="Uninstall_StoreReinstallNo">May not be available to install again</system:String>
+    <system:String x:Key="Uninstall_KeepAwayOption">Also keep Windows from bringing apps back (you can undo this)</system:String>
+    <system:String x:Key="Uninstall_KeepAwayDetails">Turns off Windows' consumer features, silently installed apps and app suggestions. The current settings are saved first; "Allow Windows suggestions again" on this page puts them back.</system:String>
+    <system:String x:Key="Uninstall_KeepAwayDetailsCopilot">Windows Copilot is turned off as well.</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndo">Allow Windows suggestions again</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndoTitle">Allow Windows Suggestions</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndoConfirm" xml:space="preserve">Put the Windows settings back as they were before WinXTools changed them?&#x0a;&#x0a;Windows may suggest and install apps by itself again. This does not reinstall the apps you removed.</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndone">The Windows settings are back as they were ({0:N0} values restored).</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndoFailed" xml:space="preserve">Some settings could not be put back:&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_KeepAwayApplied">Windows is now set not to bring apps back ({0:N0} settings changed). To undo, click "Allow Windows suggestions again" on this page.</system:String>
+    <system:String x:Key="Uninstall_KeepAwayAlready">Windows was already set not to bring apps back.</system:String>
+    <system:String x:Key="Uninstall_KeepAwayFailed" xml:space="preserve">Some of the settings that keep apps from coming back could not be changed:&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_StoreWorkTitle">Removing Windows apps</system:String>
+    <system:String x:Key="Uninstall_StoreWorkMsg" xml:space="preserve">App {0} of {1}:&#x0a;{2}</system:String>
+    <system:String x:Key="Uninstall_StoreStop">Stop after this app</system:String>
+    <system:String x:Key="Uninstall_StoreStopping">Stopping after the app that is being removed…</system:String>
+    <system:String x:Key="Uninstall_StoreDoneTitle">Removal Finished</system:String>
+    <system:String x:Key="Uninstall_StoreResRemoved">Removed completely: {0:N0}</system:String>
+    <system:String x:Key="Uninstall_StoreResGone">Already removed before WinXTools got to it: {0:N0}</system:String>
+    <system:String x:Key="Uninstall_StoreResNotRemoved">Not removed: {0:N0}</system:String>
+    <system:String x:Key="Uninstall_StoreResStopped">Not processed because you stopped: {0:N0}</system:String>
+    <system:String x:Key="Uninstall_StoreWhyWindows">Windows does not allow removing this one ({0})</system:String>
+    <system:String x:Key="Uninstall_StoreWhyInUse">it is running or being updated — close it and try again ({0})</system:String>
+    <system:String x:Key="Uninstall_StoreWhyOtherAccount">removed for your account, but another account still has it</system:String>
+    <system:String x:Key="Uninstall_StoreWhyProvisioned">removed, but the copy Windows keeps for new accounts is still there</system:String>
+    <system:String x:Key="Uninstall_StoreWhyStaged">no account has it any more, but Windows still keeps its files</system:String>
+    <system:String x:Key="Uninstall_StoreWhyNoAnswer">Windows did not answer, so nothing was removed — try again</system:String>
+    <system:String x:Key="Uninstall_StoreWhyStill">still installed (Windows error {0})</system:String>
+    <system:String x:Key="Uninstall_StoreWhyStillNoCode">still installed</system:String>
+    <system:String x:Key="Uninstall_StoreWhyProtected">WinXTools does not remove this one — Windows needs it</system:String>
+    <system:String x:Key="Uninstall_StoreWhyUnknown">the result could not be checked — click Refresh to see whether it is still installed</system:String>
+    <system:String x:Key="Uninstall_StoreNoteAccounts">other accounts could not be checked</system:String>
+    <system:String x:Key="Uninstall_StoreNoteProvisioned">the copy for new accounts could not be checked</system:String>
+    <system:String x:Key="Uninstall_StoreDataLeft">App data still on disk (Windows did not delete it):</system:String>
+
     <!-- Automation rules -->
     <system:String x:Key="Rules_ActivityEmpty">Nothing yet. When a rule runs, each action and its result appear here.</system:String>
     <system:String x:Key="Rules_ActivityTitle">Activity (this session)</system:String>

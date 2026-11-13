@@ -907,6 +907,69 @@
     <system:String x:Key="Uninstall_FailChanged">ข้ามเพื่อความปลอดภัย — โฟลเดอร์เปลี่ยนไปหลังการสแกน</system:String>
     <system:String x:Key="Uninstall_FailCode">ข้อผิดพลาดจาก Windows 0x{0:X}</system:String>
 
+    <!-- Uninstaller: Windows apps (Microsoft Store) -->
+    <system:String x:Key="Uninstall_FilterLabel">แสดง</system:String>
+    <system:String x:Key="Uninstall_FilterAll">ทั้งหมด</system:String>
+    <system:String x:Key="Uninstall_FilterDesktop">โปรแกรมเดสก์ท็อป</system:String>
+    <system:String x:Key="Uninstall_FilterStore">แอป Windows (Store)</system:String>
+    <system:String x:Key="Uninstall_FilterPreinstalled">มากับ Windows</system:String>
+    <system:String x:Key="Uninstall_FilterSafe">ลบได้ปลอดภัย</system:String>
+    <system:String x:Key="Uninstall_BadgeStore">แอป Windows</system:String>
+    <system:String x:Key="Uninstall_BadgePreinstalled">มากับ Windows</system:String>
+    <system:String x:Key="Uninstall_VerdictSafe">ลบได้ปลอดภัย</system:String>
+    <system:String x:Key="Uninstall_VerdictYourCall">แล้วแต่คุณ</system:String>
+    <system:String x:Key="Uninstall_VerdictHardware">แอปของฮาร์ดแวร์</system:String>
+    <system:String x:Key="Uninstall_StoreNotMine">ไม่ได้ติดตั้งในบัญชีของคุณ</system:String>
+    <system:String x:Key="Uninstall_StoreRemove">ลบออก</system:String>
+    <system:String x:Key="Uninstall_SelectSafe">เลือกทุกตัวที่ลบได้ปลอดภัย</system:String>
+    <system:String x:Key="Uninstall_RemoveSelected">ลบที่เลือก ({0})</system:String>
+    <system:String x:Key="Uninstall_StoreLoading">กำลังอ่านรายการแอป Windows…</system:String>
+    <system:String x:Key="Uninstall_StoreSummary">แอป Windows {0:N0} รายการ · ลบได้ปลอดภัย {1:N0} รายการ · แพ็กเกจระบบ {2:N0} รายการถูกป้องกันไว้ จึงไม่แสดง</system:String>
+    <system:String x:Key="Uninstall_StoreOnlyThisAccount">อ่านได้เฉพาะบัญชีของคุณ</system:String>
+    <system:String x:Key="Uninstall_StoreFailed">อ่านรายการแอป Windows ไม่ได้ ({0}) ส่วนโปรแกรมเดสก์ท็อปยังแสดงตามปกติ — กด "รีเฟรช" เพื่อลองใหม่</system:String>
+    <system:String x:Key="Uninstall_StoreTimedOut">อ่านรายการแอป Windows ไม่ได้: Windows PowerShell ไม่ตอบกลับภายใน 60 วินาที ส่วนโปรแกรมเดสก์ท็อปยังแสดงตามปกติ — กด "รีเฟรช" เพื่อลองใหม่</system:String>
+    <system:String x:Key="Uninstall_StoreBadAnswer">Windows PowerShell ตอบกลับมาในรูปแบบที่ไม่คาดคิด</system:String>
+    <system:String x:Key="Uninstall_StoreNoPowerShell">เปิด Windows PowerShell ไม่ได้</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmTitleOne">ลบ {0} ใช่ไหม?</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmTitleMany">ลบแอป Windows {0:N0} รายการใช่ไหม?</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmMsg">ทุกรายการด้านล่างจะถูกลบออกจากทุกบัญชีในเครื่องนี้ รวมถึงสำเนาที่ Windows เก็บไว้ติดตั้งให้บัญชีใหม่ จึงไม่กลับมาอีกเมื่อมีผู้ใช้ใหม่หรือหลังอัพเดทใหญ่ของ Windows ข้อมูลของแต่ละแอปจะถูก Windows ลบไปพร้อมกัน</system:String>
+    <system:String x:Key="Uninstall_StoreConfirmRemoveMany">ลบทั้ง {0:N0} รายการ</system:String>
+    <system:String x:Key="Uninstall_StoreReinstallYes">ติดตั้งใหม่ได้จาก Microsoft Store</system:String>
+    <system:String x:Key="Uninstall_StoreReinstallNo">อาจหาติดตั้งใหม่ไม่ได้แล้ว</system:String>
+    <system:String x:Key="Uninstall_KeepAwayOption">ตั้งค่าไม่ให้ Windows ติดตั้งแอปกลับมาเองด้วย (ยกเลิกได้ภายหลัง)</system:String>
+    <system:String x:Key="Uninstall_KeepAwayDetails">ปิดฟีเจอร์สำหรับผู้ใช้ทั่วไปของ Windows การติดตั้งแอปเองแบบเงียบๆ และการแนะนำแอป ค่าเดิมจะถูกบันทึกไว้ก่อน กด "ให้ Windows แนะนำแอปได้อีกครั้ง" ในหน้านี้เพื่อคืนค่าเดิม</system:String>
+    <system:String x:Key="Uninstall_KeepAwayDetailsCopilot">และปิด Windows Copilot ด้วย</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndo">ให้ Windows แนะนำแอปได้อีกครั้ง</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndoTitle">ให้ Windows แนะนำแอป</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndoConfirm" xml:space="preserve">คืนการตั้งค่าของ Windows ให้เป็นเหมือนก่อนที่ WinXTools จะเปลี่ยนใช่ไหม?&#x0a;&#x0a;Windows อาจแนะนำและติดตั้งแอปเองได้อีก การคืนค่านี้ไม่ได้ติดตั้งแอปที่ลบไปแล้วกลับมา</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndone">คืนการตั้งค่าของ Windows เป็นค่าเดิมแล้ว ({0:N0} ค่า)</system:String>
+    <system:String x:Key="Uninstall_KeepAwayUndoFailed" xml:space="preserve">คืนค่าบางรายการไม่สำเร็จ:&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_KeepAwayApplied">ตั้งค่า Windows ไม่ให้ติดตั้งแอปกลับมาเองแล้ว (เปลี่ยน {0:N0} ค่า) ถ้าต้องการยกเลิก กด "ให้ Windows แนะนำแอปได้อีกครั้ง" ในหน้านี้</system:String>
+    <system:String x:Key="Uninstall_KeepAwayAlready">Windows ถูกตั้งค่าไม่ให้ติดตั้งแอปกลับมาเองอยู่แล้ว</system:String>
+    <system:String x:Key="Uninstall_KeepAwayFailed" xml:space="preserve">เปลี่ยนการตั้งค่าบางรายการที่กันไม่ให้แอปกลับมาไม่สำเร็จ:&#x0a;{0}</system:String>
+    <system:String x:Key="Uninstall_StoreWorkTitle">กำลังลบแอป Windows</system:String>
+    <system:String x:Key="Uninstall_StoreWorkMsg" xml:space="preserve">แอปที่ {0} จาก {1}:&#x0a;{2}</system:String>
+    <system:String x:Key="Uninstall_StoreStop">หยุดหลังแอปนี้</system:String>
+    <system:String x:Key="Uninstall_StoreStopping">จะหยุดเมื่อลบแอปที่กำลังทำอยู่เสร็จ…</system:String>
+    <system:String x:Key="Uninstall_StoreDoneTitle">ลบเสร็จแล้ว</system:String>
+    <system:String x:Key="Uninstall_StoreResRemoved">ลบออกหมดแล้ว: {0:N0} รายการ</system:String>
+    <system:String x:Key="Uninstall_StoreResGone">ถูกลบไปก่อนแล้ว: {0:N0} รายการ</system:String>
+    <system:String x:Key="Uninstall_StoreResNotRemoved">ลบไม่ได้: {0:N0} รายการ</system:String>
+    <system:String x:Key="Uninstall_StoreResStopped">ยังไม่ได้ลบเพราะกดหยุด: {0:N0} รายการ</system:String>
+    <system:String x:Key="Uninstall_StoreWhyWindows">Windows ไม่อนุญาตให้ลบตัวนี้ ({0})</system:String>
+    <system:String x:Key="Uninstall_StoreWhyInUse">กำลังเปิดใช้งานหรือกำลังอัพเดทอยู่ — ปิดแอปแล้วลองใหม่ ({0})</system:String>
+    <system:String x:Key="Uninstall_StoreWhyOtherAccount">ลบออกจากบัญชีของคุณแล้ว แต่บัญชีอื่นยังมีอยู่</system:String>
+    <system:String x:Key="Uninstall_StoreWhyProvisioned">ลบแล้ว แต่สำเนาที่ Windows เก็บไว้ให้บัญชีใหม่ยังอยู่</system:String>
+    <system:String x:Key="Uninstall_StoreWhyStaged">ไม่มีบัญชีไหนติดตั้งไว้แล้ว แต่ Windows ยังเก็บไฟล์ของแอปไว้</system:String>
+    <system:String x:Key="Uninstall_StoreWhyNoAnswer">Windows ไม่ตอบกลับ จึงยังไม่ได้ลบอะไร — ลองใหม่อีกครั้ง</system:String>
+    <system:String x:Key="Uninstall_StoreWhyStill">ยังติดตั้งอยู่ (ข้อผิดพลาดจาก Windows {0})</system:String>
+    <system:String x:Key="Uninstall_StoreWhyStillNoCode">ยังติดตั้งอยู่</system:String>
+    <system:String x:Key="Uninstall_StoreWhyProtected">WinXTools ไม่ลบตัวนี้ เพราะ Windows ต้องใช้</system:String>
+    <system:String x:Key="Uninstall_StoreWhyUnknown">ตรวจผลลัพธ์ไม่ได้ — กด "รีเฟรช" เพื่อดูว่ายังติดตั้งอยู่หรือไม่</system:String>
+    <system:String x:Key="Uninstall_StoreNoteAccounts">ตรวจบัญชีอื่นไม่ได้</system:String>
+    <system:String x:Key="Uninstall_StoreNoteProvisioned">ตรวจสำเนาสำหรับบัญชีใหม่ไม่ได้</system:String>
+    <system:String x:Key="Uninstall_StoreDataLeft">ข้อมูลของแอปยังอยู่ในเครื่อง (Windows ไม่ได้ลบให้):</system:String>
+
     <!-- Automation rules -->
     <system:String x:Key="Rules_ActivityEmpty">ยังไม่มีรายการ เมื่อกฎทำงาน ทุกการกระทำและผลลัพธ์จะแสดงที่นี่</system:String>
     <system:String x:Key="Rules_ActivityTitle">กิจกรรม (รอบการใช้งานนี้)</system:String>

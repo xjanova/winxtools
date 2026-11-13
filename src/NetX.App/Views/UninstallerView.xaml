@@ -155,11 +155,116 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
+        <!-- Windows app removal: exactly what goes, a warning per app where it matters, and the
+             optional "keep it from coming back" tick (never pre-ticked);
+             DataContext = StoreRemoveConfirmModel. -->
+        <DataTemplate x:Key="UninstallStoreConfirmTemplate">
+            <Border Background="{StaticResource BgSecondaryBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24"
+                    Margin="16"
+                    Effect="{StaticResource CardShadow}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding Title}"
+                               Style="{StaticResource SubHeaderTextStyle}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding Message}"
+                               Style="{StaticResource BodyTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,16"/>
+
+                    <ScrollViewer Grid.Row="2"
+                                  MaxHeight="320"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Items}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource BgTertiaryBrush}"
+                                            CornerRadius="8"
+                                            Padding="12,10"
+                                            Margin="0,0,0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Note}"
+                                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                                       FontSize="11"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Warning}"
+                                                       Foreground="{StaticResource WarningBrush}"
+                                                       FontSize="12"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,4,0,0"
+                                                       Visibility="{Binding HasWarning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <CheckBox Grid.Row="3"
+                              IsChecked="{Binding KeepAway, Mode=TwoWay}"
+                              ToolTip="{Binding KeepAwayValues}"
+                              VerticalContentAlignment="Top"
+                              Margin="0,12,0,0"
+                              Visibility="{Binding KeepAwayAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Margin="4,0,0,0">
+                            <TextBlock Text="{DynamicResource Uninstall_KeepAwayOption}"
+                                       Style="{StaticResource BodyTextStyle}"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding KeepAwayDetails}"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </CheckBox>
+
+                    <!-- Enter and Esc both keep everything: removing needs a click on the red button -->
+                    <StackPanel Grid.Row="4"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,20,0,0">
+                        <Button Content="{DynamicResource Common_Cancel}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="16,8"
+                                IsCancel="True"
+                                IsDefault="True"
+                                Click="StoreConfirmCancel_Click"/>
+                        <Button Content="{Binding RemoveText}"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Padding="16,8"
+                                Margin="8,0,0,0"
+                                Click="StoreConfirmRemove_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -248,8 +353,65 @@
             </Grid>
         </Border>
 
+        <!-- Windows apps (Microsoft Store): what to show, the quiet status note, and removing several at once -->
+        <Border Grid.Row="2" Style="{StaticResource GlassCardStyle}" Margin="0,0,0,16" Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="{DynamicResource Uninstall_FilterLabel}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <ComboBox x:Name="SourceFilter"
+                              Width="210"
+                              Style="{StaticResource ModernComboBoxStyle}"
+                              SelectedIndex="0"
+                              SelectionChanged="SourceFilter_SelectionChanged">
+                        <ComboBoxItem Content="{DynamicResource Uninstall_FilterAll}"/>
+                        <ComboBoxItem Content="{DynamicResource Uninstall_FilterDesktop}"/>
+                        <ComboBoxItem Content="{DynamicResource Uninstall_FilterStore}"/>
+                        <ComboBoxItem Content="{DynamicResource Uninstall_FilterPreinstalled}"/>
+                        <ComboBoxItem Content="{DynamicResource Uninstall_FilterSafe}"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- "Reading…", how many were found, or why Windows apps could not be read -->
+                <TextBlock Grid.Column="1"
+                           x:Name="StoreNoteText"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"
+                           Margin="16,0"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <!-- Only while WinXTools has "keep it from coming back" settings to put back -->
+                    <Button x:Name="UndoKeepAwayButton"
+                            Content="{DynamicResource Uninstall_KeepAwayUndo}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="UndoKeepAway_Click"
+                            Margin="0,0,8,0"
+                            Visibility="Collapsed"/>
+                    <Button x:Name="SelectSafeButton"
+                            Content="{DynamicResource Uninstall_SelectSafe}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="SelectSafe_Click"
+                            Margin="0,0,8,0"/>
+                    <Button x:Name="RemoveSelectedButton"
+                            Style="{StaticResource DangerButtonStyle}"
+                            Click="RemoveSelected_Click"
+                            IsEnabled="False"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Programs List -->
-        <Border Grid.Row="2" Style="{StaticResource GlassCardStyle}">
+        <Border Grid.Row="3" Style="{StaticResource GlassCardStyle}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -316,16 +478,32 @@
                                     <ColumnDefinition Width="240"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Icon -->
+                                <!-- Icon (desktop program) -->
                                 <Border Grid.Column="0"
                                         Width="32" Height="32"
                                         CornerRadius="6"
                                         Background="{StaticResource BgTertiaryBrush}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsStoreApp}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <Path Data="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
                                           Fill="{StaticResource AccentPrimaryBrush}"
                                           Width="16" Height="16"
                                           Stretch="Uniform"/>
                                 </Border>
+
+                                <!-- Tick box (Windows app): several can be removed with one confirmation -->
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding IsStoreApp, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
                                 <!-- Name & Publisher · version · scope -->
                                 <StackPanel Grid.Column="1" Margin="8,0,0,0">
@@ -338,6 +516,57 @@
                                                Foreground="{StaticResource TextTertiaryBrush}"
                                                FontSize="11"
                                                TextTrimming="CharacterEllipsis"/>
+
+                                    <!-- Windows app: what kind it is, the verdict, and one sentence about it -->
+                                    <DockPanel Margin="0,4,0,0"
+                                               Visibility="{Binding IsStoreApp, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Border DockPanel.Dock="Left"
+                                                Background="{StaticResource BgTertiaryBrush}"
+                                                CornerRadius="4"
+                                                Padding="6,1"
+                                                Margin="0,0,6,0">
+                                            <TextBlock Text="{Binding Badge}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       FontSize="10"/>
+                                        </Border>
+                                        <Border DockPanel.Dock="Left"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                Padding="6,0"
+                                                Margin="0,0,6,0"
+                                                Visibility="{Binding HasVerdict, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding VerdictKind}" Value="SafeToRemove">
+                                                            <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding VerdictText}"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding VerdictKind}" Value="SafeToRemove">
+                                                                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+                                        <TextBlock Text="{Binding Description}"
+                                                   ToolTip="{Binding Hint}"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
                                 </StackPanel>
 
                                 <!-- Size -->
@@ -353,8 +582,17 @@
                                            Foreground="{StaticResource TextTertiaryBrush}"
                                            HorizontalAlignment="Center"/>
 
-                                <!-- Actions -->
+                                <!-- Actions (desktop program) -->
                                 <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsStoreApp}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
                                     <Button Content="{DynamicResource Uninstall_Uninstall}"
                                             Style="{StaticResource SecondaryButtonStyle}"
                                             Padding="10,6"
@@ -365,6 +603,16 @@
                                             Padding="10,6"
                                             Click="DeepClean_Click"/>
                                 </StackPanel>
+
+                                <!-- Action (Windows app): Windows removes the package and its data itself -->
+                                <Button Grid.Column="4"
+                                        Content="{DynamicResource Uninstall_StoreRemove}"
+                                        Style="{StaticResource DangerButtonStyle}"
+                                        Padding="10,6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Click="StoreRemove_Click"
+                                        Visibility="{Binding IsStoreApp, Converter={StaticResource BoolToVisibilityConverter}}"/>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
